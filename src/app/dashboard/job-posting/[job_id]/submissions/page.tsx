@@ -193,7 +193,7 @@ export default function Home() {
           page,
           perPage,
         }
-      : null
+      : null,
   );
 
   // Parse filter values for filtered query
@@ -222,7 +222,7 @@ export default function Home() {
           page,
           perPage,
         }
-      : null
+      : null,
   );
 
   // Simplified getJobId function
@@ -464,7 +464,7 @@ export default function Home() {
         `Successfully sent ${application_ids.length} candidate${
           application_ids.length > 1 ? "s" : ""
         } to ${assessment_id.replace("_", " ")}`,
-        "success"
+        "success",
       );
       // Convex will auto-update the data
     } catch (error) {
@@ -522,11 +522,11 @@ export default function Home() {
         ["clean"],
       ],
     }),
-    []
+    [],
   );
   const quillFormats = React.useMemo(
     () => ["header", "bold", "italic", "underline", "strike", "list", "bullet", "link"],
-    []
+    [],
   );
 
   const [emailModalOpen, setEmailModalOpen] = useState(false);
