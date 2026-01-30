@@ -1,0 +1,8 @@
+[build]
+  command = "npm run prebuild && npm run build"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

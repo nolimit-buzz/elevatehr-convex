@@ -1,0 +1,21 @@
+{
+  "folders": [
+    {
+      "name": "Root",
+      "path": ".",
+    },
+
+    {
+      "name": "Convex",
+      "path": "./convex",
+    },
+
+    {
+      "name": "Client",
+      "path": "./src",
+    },
+  ],
+  "settings": {
+    "cSpell.words": ["architecting", "baselight", "elevatehr", "groq", "Groq", "mainwrapper", "Typeform"],
+  },
+}

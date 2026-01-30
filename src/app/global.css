@@ -1,0 +1,100 @@
+/* outfit-latin-wght-normal */
+@font-face {
+  font-family: "Outfit Variable";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url("../utils/theme/fonts/Outfit-VariableFont_wght.ttf") format("woff2-variations");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC,
+    U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+body {
+  font-family: "Outfit Variable", sans-serif;
+}
+
+.quill {
+  flex: 1;
+  position: relative;
+}
+
+.quill .ql-editor {
+  min-height: 228px;
+  min-width: 100%;
+  border: none;
+  font-family: "Outfit Variable" !important;
+  font-weight: 400;
+  font-size: 16px;
+  padding-bottom: 65px;
+}
+
+.quill .ql-toolbar {
+  border: none;
+  position: absolute;
+  bottom: 0;
+  z-index: 20;
+  font-family: "Outfit Variable" !important;
+  font-weight: 300;
+}
+
+.quill .ql-container {
+  border: none;
+}
+
+.quill .ql-stroke {
+  strokewidth: 1;
+}
+
+input {
+  font-family: "Outfit Variable" !important;
+  font-weight: 400;
+  font-size: 16px !important;
+}
+
+.job-title {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.job-title:hover {
+  text-decoration: underline;
+  transition: all 0.3s ease;
+}
+
+.job-title:hover .arrow-link {
+  transform: translateX(2px) translateY(-2px);
+  transition: all 0.3s ease 0.2s;
+}
+
+.arrow-link {
+  transition: all 0.3s ease;
+}
+
+.arrow-link:hover {
+  transform: translateX(2px) translateY(-2px);
+}
+
+.thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #032b4420 transparent;
+
+  &::-webkit-scrollbar {
+    height: 4px;
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: "#032B44";
+    width: 4px;
+    border-radius: 4px;
+
+    &:hover {
+      background: rgba(68, 68, 226, 0.3);
+    }
+  }
+}
