@@ -59,6 +59,7 @@ import {
   useApplicationsWithFilters,
   useApplicationMutations,
   StageType as ConvexStageType,
+  CompanyApplication,
 } from "@/queries/applications.queries";
 import { useEmailTemplates } from "@/queries/emailTemplates.queries";
 
@@ -1421,7 +1422,30 @@ export default function Home() {
                       ))}
                     </Box>
                     <MobileCandidateGrid
-                      candidates={filteredCandidates?.applications || []}
+                      candidates={(filteredCandidates?.applications || []).map((app) => ({
+                        id: app.id,
+                        name: `${app.personal_info?.firstname || ""} ${app.personal_info?.lastname || ""}`.trim(),
+                        email: "",
+                        phone: "",
+                        cv_url: app.attachments?.cv || "",
+                        status: "",
+                        created_at: "",
+                        professional_info: {
+                          experience_years: Number(app.professional_info?.experience) || 0,
+                          skills: app.professional_info?.skills || "",
+                          education: [],
+                          start_date: app.professional_info?.start_date || "",
+                        },
+                        cv_analysis: app.cv_analysis
+                          ? {
+                              experience_years: app.cv_analysis.experience_years || 0,
+                              skills: app.cv_analysis.skills || [],
+                              education: app.cv_analysis.education || [],
+                              ...app.cv_analysis,
+                            }
+                          : undefined,
+                        attachments: app.attachments,
+                      }))}
                       selectedEntries={selectedEntries}
                       subTabValue={subTabValue}
                       isMovingStage={isMovingStage}

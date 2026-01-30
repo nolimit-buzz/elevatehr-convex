@@ -56,8 +56,11 @@ export interface Candidate {
   [key: string]: any;
 }
 
+// Import CompanyApplication from Convex for type compatibility
+import type { CompanyApplication } from "@/queries/applications.queries";
+
 export interface CandidateResponse {
-  applications: Candidate[];
+  applications: CompanyApplication[];
 }
 
 export interface SkillColor {
