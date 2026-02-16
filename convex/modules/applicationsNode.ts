@@ -4,7 +4,7 @@ import { ConvexError, v } from "convex/values";
 import { action, internalAction, ActionCtx } from "../_generated/server";
 import { internal } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
-import { analyzeCVWithAI, extractTextFromCV } from "../ai/cvAnalysis";
+import { analyzeCVWithAI, extractTextFromCV } from "../templates/ai/cvAnalysis";
 
 // CV Analysis Schema (must match the one in applications.ts)
 const CVAnalysisSchema = {

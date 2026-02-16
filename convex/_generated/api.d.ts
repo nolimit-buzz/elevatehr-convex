@@ -8,9 +8,6 @@
  * @module
  */
 
-import type * as ai_assessmentDescription from "../ai/assessmentDescription.js";
-import type * as ai_cvAnalysis from "../ai/cvAnalysis.js";
-import type * as ai_jobDescription from "../ai/jobDescription.js";
 import type * as modules_applications from "../modules/applications.js";
 import type * as modules_applicationsNode from "../modules/applicationsNode.js";
 import type * as modules_assessment from "../modules/assessment.js";
@@ -21,6 +18,9 @@ import type * as modules_jobs from "../modules/jobs.js";
 import type * as modules_notifications from "../modules/notifications.js";
 import type * as modules_statistics from "../modules/statistics.js";
 import type * as modules_user from "../modules/user.js";
+import type * as templates_ai_assessmentDescription from "../templates/ai/assessmentDescription.js";
+import type * as templates_ai_cvAnalysis from "../templates/ai/cvAnalysis.js";
+import type * as templates_ai_jobDescription from "../templates/ai/jobDescription.js";
 import type * as utils_constants from "../utils/constants.js";
 import type * as utils_data from "../utils/data.js";
 import type * as utils_helpers from "../utils/helpers.js";
@@ -35,9 +35,6 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  "ai/assessmentDescription": typeof ai_assessmentDescription;
-  "ai/cvAnalysis": typeof ai_cvAnalysis;
-  "ai/jobDescription": typeof ai_jobDescription;
   "modules/applications": typeof modules_applications;
   "modules/applicationsNode": typeof modules_applicationsNode;
   "modules/assessment": typeof modules_assessment;
@@ -48,6 +45,9 @@ declare const fullApi: ApiFromModules<{
   "modules/notifications": typeof modules_notifications;
   "modules/statistics": typeof modules_statistics;
   "modules/user": typeof modules_user;
+  "templates/ai/assessmentDescription": typeof templates_ai_assessmentDescription;
+  "templates/ai/cvAnalysis": typeof templates_ai_cvAnalysis;
+  "templates/ai/jobDescription": typeof templates_ai_jobDescription;
   "utils/constants": typeof utils_constants;
   "utils/data": typeof utils_data;
   "utils/helpers": typeof utils_helpers;

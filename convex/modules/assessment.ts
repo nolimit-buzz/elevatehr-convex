@@ -4,7 +4,11 @@ import { Constants } from "../utils/constants";
 import { ConvexError, v } from "convex/values";
 import { action, internalMutation, internalQuery, query } from "../_generated/server";
 import { authedMutation, authedQuery, authedAction } from "../utils/permission";
-import { generateQuizQuestions, generateSkillsForRole, generateTechnicalContent } from "../ai/assessmentDescription";
+import {
+  generateQuizQuestions,
+  generateSkillsForRole,
+  generateTechnicalContent,
+} from "../templates/ai/assessmentDescription";
 
 // Internal query to get company by ID (used by actions)
 export const getCompanyInternal = internalQuery({

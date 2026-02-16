@@ -4,8 +4,8 @@ import { authedMutation, authedQuery } from "../utils/permission";
 import { Id } from "../_generated/dataModel";
 import { action, internalMutation, internalQuery, query } from "../_generated/server";
 import { internal } from "../_generated/api";
-import { generateJobDescription } from "../ai/jobDescription";
-import { generateSkillsForRole } from "../ai/assessmentDescription";
+import { generateJobDescription } from "../templates/ai/jobDescription";
+import { generateSkillsForRole } from "../templates/ai/assessmentDescription";
 import { verifyToken } from "../utils/validation";
 import { requiredData } from "../utils/data";
 
