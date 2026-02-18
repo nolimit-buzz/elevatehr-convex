@@ -249,7 +249,13 @@ export default function Typeform({ params }: { params: { job_id: string } }) {
         }
 
         // Extract required fields
-        const name = String(formValues.name || formValues.full_name || "");
+        // Combine firstname and lastname into name if they exist separately
+        const firstname = String(formValues.firstname || "");
+        const lastname = String(formValues.lastname || "");
+        const name =
+          firstname && lastname
+            ? `${firstname} ${lastname}`.trim()
+            : String(formValues.name || formValues.full_name || firstname || lastname || "");
         const email = String(formValues.email || "");
         const phone = formValues.phone ? String(formValues.phone) : undefined;
 

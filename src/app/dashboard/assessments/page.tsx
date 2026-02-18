@@ -541,10 +541,7 @@ export default function AssessmentsPage() {
               Technical assessment
             </MenuItem>
             <MenuItem value="online_assessment_1" sx={{ fontWeight: 400, fontSize: 15 }}>
-              Online assessment 1
-            </MenuItem>
-            <MenuItem value="online_assessment_2" sx={{ fontWeight: 400, fontSize: 15 }}>
-              Online assessment 2
+              Online assessment
             </MenuItem>
           </Select>
           <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
