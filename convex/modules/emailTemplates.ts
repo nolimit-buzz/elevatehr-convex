@@ -11,7 +11,7 @@ const TEMPLATE_TYPES = v.union(
   v.literal("interviews"),
   v.literal("acceptance"),
   v.literal("archived"),
-  v.literal("rejection")
+  v.literal("rejection"),
 );
 
 // Email template schema for database
