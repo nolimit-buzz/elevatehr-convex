@@ -130,6 +130,7 @@ export const useApplicationMutations = () => {
       updateStageMutation({
         applicationIds: applicationIds as Id<"applications">[],
         stage,
+        origin: typeof window !== "undefined" ? window.location.origin : undefined,
       }),
     );
     return { result, error };
@@ -138,7 +139,7 @@ export const useApplicationMutations = () => {
   /**
    * Send assessment to applications
    */
-  const sendAssessment = async (applicationIds: string[], assessmentId: string) => {
+  const sendAssessment = async (applicationIds: string[], assessmentId: string, customEmailTemplate?: string) => {
     if (!sendAssessmentMutation) {
       return { result: null, error: "Mutation not ready" };
     }
@@ -146,6 +147,8 @@ export const useApplicationMutations = () => {
       sendAssessmentMutation({
         applicationIds: applicationIds as Id<"applications">[],
         assessmentId: assessmentId as Id<"assessments">,
+        origin: typeof window !== "undefined" ? window.location.origin : undefined,
+        customEmailTemplate,
       }),
     );
     return { result, error };
@@ -163,6 +166,7 @@ export const useApplicationMutations = () => {
         applicationIds: applicationIds as Id<"applications">[],
         stage,
         customEmailTemplate,
+        origin: typeof window !== "undefined" ? window.location.origin : undefined,
       }),
     );
     return { result, error };
@@ -280,6 +284,7 @@ export const usePublicJobApplicationForm = (jobId: string | null): PublicJobForm
 export const usePublicApplicationMutations = () => {
   const submitAction = useAction(api.modules.applicationsNode.submitPublicApplication);
   const generateUploadUrlMutation = useMutation(api.modules.applications.generatePublicUploadUrl);
+  const submitAssessmentMutation = useMutation(api.modules.applications.submitAssessment);
 
   /**
    * Submit a public application
@@ -318,6 +323,33 @@ export const usePublicApplicationMutations = () => {
   };
 
   /**
+   * Submit an assessment
+   */
+  const submitAssessment = async (args: {
+    applicationId: string;
+    jobId: string;
+    assessmentId: string;
+    answers?: { question_index: number; answer: string }[];
+    submissionUrl?: string;
+    selectedOption?: string;
+  }) => {
+    try {
+      const result = await submitAssessmentMutation({
+        applicationId: args.applicationId as Id<"applications">,
+        jobId: args.jobId as Id<"jobs">,
+        assessmentId: args.assessmentId as Id<"assessments">,
+        answers: args.answers,
+        submissionUrl: args.submissionUrl,
+        selectedOption: args.selectedOption,
+      });
+      return { result, error: null };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to submit assessment";
+      return { result: null, error: message };
+    }
+  };
+
+  /**
    * Generate upload URL for file uploads
    */
   const generateUploadUrl = async (jobId: string) => {
@@ -335,5 +367,6 @@ export const usePublicApplicationMutations = () => {
   return {
     submitApplication,
     generateUploadUrl,
+    submitAssessment,
   };
 };

@@ -27,6 +27,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { Banner } from "@/app/components/Banner";
 import { RadioGroup, FormControlLabel, Radio } from "@mui/material";
 import { usePublicAssessment, type Id } from "@/queries/assessment.queries";
+import { usePublicApplicationMutations } from "@/queries/applications.queries";
 
 const StyledButton = styled(Button)(({ theme }) => ({
   borderRadius: "8px",
@@ -64,6 +65,8 @@ export default function AssessmentPage() {
   // Use Convex public query for assessment
   const assessment = usePublicAssessment(assessmentId ? (assessmentId as Id<"assessments">) : null);
   const loading = assessment === undefined;
+
+  const { submitAssessment } = usePublicApplicationMutations();
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -145,8 +148,8 @@ export default function AssessmentPage() {
   };
 
   const handleOnlineAssessmentSubmit = async () => {
-    if (!applicationId) {
-      setError("Application ID is missing");
+    if (!applicationId || !jobId || !assessmentId) {
+      setError("Missing required parameters");
       return;
     }
 
@@ -155,39 +158,29 @@ export default function AssessmentPage() {
     setSuccess(null);
 
     try {
-      const response = await fetch(
-        "https://app.elevatehr.ai/wp-json/elevatehr/v1/applications/submit-online-assessment",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            application_id: parseInt(applicationId),
-            job_id: parseInt(jobId || "0"),
-            assessment_id: parseInt(assessmentId || "0"),
-            answers: Object.entries(answers).map(([questionIndex, answer]) => ({
-              question_index: parseInt(questionIndex),
-              answer,
-            })),
-          }),
-        }
-      );
+      const formattedAnswers = Object.entries(answers).map(([questionIndex, answer]) => ({
+        question_index: parseInt(questionIndex),
+        answer,
+      }));
 
-      if (!response.ok) {
-        throw new Error("Failed to submit assessment");
+      const { result, error: submitError } = await submitAssessment({
+        applicationId,
+        jobId,
+        assessmentId,
+        answers: formattedAnswers.length > 0 ? formattedAnswers : undefined,
+        submissionUrl: submissionUrl || undefined,
+        selectedOption: selectedOption || undefined,
+      });
+
+      if (submitError) {
+        throw new Error(submitError);
       }
 
-      const data = await response.json();
-      if (data.status === "success") {
-        setSuccess("Assessment submitted successfully!");
-        setIsSubmitted(true);
-        // Store submission in localStorage
-        const submissionKey = `assessment_submission_${jobId}_${assessmentId}_${applicationId}`;
-        localStorage.setItem(submissionKey, "true");
-      } else {
-        throw new Error(data.message || "Failed to submit assessment");
-      }
+      setSuccess("Assessment submitted successfully!");
+      setIsSubmitted(true);
+      // Store submission in localStorage
+      const submissionKey = `assessment_submission_${jobId}_${assessmentId}_${applicationId}`;
+      localStorage.setItem(submissionKey, "true");
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred while submitting");
     } finally {

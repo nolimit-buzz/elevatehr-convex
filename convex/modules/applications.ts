@@ -124,6 +124,15 @@ const AssessmentResultSchema = v.object({
   assessment_submission_status: v.optional(v.string()),
   assessment_submission_link: v.optional(v.string()),
   assessment_score: v.optional(v.number()),
+  answers: v.optional(
+    v.array(
+      v.object({
+        question_index: v.number(),
+        answer: v.string(),
+      }),
+    ),
+  ),
+  selected_option: v.optional(v.string()),
 });
 
 // Application schema for database
@@ -708,6 +717,7 @@ export const updateStage = authedMutation({
   args: {
     applicationIds: v.array(v.id("applications")),
     stage: APPLICATION_STAGES,
+    origin: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const user = ctx.user;
@@ -749,6 +759,7 @@ export const updateStage = authedMutation({
         await ctx.scheduler.runAfter(0, internal.modules.applicationsNode.sendStageEmailInternal, {
           applicationId,
           templateType,
+          origin: args.origin,
         });
       }
 
@@ -764,6 +775,8 @@ export const sendAssessment = authedMutation({
   args: {
     applicationIds: v.array(v.id("applications")),
     assessmentId: v.id("assessments"),
+    customEmailTemplate: v.optional(v.string()),
+    origin: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const user = ctx.user;
@@ -805,6 +818,8 @@ export const sendAssessment = authedMutation({
       await ctx.scheduler.runAfter(0, internal.modules.applicationsNode.sendStageEmailInternal, {
         applicationId,
         templateType: emailTemplateType,
+        origin: args.origin,
+        customContent: args.customEmailTemplate,
       });
 
       results.push({ id: applicationId, success: true });
@@ -820,6 +835,7 @@ export const moveToStageWithEmail = authedMutation({
     applicationIds: v.array(v.id("applications")),
     stage: APPLICATION_STAGES,
     customEmailTemplate: v.optional(v.string()),
+    origin: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const user = ctx.user;
@@ -861,6 +877,8 @@ export const moveToStageWithEmail = authedMutation({
         await ctx.scheduler.runAfter(0, internal.modules.applicationsNode.sendStageEmailInternal, {
           applicationId,
           templateType,
+          origin: args.origin,
+          customContent: args.customEmailTemplate,
         });
       }
 
@@ -935,6 +953,83 @@ export const getPublicJobApplicationForm = query({
 });
 
 // Note: submitPublicApplication is now in applications.node.ts (requires Node.js runtime)
+
+// Public mutation to submit online/technical assessment
+export const submitAssessment = mutation({
+  args: {
+    applicationId: v.id("applications"),
+    jobId: v.id("jobs"),
+    assessmentId: v.id("assessments"),
+    answers: v.optional(
+      v.array(
+        v.object({
+          question_index: v.number(),
+          answer: v.string(),
+        }),
+      ),
+    ),
+    submissionUrl: v.optional(v.string()),
+    selectedOption: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { applicationId, jobId, assessmentId, answers, submissionUrl, selectedOption } = args;
+
+    // Validate application
+    const application = await ctx.db.get(applicationId);
+    if (!application) {
+      throw new ConvexError({ message: "Application not found", code: 404 });
+    }
+
+    if (application.job_id !== jobId) {
+      throw new ConvexError({ message: "Application does not match job", code: 400 });
+    }
+
+    // Validate assessment
+    const assessment = await ctx.db.get(assessmentId);
+    if (!assessment) {
+      throw new ConvexError({ message: "Assessment not found", code: 404 });
+    }
+
+    // Update application with assessment results
+    const assessmentKey = assessment.type;
+    const now = new Date().toISOString();
+
+    const result = {
+      assessment_id: assessmentId,
+      assessment_status: "completed",
+      assessment_submitted_date: now,
+      assessment_submission_status: "submitted",
+      assessment_submission_link: submissionUrl,
+      answers: answers,
+      selected_option: selectedOption,
+    };
+
+    // Prepare update data
+    const updateData: any = {};
+
+    // Get existing assessment results or initialize
+    const currentResults = application.assessments_results || {};
+
+    // Update the specific assessment type result
+    updateData.assessments_results = {
+      ...currentResults,
+      [assessmentKey]: {
+        ...(currentResults[assessmentKey] || {}), // Keep existing data if any (though usually overwriting)
+        ...result,
+      },
+    };
+
+    // Also update legacy fields if needed (optional but good for compatibility)
+    if (assessment.type === "technical_assessment") {
+      updateData.assessment_completed = true;
+      updateData.assessment_id = assessmentId;
+    }
+
+    await ctx.db.patch(applicationId, updateData);
+
+    return { status: "success", message: "Assessment submitted successfully" };
+  },
+});
 
 // Public mutation to generate upload URL for CV/resume uploads
 export const generatePublicUploadUrl = mutation({

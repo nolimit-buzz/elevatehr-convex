@@ -443,15 +443,17 @@ export default function Home() {
   const handleSendAssessment = async ({
     application_ids,
     assessment_id,
+    emailContent,
   }: {
     application_ids: string[];
     assessment_id?: string;
+    emailContent?: string;
   }) => {
     if (!application_ids?.length || !assessment_id) return;
 
     setIsMovingStage(assessment_id);
     try {
-      const { error } = await sendAssessmentMutation(application_ids, assessment_id);
+      const { error } = await sendAssessmentMutation(application_ids, assessment_id, emailContent);
 
       if (error) {
         throw new Error(error);
@@ -577,11 +579,13 @@ export default function Home() {
     if (
       pendingAction === "technical_assessment" ||
       pendingAction === "online_assessment_1" ||
-      pendingAction === "online_assessment_2"
+      pendingAction === "online_assessment_2" ||
+      (pendingAction === "skill_assessment" && jobDetails?.assessment_id)
     ) {
       handleSendAssessment({
         application_ids: selectedEntries,
         assessment_id: jobDetails?.assessment_id,
+        emailContent,
       });
       return;
     }

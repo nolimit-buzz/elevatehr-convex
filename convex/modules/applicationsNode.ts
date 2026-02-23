@@ -203,6 +203,8 @@ export const sendStageEmailInternal = internalAction({
   args: {
     applicationId: v.id("applications"),
     templateType: v.string(),
+    origin: v.optional(v.string()),
+    customContent: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     try {
@@ -217,16 +219,32 @@ export const sendStageEmailInternal = internalAction({
 
       const { application, job, company } = data;
 
+      console.log(`[Email] sendStageEmailInternal - Application ID: ${application._id}`);
+      console.log(`[Email] sendStageEmailInternal - Template Type: ${args.templateType}`);
+      console.log(`[Email] sendStageEmailInternal - Origin: ${args.origin}`);
+      console.log(`[Email] sendStageEmailInternal - Assessment ID: ${application.assessment_id}`);
+
       // Fetch company-specific email template (may be null)
       const template = await ctx.runQuery(internal.modules.emailTemplates.getByTypeInternal, {
         companyId: application.company_id,
         type: args.templateType,
       });
 
+      let assessmentLink: string | undefined;
+      // Construct assessment link if origin is provided and applicable
+      if (
+        args.origin &&
+        (args.templateType === "skill_assessment" || args.templateType === "technical_assessment") &&
+        application.assessment_id
+      ) {
+        assessmentLink = `${args.origin}/assessment?job_id=${application.job_id}&assessment_id=${application.assessment_id}&application_id=${application._id}`;
+      }
+
       const templatePayload = {
         candidate_name: application.name,
         job_title: job.title,
         company_name: company.company_name,
+        assessment_link: assessmentLink,
       };
 
       const subject = template?.subject ?? getDefaultEmailSubject(args.templateType, job.title);
@@ -236,7 +254,7 @@ export const sendStageEmailInternal = internalAction({
         subject,
         template: args.templateType,
         templatePayload,
-        customHtmlContent: template?.content,
+        customHtmlContent: args.customContent ?? template?.content,
       });
 
       return { success: true };
