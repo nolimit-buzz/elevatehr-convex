@@ -704,6 +704,14 @@ export const createPublicApplicationInternal = internalMutation({
       });
     }
 
+    // Notify the company of the new application
+    await ctx.scheduler.runAfter(0, internal.modules.notifications.createInternal, {
+      company_id: job.company_id,
+      title: "New Application Received",
+      content: `${args.name} has applied for the ${job.title} position.`,
+      type: "application",
+    });
+
     return { id: applicationId };
   },
 });
@@ -1026,6 +1034,17 @@ export const submitAssessment = mutation({
     }
 
     await ctx.db.patch(applicationId, updateData);
+
+    // Notify the company that an assessment has been submitted
+    const notifJob = await ctx.db.get(args.jobId);
+    if (notifJob) {
+      await ctx.scheduler.runAfter(0, internal.modules.notifications.createInternal, {
+        company_id: application.company_id,
+        title: "Assessment Submitted",
+        content: `${application.name} has submitted their ${assessment.type.replace(/_/g, " ")} for the ${notifJob.title} position.`,
+        type: "assessment",
+      });
+    }
 
     return { status: "success", message: "Assessment submitted successfully" };
   },

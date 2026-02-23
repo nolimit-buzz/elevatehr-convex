@@ -1,5 +1,6 @@
 import { Constants } from "../utils/constants";
 import { ConvexError, v } from "convex/values";
+import { internalMutation } from "../_generated/server";
 import { authedMutation, authedQuery } from "../utils/permission";
 
 // Notification schema for database
@@ -139,6 +140,26 @@ export const markAllAsRead = authedMutation({
     }
 
     return { message: `${notifications.length} notifications marked as read` };
+  },
+});
+
+// Internal mutation to create a notification from other server modules (no auth required)
+export const createInternal = internalMutation({
+  args: {
+    company_id: v.id("companies"),
+    title: v.string(),
+    content: v.string(),
+    type: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("notifications", {
+      company_id: args.company_id,
+      title: args.title,
+      content: args.content,
+      type: args.type || "default",
+      read: false,
+      created_at: Date.now(),
+    });
   },
 });
 
