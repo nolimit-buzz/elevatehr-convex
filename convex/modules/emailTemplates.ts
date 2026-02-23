@@ -1,5 +1,6 @@
 import { Constants } from "../utils/constants";
 import { ConvexError, v } from "convex/values";
+import { internalQuery } from "../_generated/server";
 import { authedMutation, authedQuery } from "../utils/permission";
 
 // Template type enum
@@ -21,6 +22,25 @@ export const EmailTemplateSchema = v.object({
   subject: v.optional(v.string()),
   content: v.string(),
   is_default: v.optional(v.boolean()),
+});
+
+// ============================================
+// INTERNAL QUERIES (for use by actions)
+// ============================================
+
+// Internal query to get a single template by company + type (returns null if not found)
+export const getByTypeInternal = internalQuery({
+  args: {
+    companyId: v.id("companies"),
+    type: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const templates = await ctx.db
+      .query("email_templates")
+      .withIndex("by_company_type", (q) => q.eq("company_id", args.companyId).eq("type", args.type as any))
+      .collect();
+    return templates.length > 0 ? templates[0] : null;
+  },
 });
 
 // ============================================

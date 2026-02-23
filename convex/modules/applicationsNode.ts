@@ -5,6 +5,31 @@ import { action, internalAction, ActionCtx } from "../_generated/server";
 import { internal } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
 import { analyzeCVWithAI, extractTextFromCV } from "../templates/ai/cvAnalysis";
+import { Mailman } from "../utils/email";
+
+// ============================================
+// HELPERS
+// ============================================
+
+function getDefaultEmailSubject(templateType: string, jobTitle: string): string {
+  switch (templateType) {
+    case "skill_assessment":
+      return `Skill Assessment Invitation - ${jobTitle}`;
+    case "technical_assessment":
+      return `Technical Assessment - ${jobTitle}`;
+    case "interviews":
+      return `Interview Invitation - ${jobTitle}`;
+    case "acceptance":
+      return `Job Offer - ${jobTitle}`;
+    case "archived":
+    case "rejection":
+      return `Application Update - ${jobTitle}`;
+    case "application_received":
+      return `Application Received - ${jobTitle}`;
+    default:
+      return `Application Update - ${jobTitle}`;
+  }
+}
 
 // CV Analysis Schema (must match the one in applications.ts)
 const CVAnalysisSchema = {
@@ -167,6 +192,62 @@ async function performCVAnalysis(ctx: ActionCtx, args: AnalyzeCVArgs): Promise<A
 }
 
 // ============================================
+// EMAIL ACTIONS (Node.js environment)
+// ============================================
+
+/**
+ * Internal action – sends a lifecycle/stage-transition email for one application.
+ * Called via ctx.scheduler.runAfter from mutations.
+ */
+export const sendStageEmailInternal = internalAction({
+  args: {
+    applicationId: v.id("applications"),
+    templateType: v.string(),
+  },
+  handler: async (ctx, args) => {
+    try {
+      const data = await ctx.runQuery(internal.modules.applications.getApplicationEmailDataInternal, {
+        applicationId: args.applicationId,
+      });
+
+      if (!data) {
+        console.error("[Email] Missing data for application:", args.applicationId);
+        return { success: false, error: "Missing application data" };
+      }
+
+      const { application, job, company } = data;
+
+      // Fetch company-specific email template (may be null)
+      const template = await ctx.runQuery(internal.modules.emailTemplates.getByTypeInternal, {
+        companyId: application.company_id,
+        type: args.templateType,
+      });
+
+      const templatePayload = {
+        candidate_name: application.name,
+        job_title: job.title,
+        company_name: company.company_name,
+      };
+
+      const subject = template?.subject ?? getDefaultEmailSubject(args.templateType, job.title);
+
+      await Mailman.sendTemplatedEmail({
+        to: [application.email],
+        subject,
+        template: args.templateType,
+        templatePayload,
+        customHtmlContent: template?.content,
+      });
+
+      return { success: true };
+    } catch (error) {
+      console.error("[Email] sendStageEmailInternal failed:", error);
+      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+    }
+  },
+});
+
+// ============================================
 // CV ANALYSIS ACTIONS (Node.js environment)
 // ============================================
 
@@ -248,6 +329,16 @@ export const submitPublicApplication = action({
         // Log but don't fail the application submission
         console.error("Failed to schedule CV analysis:", error);
       }
+    }
+
+    // Send application-received confirmation email to the candidate
+    try {
+      await ctx.scheduler.runAfter(0, internal.modules.applicationsNode.sendStageEmailInternal, {
+        applicationId: result.id,
+        templateType: "application_received",
+      });
+    } catch (error) {
+      console.error("Failed to schedule application-received email:", error);
     }
 
     return {

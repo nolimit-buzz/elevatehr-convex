@@ -593,6 +593,19 @@ export const getFileUrlInternal = internalQuery({
   },
 });
 
+// Internal query to get all data needed to send a lifecycle email for an application
+export const getApplicationEmailDataInternal = internalQuery({
+  args: { applicationId: v.id("applications") },
+  handler: async (ctx, args) => {
+    const application = await ctx.db.get(args.applicationId);
+    if (!application) return null;
+    const job = await ctx.db.get(application.job_id);
+    const company = await ctx.db.get(application.company_id);
+    if (!job || !company) return null;
+    return { application, job, company };
+  },
+});
+
 // Internal mutation to update CV analysis
 export const updateCVAnalysisInternal = internalMutation({
   args: {
@@ -715,12 +728,28 @@ export const updateStage = authedMutation({
         continue;
       }
 
+      const prevStage = application.stage;
       await ctx.db.patch(applicationId, { stage: args.stage });
 
       // Update job stage counts
       const job = await ctx.db.get(application.job_id);
       if (job) {
-        await updateJobStageCounts(ctx.db, job, application.stage, args.stage);
+        await updateJobStageCounts(ctx.db, job, prevStage, args.stage);
+      }
+
+      // Schedule email notification for applicable stage transitions
+      const stageTemplateMap: Record<string, string> = {
+        skill_assessment: "skill_assessment",
+        interviews: "interviews",
+        acceptance: "acceptance",
+        archived: "archived",
+      };
+      const templateType = stageTemplateMap[args.stage];
+      if (templateType && prevStage !== args.stage) {
+        await ctx.scheduler.runAfter(0, internal.modules.applicationsNode.sendStageEmailInternal, {
+          applicationId,
+          templateType,
+        });
       }
 
       results.push({ id: applicationId, success: true });
@@ -739,6 +768,10 @@ export const sendAssessment = authedMutation({
   handler: async (ctx, args) => {
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
+
+    // Determine email template type from the assessment type
+    const assessment = await ctx.db.get(args.assessmentId);
+    const emailTemplateType = assessment?.type === "technical_assessment" ? "technical_assessment" : "skill_assessment";
 
     const results = [];
 
@@ -767,6 +800,12 @@ export const sendAssessment = authedMutation({
       if (job) {
         await updateJobStageCounts(ctx.db, job, application.stage, "skill_assessment");
       }
+
+      // Schedule email notification for the candidate
+      await ctx.scheduler.runAfter(0, internal.modules.applicationsNode.sendStageEmailInternal, {
+        applicationId,
+        templateType: emailTemplateType,
+      });
 
       results.push({ id: applicationId, success: true });
     }
@@ -810,9 +849,20 @@ export const moveToStageWithEmail = authedMutation({
         await updateJobStageCounts(ctx.db, job, oldStage, args.stage);
       }
 
-      // TODO: Send email using the customEmailTemplate
-      // For now, we just update the stage. Email sending would be done via an action
-      // that calls an email service like SendGrid, Resend, etc.
+      // Schedule email notification (skips stages with no template)
+      const stageTemplateMap: Record<string, string> = {
+        skill_assessment: "skill_assessment",
+        interviews: "interviews",
+        acceptance: "acceptance",
+        archived: "archived",
+      };
+      const templateType = stageTemplateMap[args.stage];
+      if (templateType) {
+        await ctx.scheduler.runAfter(0, internal.modules.applicationsNode.sendStageEmailInternal, {
+          applicationId,
+          templateType,
+        });
+      }
 
       results.push({ id: applicationId, success: true });
     }
