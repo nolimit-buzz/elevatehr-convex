@@ -284,7 +284,7 @@ export default function Home() {
           .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
           .join(" ")}`,
         icon: AssessmentIcon,
-        action: assessment.type,
+        action: assessment.id,
         id: assessment.id,
       }));
 
@@ -538,6 +538,10 @@ export default function Home() {
   const [pendingAction, setPendingAction] = useState<string | null>(null);
 
   const mapActionToTemplateKey = (action: string): string | null => {
+    const matchedAssessment = assessments.find((a: any) => a.id === action);
+    if (matchedAssessment) {
+      return (matchedAssessment as any).type === "technical_assessment" ? "technical_assessment" : "skill_assessment";
+    }
     switch (action) {
       case "skill_assessment":
         return "skill_assessment";
@@ -576,7 +580,9 @@ export default function Home() {
 
   const handleSendBulkEmailAndMoveStage = async () => {
     if (!pendingAction || !selectedEntries || selectedEntries.length === 0) return;
+    const selectedAssessment = assessments.find((a: any) => a.id === pendingAction);
     if (
+      selectedAssessment ||
       pendingAction === "technical_assessment" ||
       pendingAction === "online_assessment_1" ||
       pendingAction === "online_assessment_2" ||
@@ -584,7 +590,7 @@ export default function Home() {
     ) {
       handleSendAssessment({
         application_ids: selectedEntries,
-        assessment_id: jobDetails?.assessment_id,
+        assessment_id: selectedAssessment ? pendingAction : jobDetails?.assessment_id,
         emailContent,
       });
       return;
@@ -1531,7 +1537,17 @@ export default function Home() {
               {/* Custom Email Modal */}
               <Dialog open={emailModalOpen} onClose={() => setEmailModalOpen(false)} fullWidth maxWidth="md">
                 <DialogTitle sx={{ fontWeight: 600, color: "rgba(17, 17, 17, 0.92)" }}>
-                  {pendingAction ? `Send email for ${pendingAction.replace("_", " ")}` : "Send Email"}
+                  {pendingAction
+                    ? `Send email for ${(() => {
+                        const matched = assessments.find((a: any) => a.id === pendingAction);
+                        return matched
+                          ? (matched as any).type
+                              .split("_")
+                              .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+                              .join(" ")
+                          : pendingAction.replace("_", " ");
+                      })()}`
+                    : "Send Email"}
                 </DialogTitle>
                 <DialogContent dividers sx={{ bgcolor: theme.palette.background.paper }}>
                   {emailLoading ? (
