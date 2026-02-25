@@ -4,14 +4,21 @@ import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 
 export type CompanyLoginInput = FunctionArgs<typeof api.modules.company.create>;
-export type CompanyUpdateInput = FunctionArgs<typeof api.modules.company.update>;
+export type CompanyUpdateInput = FunctionArgs<
+  typeof api.modules.company.update
+>;
 
 export const CompanyQueries = () => {
   const GetMutation = useAuthedMutation(api.modules.company.get);
   const CreateMutation = useAuthedMutation(api.modules.company.create);
   const UpdateMutation = useAuthedMutation(api.modules.company.update);
-  const GenerateUploadUrlMutation = useAuthedMutation(api.modules.company.generateUploadUrl);
+  const GenerateUploadUrlMutation = useAuthedMutation(
+    api.modules.company.generateUploadUrl,
+  );
   const UpdateLogoMutation = useAuthedMutation(api.modules.company.updateLogo);
+  const SeedEmailTemplatesMutation = useAuthedMutation(
+    api.modules.company.seedEmailTemplatesForCompany,
+  );
 
   const GetCompany = async () => {
     if (!GetMutation) {
@@ -43,7 +50,9 @@ export const CompanyQueries = () => {
     if (!GenerateUploadUrlMutation) {
       return { result: null, error: "Mutations not ready" };
     }
-    const { result, error } = await useConvexResponse(GenerateUploadUrlMutation());
+    const { result, error } = await useConvexResponse(
+      GenerateUploadUrlMutation(),
+    );
     return { result, error };
   };
 
@@ -51,9 +60,28 @@ export const CompanyQueries = () => {
     if (!UpdateLogoMutation) {
       return { result: null, error: "Mutations not ready" };
     }
-    const { result, error } = await useConvexResponse(UpdateLogoMutation({ storageId }));
+    const { result, error } = await useConvexResponse(
+      UpdateLogoMutation({ storageId }),
+    );
     return { result, error };
   };
 
-  return { GetCompany, CreateCompany, UpdateCompany, GenerateUploadUrl, UpdateLogo };
+  const SeedEmailTemplates = async () => {
+    if (!SeedEmailTemplatesMutation) {
+      return { result: null, error: "Mutations not ready" };
+    }
+    const { result, error } = await useConvexResponse(
+      SeedEmailTemplatesMutation(),
+    );
+    return { result, error };
+  };
+
+  return {
+    GetCompany,
+    CreateCompany,
+    UpdateCompany,
+    GenerateUploadUrl,
+    UpdateLogo,
+    SeedEmailTemplates,
+  };
 };
