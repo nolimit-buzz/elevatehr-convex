@@ -359,7 +359,7 @@ export const createJobInternal = internalMutation({
   },
 });
 
-// Get assessments linked to a job (assessments created for the company)
+// Get assessments linked to a specific job
 export const getJobAssessments = authedQuery({
   args: {
     jobId: v.id("jobs"),
@@ -376,15 +376,14 @@ export const getJobAssessments = authedQuery({
       throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 403 });
     }
 
-    // Get all assessments for the company
-    const assessments = await ctx.db
-      .query("assessments")
-      .withIndex("by_company", (q) => q.eq("company_id", user.company_id!))
-      .collect();
+    // Get only assessments linked to this specific job
+    const jobAssessmentIds = job.assessments || [];
+    const assessments = await Promise.all(jobAssessmentIds.map((assessmentId) => ctx.db.get(assessmentId)));
+    const validAssessments = assessments.filter(Boolean) as NonNullable<(typeof assessments)[number]>[];
 
     return {
       status: "success",
-      assessments: assessments.map((assessment) => ({
+      assessments: validAssessments.map((assessment) => ({
         id: assessment._id,
         type: assessment.type,
         title: assessment.title,
