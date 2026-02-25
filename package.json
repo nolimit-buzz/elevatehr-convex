@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "git submodule update --init --recursive",
+    "prebuild": "if [ -d .git ]; then git submodule update --init --recursive; fi",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
