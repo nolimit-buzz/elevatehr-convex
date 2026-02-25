@@ -49,7 +49,7 @@ export const JobSchema = v.object({
       archived: v.number(),
     }),
   ),
-  assessment_id: v.optional(v.id("assessments")),
+  assessments: v.optional(v.array(v.id("assessments"))),
   application_form: v.optional(
     v.object({
       custom_fields: v.optional(

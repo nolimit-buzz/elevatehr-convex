@@ -314,7 +314,7 @@ interface FormData {
   level?: string;
   skills: string[];
   about_role: string;
-  assessment_id?: Id<"assessments"> | string;
+  assessments?: Id<"assessments">[];
   [key: string]: any;
 }
 
@@ -668,7 +668,7 @@ const FormBuilderField: React.FC<FormBuilderFieldProps> = ({
                     : field.options
                       ? Object.values(field.options as any)
                       : []
-                  ).length
+                  ).length,
                 )
               }
               style={{ alignSelf: "flex-start" }}
@@ -966,7 +966,7 @@ const AboutTheJob = () => {
     salary_error: "",
     skills: [],
     about_role: "",
-    assessment_id: undefined,
+    assessments: [],
   });
 
   const [formFields, setFormFields] = useState<FormField[]>([]);
@@ -1050,7 +1050,7 @@ const AboutTheJob = () => {
           options: Array.isArray(field.options) ? field.options : field.options ? Object.values(field.options) : [],
           required: field.required || false,
           description: field.description || "",
-        }))
+        })),
       );
 
       // Load existing required fields from application_form
@@ -1064,7 +1064,7 @@ const AboutTheJob = () => {
           options: Array.isArray(field.options) ? field.options : field.options ? Object.values(field.options) : [],
           required: field.required || false,
           description: field.description || "",
-        }))
+        })),
       );
 
       setFormData({
@@ -1083,7 +1083,7 @@ const AboutTheJob = () => {
         level: jobData.experience_level || "",
         skills: skills,
         about_role: jobData.description || "",
-        assessment_id: (jobData as any).assessment_id || undefined,
+        assessments: (jobData as any).assessments || [],
       });
 
       setLoading(false);
@@ -1116,37 +1116,36 @@ const AboutTheJob = () => {
   // Set selected assessment when either assessments or job data is loaded
   useEffect(() => {
     // Check if we have assessments, an assessment ID, and no currently selected assessment
-    if (
-      assessments.length > 0 &&
-      formData.assessment_id &&
-      formData.assessment_id !== "" &&
-      formData.assessment_id !== null &&
-      formData.assessment_id !== undefined &&
-      !selectedAssessment
-    ) {
-      const assessmentId = formData.assessment_id;
+    if (assessments.length > 0 && formData.assessments && formData.assessments.length > 0 && !selectedAssessment) {
+      const assessmentId = formData.assessments[0];
       const assessment = assessments.find((a) => a.id === assessmentId);
       if (assessment) {
         setSelectedAssessment(assessment);
       }
     }
-  }, [assessments, formData.assessment_id, selectedAssessment]);
+  }, [assessments, formData.assessments, selectedAssessment]);
 
   // Ensure assessment is selected when user navigates to assessment step
   useEffect(() => {
-    if (currentStep === 3 && assessments.length > 0 && formData.assessment_id && !selectedAssessment) {
-      const assessmentId = formData.assessment_id;
+    if (
+      currentStep === 3 &&
+      assessments.length > 0 &&
+      formData.assessments &&
+      formData.assessments.length > 0 &&
+      !selectedAssessment
+    ) {
+      const assessmentId = formData.assessments[0];
       const assessment = assessments.find((a) => a.id === assessmentId);
       if (assessment) {
         setSelectedAssessment(assessment);
       }
     }
-  }, [currentStep, assessments, formData.assessment_id, selectedAssessment]);
+  }, [currentStep, assessments, formData.assessments, selectedAssessment]);
 
   // Initial check for assessment when component mounts
   useEffect(() => {
-    if (assessments.length > 0 && formData.assessment_id && !selectedAssessment) {
-      const assessmentId = formData.assessment_id;
+    if (assessments.length > 0 && formData.assessments && formData.assessments.length > 0 && !selectedAssessment) {
+      const assessmentId = formData.assessments[0];
       const assessment = assessments.find((a) => a.id === assessmentId);
       if (assessment) {
         setSelectedAssessment(assessment);
@@ -1262,7 +1261,7 @@ const AboutTheJob = () => {
           )(prevFields as any).map((f: any, idx: number) =>
             idx !== index
               ? f
-              : { ...f, options: (f.options || []).filter((_: any, optIdx: number) => optIdx !== optionIndex) }
+              : { ...f, options: (f.options || []).filter((_: any, optIdx: number) => optIdx !== optionIndex) },
           );
           console.log("[handleDeleteField] Option deleted:", {
             index,
@@ -1287,7 +1286,7 @@ const AboutTheJob = () => {
         application_form: {
           ...(prev as any).application_form,
           custom_fields: ((prev as any).application_form?.custom_fields || []).filter(
-            (_: any, idx: number) => idx !== index
+            (_: any, idx: number) => idx !== index,
           ),
         },
       }));
@@ -1308,7 +1307,7 @@ const AboutTheJob = () => {
     // Also update the formData to keep it in sync
     setFormData((prev) => ({
       ...prev,
-      assessment_id: assessment ? assessment.id : undefined,
+      assessments: assessment ? [assessment.id as Id<"assessments">] : [],
     }));
   };
 
@@ -1443,7 +1442,7 @@ const AboutTheJob = () => {
               }
               return acc;
             },
-            {}
+            {},
           );
         }
         // Add allowed_types for file type
@@ -1467,7 +1466,7 @@ const AboutTheJob = () => {
           salary_max: parseInt(formData.salary_max.replace(/,/g, "")) || undefined,
           skills: formData.skills,
           experience_level: formData.level,
-          assessment_id: selectedAssessment?.id as Id<"assessments"> | undefined,
+          assessments: selectedAssessment ? [selectedAssessment.id as Id<"assessments">] : undefined,
           application_form: {
             required_fields: transformedRequiredFields,
             custom_fields: transformedCustomFields,
