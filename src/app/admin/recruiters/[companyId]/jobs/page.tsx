@@ -27,7 +27,8 @@ import {
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { ADMIN_CARD_SX } from "../../../styles";
-import { MOCK_JOBS, MOCK_RECRUITERS, type MockJobRow } from "../../../mock-data";
+import { type MockJobRow } from "../../../mock-data";
+import { useAdminRecruiterDetails } from "@/queries/admin.queries";
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   borderBottom: `1px solid ${theme.palette.divider}`,
@@ -41,12 +42,12 @@ export default function RecruiterJobsPage() {
   const router = useRouter();
   const companyId = params.companyId as string;
 
-  const recruiter = MOCK_RECRUITERS.find((r) => r.id === companyId);
+  const { details: recruiter, isLoading } = useAdminRecruiterDetails(companyId);
 
   const [jobMenuAnchorEl, setJobMenuAnchorEl] = React.useState<null | HTMLElement>(null);
-  const [activeJob, setActiveJob] = React.useState<MockJobRow | null>(null);
+  const [activeJob, setActiveJob] = React.useState<any | null>(null);
 
-  const handleOpenJobMenu = (event: React.MouseEvent<HTMLElement>, job: MockJobRow) => {
+  const handleOpenJobMenu = (event: React.MouseEvent<HTMLElement>, job: any) => {
     event.stopPropagation();
     setJobMenuAnchorEl(event.currentTarget);
     setActiveJob(job);
@@ -79,7 +80,9 @@ export default function RecruiterJobsPage() {
 
   return (
     <Box sx={{ width: "100%", pb: 4 }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, gap: 2, flexWrap: "wrap" }}>
+      <Box
+        sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3, gap: 2, flexWrap: "wrap" }}
+      >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <IconButton
             size="small"
@@ -137,15 +140,8 @@ export default function RecruiterJobsPage() {
                     sx={{
                       borderRadius: 2,
                       bgcolor:
-                        j.status === "active"
-                          ? "success.dark"
-                          : j.status === "closed"
-                          ? "error.dark"
-                          : "action.hover",
-                      color:
-                        j.status === "active" || j.status === "closed"
-                          ? "common.white"
-                          : "text.secondary",
+                        j.status === "active" ? "success.dark" : j.status === "closed" ? "error.dark" : "action.hover",
+                      color: j.status === "active" || j.status === "closed" ? "common.white" : "text.secondary",
                     }}
                   />
                 </StyledTableCell>
@@ -204,13 +200,10 @@ export default function RecruiterJobsPage() {
             ) : (
               <XMarkIcon style={{ width: 16, height: 16, color: "rgba(17,17,17,0.58)" }} />
             )}
-            <Typography variant="body2">
-              {activeJob?.status === "closed" ? "Reopen" : "Close"}
-            </Typography>
+            <Typography variant="body2">{activeJob?.status === "closed" ? "Reopen" : "Close"}</Typography>
           </Box>
         </MenuItem>
       </Menu>
     </Box>
   );
 }
-

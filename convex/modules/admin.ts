@@ -1,4 +1,5 @@
 import { adminQuery } from "../utils/permission";
+import { v } from "convex/values";
 
 export const getDashboardStats = adminQuery({
   args: {},
@@ -141,5 +142,136 @@ export const getRecentActivity = adminQuery({
         time: timeStr,
       };
     });
+  },
+});
+
+export const getRecruiters = adminQuery({
+  args: {},
+  handler: async (ctx) => {
+    const companies = await ctx.db.query("companies").order("desc").collect();
+
+    // For each company, we need to get their primary admin (first user created for this company)
+    // and count their active jobs
+    const recruiters = await Promise.all(
+      companies.map(async (company) => {
+        const users = await ctx.db
+          .query("users")
+          .filter((q) => q.eq(q.field("company_id"), company._id))
+          .order("asc")
+          .collect();
+
+        const primaryAdmin = users.length > 0 ? users[0] : null;
+
+        const jobs = await ctx.db
+          .query("jobs")
+          .withIndex("by_company", (q) => q.eq("company_id", company._id))
+          .collect();
+
+        const activeJobsCount = jobs.filter((j) => j.status === "active").length;
+
+        return {
+          id: company._id,
+          companyName: company.company_name,
+          companyLogo: company.company_logo,
+          industry: "Technology", // Defaulting as it's not in schema
+          primaryAdmin: primaryAdmin ? `${primaryAdmin.first_name} ${primaryAdmin.last_name}` : "Unknown",
+          email: primaryAdmin?.email || "Unknown",
+          status: "active" as const, // Defaulting as it's not in schema
+          activeJobs: activeJobsCount,
+          joinedAt: new Date(company._creationTime).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          }),
+        };
+      }),
+    );
+
+    return recruiters;
+  },
+});
+
+export const getRecruiterDetails = adminQuery({
+  args: { companyId: v.id("companies") },
+  handler: async (ctx, args) => {
+    const company = await ctx.db.get(args.companyId);
+    if (!company) return null;
+
+    const users = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("company_id"), company._id))
+      .order("asc")
+      .collect();
+
+    const primaryAdmin = users.length > 0 ? users[0] : null;
+
+    const jobs = await ctx.db
+      .query("jobs")
+      .withIndex("by_company", (q) => q.eq("company_id", company._id))
+      .collect();
+
+    const activeJobsCount = jobs.filter((j) => j.status === "active").length;
+
+    const applications = await ctx.db
+      .query("applications")
+      .withIndex("by_company", (q) => q.eq("company_id", company._id))
+      .collect();
+
+    const assessments = await ctx.db
+      .query("assessments")
+      .withIndex("by_company", (q) => q.eq("company_id", company._id))
+      .collect();
+
+    return {
+      id: company._id,
+      companyName: company.company_name,
+      companyLogo: company.company_logo,
+      industry: "Technology", // Defaulting as it's not in schema
+      primaryAdmin: primaryAdmin ? `${primaryAdmin.first_name} ${primaryAdmin.last_name}` : "Unknown",
+      email: primaryAdmin?.email || "Unknown",
+      status: "active" as const, // Defaulting as it's not in schema
+      activeJobs: activeJobsCount,
+      totalJobs: jobs.length,
+      totalCandidates: applications.length,
+      totalAssessments: assessments.length,
+      joinedAt: new Date(company._creationTime).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }),
+      website: company.company_website || "N/A",
+      employees: company.number_of_employees || "N/A",
+      about: company.about_company || "N/A",
+      jobs: jobs.map((j) => ({
+        id: j._id,
+        title: j.title,
+        department: "Engineering", // Defaulting
+        status: j.status || "draft",
+        candidates: applications.filter((a) => a.job_id === j._id).length,
+        postedDate: new Date(j._creationTime).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+      })),
+      recentActivity: [
+        ...jobs.map((j) => ({
+          id: `job-${j._id}`,
+          action: "Job Posted",
+          details: `Posted new job: ${j.title}`,
+          date: new Date(j._creationTime).toISOString(),
+          timestamp: j._creationTime,
+        })),
+        ...assessments.map((a) => ({
+          id: `assessment-${a._id}`,
+          action: "Assessment Created",
+          details: `Created assessment: ${a.title}`,
+          date: new Date(a._creationTime).toISOString(),
+          timestamp: a._creationTime,
+        })),
+      ]
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, 10),
+    };
   },
 });

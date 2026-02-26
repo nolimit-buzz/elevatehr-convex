@@ -41,9 +41,10 @@ import {
 
 import { useRouter } from "next/navigation";
 import { useImpersonation } from "../context/ImpersonationContext";
-import { MOCK_RECRUITERS, type MockRecruiter, type RecruiterStatus } from "../mock-data";
+import { type MockRecruiter, type RecruiterStatus } from "../mock-data";
 import { ADMIN_CARD_SX } from "../styles";
 import NewRecruiterModal from "../components/NewRecruiterModal";
+import { useAdminRecruiters } from "@/queries/admin.queries";
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   borderBottom: `1px solid ${theme.palette.divider}`,
@@ -53,12 +54,7 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
 }));
 
 function StatusDot({ status }: { status: RecruiterStatus }) {
-  const color =
-    status === "active"
-      ? "success.main"
-      : status === "pending"
-        ? "warning.main"
-        : "error.main";
+  const color = status === "active" ? "success.main" : status === "pending" ? "warning.main" : "error.main";
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
       <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: color }} />
@@ -72,8 +68,10 @@ function StatusDot({ status }: { status: RecruiterStatus }) {
 function getIndustryTagProps(industry: string) {
   const i = industry.toLowerCase();
   const s = { width: 14, height: 14 };
-  if (i.includes("tech")) return { color: "info.light", textColor: "info.dark", icon: <ComputerDesktopIcon style={s} /> };
-  if (i.includes("design")) return { color: "warning.light", textColor: "warning.dark", icon: <PaintBrushIcon style={s} /> };
+  if (i.includes("tech"))
+    return { color: "info.light", textColor: "info.dark", icon: <ComputerDesktopIcon style={s} /> };
+  if (i.includes("design"))
+    return { color: "warning.light", textColor: "warning.dark", icon: <PaintBrushIcon style={s} /> };
   if (i.includes("oil")) return { color: "primary.light", textColor: "primary.dark", icon: <BeakerIcon style={s} /> };
   return { color: "action.hover", textColor: "text.secondary", icon: <BuildingOfficeIcon style={s} /> };
 }
@@ -81,13 +79,15 @@ function getIndustryTagProps(industry: string) {
 export default function RecruiterDirectoryPage() {
   const router = useRouter();
   const { startImpersonation } = useImpersonation();
+  const { recruiters, isLoading } = useAdminRecruiters();
   const [search, setSearch] = useState("");
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedRecruiter, setSelectedRecruiter] = useState<MockRecruiter | null>(null);
+  const [selectedRecruiter, setSelectedRecruiter] = useState<any | null>(null);
   const [newRecruiterOpen, setNewRecruiterOpen] = useState(false);
 
   const filtered = useMemo(() => {
-    return MOCK_RECRUITERS.filter((r) => {
+    if (!recruiters) return [];
+    return recruiters.filter((r) => {
       const matchSearch =
         !search ||
         r.companyName.toLowerCase().includes(search.toLowerCase()) ||
@@ -95,9 +95,9 @@ export default function RecruiterDirectoryPage() {
         r.email.toLowerCase().includes(search.toLowerCase());
       return matchSearch;
     });
-  }, [search]);
+  }, [search, recruiters]);
 
-  const handleOpenMenu = (e: React.MouseEvent<HTMLElement>, row: MockRecruiter) => {
+  const handleOpenMenu = (e: React.MouseEvent<HTMLElement>, row: any) => {
     e.stopPropagation();
     setAnchorEl(e.currentTarget);
     setSelectedRecruiter(row);
@@ -135,7 +135,7 @@ export default function RecruiterDirectoryPage() {
             px: 2.5,
             py: 1,
             "&:hover": { bgcolor: "primary.dark" },
-            boxShadow: "none"
+            boxShadow: "none",
           }}
           startIcon={<PlusIcon style={{ width: 20, height: 20 }} />}
           onClick={() => setNewRecruiterOpen(true)}
@@ -154,7 +154,17 @@ export default function RecruiterDirectoryPage() {
         }}
       >
         {/* Table Toolbar - without "Recruiter List" title */}
-        <Box sx={{ display: "flex", justifyContent: "flex-start", alignItems: "center", px: 3, py: 2.5, flexWrap: "wrap", gap: 2 }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "flex-start",
+            alignItems: "center",
+            px: 3,
+            py: 2.5,
+            flexWrap: "wrap",
+            gap: 2,
+          }}
+        >
           <Box
             sx={{
               display: "flex",
@@ -187,7 +197,7 @@ export default function RecruiterDirectoryPage() {
               fontWeight: 600,
               px: 2,
               py: 0.75,
-              "&:hover": { bgcolor: "action.hover" }
+              "&:hover": { bgcolor: "action.hover" },
             }}
             startIcon={<AdjustmentsHorizontalIcon style={{ width: 20, height: 20 }} />}
           >
@@ -210,115 +220,147 @@ export default function RecruiterDirectoryPage() {
               <StyledTableCell sx={{ fontWeight: 600, color: "text.primary" }}>Industry</StyledTableCell>
               <StyledTableCell sx={{ fontWeight: 600, color: "text.primary" }}>Usage</StyledTableCell>
               <StyledTableCell sx={{ fontWeight: 600, color: "text.primary" }}>Status</StyledTableCell>
-              <StyledTableCell align="right" sx={{ fontWeight: 600, color: "text.primary" }}>Action</StyledTableCell>
+              <StyledTableCell align="right" sx={{ fontWeight: 600, color: "text.primary" }}>
+                Action
+              </StyledTableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {filtered.map((row) => {
-              const tagConfig = getIndustryTagProps(row.industry);
-              return (
-                <TableRow key={row.id} hover>
-                  <StyledTableCell padding="checkbox">
-                    <Checkbox
-                      size="small"
-                      icon={<StopIcon style={{ width: 18, height: 18 }} />}
-                      checkedIcon={<CheckIcon style={{ width: 18, height: 18 }} />}
-                    />
-                  </StyledTableCell>
-                  <StyledTableCell>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                      <Avatar
-                        src={row.logoUrl}
-                        sx={{
-                          width: 36,
-                          height: 36,
-                          bgcolor: row.logoUrl ? "transparent" : "action.hover",
-                          border: row.logoUrl ? "none" : "1px solid",
-                          borderColor: row.logoUrl ? "transparent" : "divider",
-                        }}
-                      >
-                        {!row.logoUrl && (
-                          <BuildingOfficeIcon style={{ width: 18, height: 18, color: "rgba(17,17,17,0.58)" }} />
-                        )}
-                      </Avatar>
-                      <Box>
-                        <Typography variant="body2" fontWeight={600} color="text.primary">
-                          {row.companyName}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {row.primaryAdmin}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </StyledTableCell>
-                  <StyledTableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {row.email}
-                    </Typography>
-                  </StyledTableCell>
-                  <StyledTableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {new Date(row.createdAt).toLocaleDateString("en-GB", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric"
-                      })}
-                    </Typography>
-                  </StyledTableCell>
-                  <StyledTableCell>
-                    <Stack direction="row" gap={1} alignItems="center">
-                      <Box
-                        sx={{
-                          bgcolor: tagConfig.color,
-                          color: tagConfig.textColor,
-                          px: 1,
-                          py: 0.25,
-                          borderRadius: 2,
-                          fontSize: "0.75rem",
-                          fontWeight: 600,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 0.5,
-                        }}
-                      >
-                        {tagConfig.icon} {row.industry}
-                      </Box>
-                      {row.tier === "premium" && (
-                        <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2, px: 0.75, py: 0.25, fontSize: "0.75rem", color: "text.secondary" }}>
-                          +1
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Loading recruiters...
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ) : filtered.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    No recruiters found.
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            ) : (
+              filtered.map((row) => {
+                const tagConfig = getIndustryTagProps(row.industry);
+                return (
+                  <TableRow key={row.id} hover>
+                    <StyledTableCell padding="checkbox">
+                      <Checkbox
+                        size="small"
+                        icon={<StopIcon style={{ width: 18, height: 18 }} />}
+                        checkedIcon={<CheckIcon style={{ width: 18, height: 18 }} />}
+                      />
+                    </StyledTableCell>
+                    <StyledTableCell>
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                        <Avatar
+                          src={row.companyLogo}
+                          sx={{
+                            width: 36,
+                            height: 36,
+                            bgcolor: row.companyLogo ? "transparent" : "action.hover",
+                            border: row.companyLogo ? "none" : "1px solid",
+                            borderColor: row.companyLogo ? "transparent" : "divider",
+                          }}
+                        >
+                          {!row.companyLogo && (
+                            <BuildingOfficeIcon style={{ width: 18, height: 18, color: "rgba(17,17,17,0.58)" }} />
+                          )}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="body2" fontWeight={600} color="text.primary">
+                            {row.companyName}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {row.primaryAdmin}
+                          </Typography>
                         </Box>
-                      )}
-                    </Stack>
-                  </StyledTableCell>
-                  <StyledTableCell>
-                    <Typography variant="body2" color="text.secondary">
-                      {row.jobsCount} Jobs / {row.candidatesCount} App
-                    </Typography>
-                  </StyledTableCell>
-                  <StyledTableCell>
-                    <StatusDot status={row.status} />
-                  </StyledTableCell>
-                  <StyledTableCell align="right">
-                    <IconButton size="small" onClick={(e) => handleOpenMenu(e, row)}>
-                      <EllipsisHorizontalIcon style={{ width: 24, height: 24 }} />
-                    </IconButton>
-                  </StyledTableCell>
-                </TableRow>
-              );
-            })}
+                      </Box>
+                    </StyledTableCell>
+                    <StyledTableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {row.email}
+                      </Typography>
+                    </StyledTableCell>
+                    <StyledTableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {row.joinedAt}
+                      </Typography>
+                    </StyledTableCell>
+                    <StyledTableCell>
+                      <Stack direction="row" gap={1} alignItems="center">
+                        <Box
+                          sx={{
+                            bgcolor: tagConfig.color,
+                            color: tagConfig.textColor,
+                            px: 1,
+                            py: 0.25,
+                            borderRadius: 2,
+                            fontSize: "0.75rem",
+                            fontWeight: 600,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                          }}
+                        >
+                          {tagConfig.icon} {row.industry}
+                        </Box>
+                      </Stack>
+                    </StyledTableCell>
+                    <StyledTableCell>
+                      <Typography variant="body2" color="text.secondary">
+                        {row.activeJobs} active jobs
+                      </Typography>
+                    </StyledTableCell>
+                    <StyledTableCell>
+                      <StatusDot status={row.status} />
+                    </StyledTableCell>
+                    <StyledTableCell align="right">
+                      <IconButton size="small" onClick={(e) => handleOpenMenu(e, row)}>
+                        <EllipsisHorizontalIcon style={{ width: 24, height: 24 }} />
+                      </IconButton>
+                    </StyledTableCell>
+                  </TableRow>
+                );
+              })
+            )}
           </TableBody>
         </Table>
         {/* Pagination footer */}
-        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", p: 2, borderTop: "1px solid", borderColor: "divider" }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            p: 2,
+            borderTop: "1px solid",
+            borderColor: "divider",
+          }}
+        >
           <Box sx={{ border: "1px solid", borderColor: "divider", px: 1.5, py: 0.5, borderRadius: 2 }}>
-            <Typography variant="body2" color="text.secondary">100 Page</Typography>
+            <Typography variant="body2" color="text.secondary">
+              100 Page
+            </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>Page 1</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+              Page 1
+            </Typography>
             <IconButton size="small" sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2 }}>
               <ChevronLeftIcon style={{ width: 24, height: 24 }} />
             </IconButton>
-            <IconButton size="small" sx={{ bgcolor: "primary.main", color: "primary.contrastText", borderRadius: 2, "&:hover": { bgcolor: "primary.dark" } }}>
+            <IconButton
+              size="small"
+              sx={{
+                bgcolor: "primary.main",
+                color: "primary.contrastText",
+                borderRadius: 2,
+                "&:hover": { bgcolor: "primary.dark" },
+              }}
+            >
               <ChevronRightIcon style={{ width: 24, height: 24 }} />
             </IconButton>
           </Box>
@@ -332,23 +374,26 @@ export default function RecruiterDirectoryPage() {
         PaperProps={{ sx: { ...ADMIN_CARD_SX, minWidth: 200 } }}
       >
         <MenuItem onClick={handleViewDeepDive} sx={{ borderRadius: 2, mx: 1, fontSize: "0.8125rem" }}>
-          <Box component="span" sx={{ mr: 1, display: "inline-flex" }}><UserIcon style={{ width: 18, height: 18 }} /></Box>
+          <Box component="span" sx={{ mr: 1, display: "inline-flex" }}>
+            <UserIcon style={{ width: 18, height: 18 }} />
+          </Box>
           View Profile
         </MenuItem>
         <MenuItem onClick={handleLoginAs} sx={{ borderRadius: 2, mx: 1, fontSize: "0.8125rem" }}>
-          <Box component="span" sx={{ mr: 1, display: "inline-flex" }}><ArrowTopRightOnSquareIcon style={{ width: 18, height: 18 }} /></Box>
+          <Box component="span" sx={{ mr: 1, display: "inline-flex" }}>
+            <ArrowTopRightOnSquareIcon style={{ width: 18, height: 18 }} />
+          </Box>
           Impersonate
         </MenuItem>
         <MenuItem onClick={handleCloseMenu} sx={{ borderRadius: 2, mx: 1, fontSize: "0.8125rem", color: "error.main" }}>
-          <Box component="span" sx={{ mr: 1, display: "inline-flex" }}><PowerIcon style={{ width: 18, height: 18 }} /></Box>
+          <Box component="span" sx={{ mr: 1, display: "inline-flex" }}>
+            <PowerIcon style={{ width: 18, height: 18 }} />
+          </Box>
           Toggle Access
         </MenuItem>
       </Menu>
 
-      <NewRecruiterModal
-        open={newRecruiterOpen}
-        onClose={() => setNewRecruiterOpen(false)}
-      />
+      <NewRecruiterModal open={newRecruiterOpen} onClose={() => setNewRecruiterOpen(false)} />
     </Box>
   );
 }

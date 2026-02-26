@@ -16,3 +16,19 @@ export const useAdminRecentActivity = () => {
     isLoading: activity === undefined,
   };
 };
+
+export const useAdminRecruiters = () => {
+  const recruiters = useQuery(api.modules.admin.getRecruiters);
+  return {
+    recruiters,
+    isLoading: recruiters === undefined,
+  };
+};
+
+export const useAdminRecruiterDetails = (companyId: string) => {
+  const details = useQuery(api.modules.admin.getRecruiterDetails, { companyId: companyId as any });
+  return {
+    details,
+    isLoading: details === undefined,
+  };
+};

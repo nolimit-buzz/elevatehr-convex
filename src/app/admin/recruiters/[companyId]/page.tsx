@@ -46,15 +46,10 @@ import {
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 import { useImpersonation } from "../../context/ImpersonationContext";
-import {
-  MOCK_RECRUITER_DASHBOARD_SNAPSHOT,
-  MOCK_AUDIT_LOG,
-  MOCK_JOBS,
-  MOCK_RECRUITERS,
-  type MockJobRow,
-} from "../../mock-data";
+import { type MockJobRow } from "../../mock-data";
 import EditRecruiterModal from "../../components/EditRecruiterModal";
 import { ADMIN_CARD_SX } from "../../styles";
+import { useAdminRecruiterDetails } from "@/queries/admin.queries";
 
 const heroIconStyle = { width: 18, height: 18, color: "rgba(17,17,17,0.58)" };
 
@@ -65,15 +60,7 @@ const DetailTableCell = styled(TableCell)(({ theme }) => ({
   fontSize: "0.875rem",
 }));
 
-const DetailRow = ({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) => (
+const DetailRow = ({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) => (
   <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1.5 }}>
     <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>{icon}</Box>
     <Box>
@@ -131,7 +118,16 @@ export default function RecruiterDeepDivePage() {
     handleCloseJobMenu();
   };
 
-  const recruiter = MOCK_RECRUITERS.find((r) => r.id === companyId);
+  const { details: recruiter, isLoading } = useAdminRecruiterDetails(companyId);
+
+  if (isLoading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+        <Typography color="text.secondary">Loading recruiter details...</Typography>
+      </Box>
+    );
+  }
+
   if (!recruiter) {
     return (
       <Box>
@@ -144,27 +140,34 @@ export default function RecruiterDeepDivePage() {
   }
 
   const stats = [
-    { label: "Jobs", value: MOCK_RECRUITER_DASHBOARD_SNAPSHOT.activeJobs },
-    { label: "Applicants", value: MOCK_RECRUITER_DASHBOARD_SNAPSHOT.totalApplicants },
-    { label: "Interviews", value: MOCK_RECRUITER_DASHBOARD_SNAPSHOT.interviewsScheduled },
+    { label: "Jobs", value: recruiter.totalJobs },
+    { label: "Applicants", value: recruiter.totalCandidates },
+    { label: "Assessments", value: recruiter.totalAssessments },
   ];
 
   return (
     <Box sx={{ width: "100%", pb: 4 }}>
-
-
-      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 2, mb: 3 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          flexWrap: "wrap",
+          gap: 2,
+          mb: 3,
+        }}
+      >
         <Button
           size="small"
           startIcon={<ArrowLeftIcon style={heroIconStyle} />}
           onClick={() => router.push("/admin/recruiters")}
-          sx={{ mb: 2, textTransform: "none", fontWeight: 600, color: "text.secondary",padding:0 }}
+          sx={{ mb: 2, textTransform: "none", fontWeight: 600, color: "text.secondary", padding: 0 }}
         >
           Back to Directory
         </Button>
         <Button
           variant="contained"
-          startIcon={<UserIcon style={{...heroIconStyle, color: "white"}} />}
+          startIcon={<UserIcon style={{ ...heroIconStyle, color: "white" }} />}
           onClick={() => startImpersonation(recruiter.companyName)}
           sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2 }}
         >
@@ -185,18 +188,16 @@ export default function RecruiterDeepDivePage() {
           >
             <Stack alignItems="center" sx={{ mb: 2 }}>
               <Avatar
-                src={recruiter.logoUrl}
+                src={recruiter.companyLogo}
                 sx={{
                   width: 80,
                   height: 80,
-                  bgcolor: recruiter.logoUrl ? "transparent" : "action.hover",
-                  border: recruiter.logoUrl ? "none" : "1px solid",
-                  borderColor: recruiter.logoUrl ? "transparent" : "divider",
+                  bgcolor: recruiter.companyLogo ? "transparent" : "action.hover",
+                  border: recruiter.companyLogo ? "none" : "1px solid",
+                  borderColor: recruiter.companyLogo ? "transparent" : "divider",
                 }}
               >
-                {!recruiter.logoUrl && (
-                  <BuildingOffice2Icon style={heroIconStyle} />
-                )}
+                {!recruiter.companyLogo && <BuildingOffice2Icon style={heroIconStyle} />}
               </Avatar>
               <Typography variant="h6" fontWeight={700} sx={{ mt: 1.5, letterSpacing: "-0.01em" }}>
                 {recruiter.companyName}
@@ -216,14 +217,22 @@ export default function RecruiterDeepDivePage() {
                 }}
               />
             </Stack>
-            <DetailRow icon={<BuildingOffice2Icon style={heroIconStyle} />} label="Company" value={recruiter.companyName} />
-            <DetailRow icon={<IdentificationIcon style={heroIconStyle} />} label="Primary Admin" value={recruiter.primaryAdmin} />
-            <DetailRow icon={<CalendarDaysIcon style={heroIconStyle} />} label="Joined" value={recruiter.createdAt} />
+            <DetailRow
+              icon={<BuildingOffice2Icon style={heroIconStyle} />}
+              label="Company"
+              value={recruiter.companyName}
+            />
+            <DetailRow
+              icon={<IdentificationIcon style={heroIconStyle} />}
+              label="Primary Admin"
+              value={recruiter.primaryAdmin}
+            />
+            <DetailRow icon={<CalendarDaysIcon style={heroIconStyle} />} label="Joined" value={recruiter.joinedAt} />
             <DetailRow icon={<EnvelopeIcon style={heroIconStyle} />} label="Email" value={recruiter.email} />
             <Button
               variant="contained"
               fullWidth
-              startIcon={<PencilSquareIcon style={{...heroIconStyle, color: "white"}} />}
+              startIcon={<PencilSquareIcon style={{ ...heroIconStyle, color: "white" }} />}
               sx={{
                 mt: 2,
                 py: 1.25,
@@ -289,13 +298,27 @@ export default function RecruiterDeepDivePage() {
             <Typography variant="h6" fontWeight={600} gutterBottom>
               KPI Performance
             </Typography>
-            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 1, mb: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 1,
+                mb: 2,
+              }}
+            >
               <Typography variant="body2" color="text.secondary">
                 Assessment and hiring metrics.
               </Typography>
               <FormControl size="small" sx={{ minWidth: 140 }}>
                 <InputLabel>Period</InputLabel>
-                <Select value={kpiPeriod} label="Period" onChange={(e) => setKpiPeriod(e.target.value)} sx={{ borderRadius: 2 }}>
+                <Select
+                  value={kpiPeriod}
+                  label="Period"
+                  onChange={(e) => setKpiPeriod(e.target.value)}
+                  sx={{ borderRadius: 2 }}
+                >
                   <MenuItem value="6">Last 6 months</MenuItem>
                   <MenuItem value="3">Last 3 months</MenuItem>
                   <MenuItem value="1">Last month</MenuItem>
@@ -395,14 +418,22 @@ export default function RecruiterDeepDivePage() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {MOCK_AUDIT_LOG.map((entry) => (
-                      <TableRow key={entry.id} sx={{ height: 72 }}>
-                        <DetailTableCell>{new Date(entry.timestamp).toLocaleString()}</DetailTableCell>
-                        <DetailTableCell>{entry.action}</DetailTableCell>
-                        <DetailTableCell>{entry.details}</DetailTableCell>
-                        <DetailTableCell>{entry.user}</DetailTableCell>
+                    {recruiter.recentActivity.length === 0 ? (
+                      <TableRow>
+                        <DetailTableCell colSpan={4} align="center">
+                          No recent activity found.
+                        </DetailTableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      recruiter.recentActivity.map((entry) => (
+                        <TableRow key={entry.id} sx={{ height: 72 }}>
+                          <DetailTableCell>{new Date(entry.date).toLocaleString()}</DetailTableCell>
+                          <DetailTableCell>{entry.action}</DetailTableCell>
+                          <DetailTableCell>{entry.details}</DetailTableCell>
+                          <DetailTableCell>{recruiter.primaryAdmin}</DetailTableCell>
+                        </TableRow>
+                      ))
+                    )}
                     <TableRow>
                       <DetailTableCell colSpan={4} sx={{ borderBottom: 0 }}>
                         <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
@@ -452,46 +483,52 @@ export default function RecruiterDeepDivePage() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {MOCK_JOBS.map((j) => (
-                      <TableRow key={j.id} sx={{ height: 72 }}>
-                        <DetailTableCell>{j.title}</DetailTableCell>
-                        <DetailTableCell>
-                          <Chip
-                            size="small"
-                            label={j.status}
-                            sx={{
-                              borderRadius: 2,
-                              bgcolor:
-                                j.status === "active"
-                                  ? "success.dark"
-                                  : j.status === "closed"
-                                  ? "error.dark"
-                                  : "action.hover",
-                              color:
-                                j.status === "active" || j.status === "closed"
-                                  ? "common.white"
-                                  : "text.secondary",
-                            }}
-                          />
-                        </DetailTableCell>
-                        <DetailTableCell>{j.createdAt}</DetailTableCell>
-                        <DetailTableCell align="right">
-                          <IconButton
-                            size="small"
-                            onClick={(e) => handleOpenJobMenu(e, j)}
-                            sx={{
-                              color: "text.secondary",
-                              borderRadius: 2,
-                              border: "1px solid",
-                              borderColor: "divider",
-                              "&:hover": { bgcolor: "action.hover" },
-                            }}
-                          >
-                            <EllipsisHorizontalIcon style={{ width: 18, height: 18 }} />
-                          </IconButton>
+                    {recruiter.jobs.length === 0 ? (
+                      <TableRow>
+                        <DetailTableCell colSpan={4} align="center">
+                          No jobs found.
                         </DetailTableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      recruiter.jobs.slice(0, 5).map((j) => (
+                        <TableRow key={j.id} sx={{ height: 72 }}>
+                          <DetailTableCell>{j.title}</DetailTableCell>
+                          <DetailTableCell>
+                            <Chip
+                              size="small"
+                              label={j.status}
+                              sx={{
+                                borderRadius: 2,
+                                bgcolor:
+                                  j.status === "active"
+                                    ? "success.dark"
+                                    : j.status === "closed"
+                                      ? "error.dark"
+                                      : "action.hover",
+                                color:
+                                  j.status === "active" || j.status === "closed" ? "common.white" : "text.secondary",
+                              }}
+                            />
+                          </DetailTableCell>
+                          <DetailTableCell>{j.postedDate}</DetailTableCell>
+                          <DetailTableCell align="right">
+                            <IconButton
+                              size="small"
+                              onClick={(e) => handleOpenJobMenu(e, j as any)}
+                              sx={{
+                                color: "text.secondary",
+                                borderRadius: 2,
+                                border: "1px solid",
+                                borderColor: "divider",
+                                "&:hover": { bgcolor: "action.hover" },
+                              }}
+                            >
+                              <EllipsisHorizontalIcon style={{ width: 18, height: 18 }} />
+                            </IconButton>
+                          </DetailTableCell>
+                        </TableRow>
+                      ))
+                    )}
                     <TableRow>
                       <DetailTableCell colSpan={4} sx={{ borderBottom: 0 }}>
                         <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
@@ -552,9 +589,7 @@ export default function RecruiterDeepDivePage() {
                 ) : (
                   <XMarkIcon style={{ width: 16, height: 16, color: heroIconStyle.color }} />
                 )}
-                <Typography variant="body2">
-                  {activeJob?.status === "closed" ? "Reopen" : "Close"}
-                </Typography>
+                <Typography variant="body2">{activeJob?.status === "closed" ? "Reopen" : "Close"}</Typography>
               </Box>
             </MenuItem>
           </Menu>
