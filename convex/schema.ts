@@ -6,6 +6,8 @@ import { AssessmentSchema } from "./modules/assessment";
 import { ApplicationSchema } from "./modules/applications";
 import { EmailTemplateSchema } from "./modules/emailTemplates";
 import { NotificationSchema } from "./modules/notifications";
+import { AdminAssessmentSchema } from "./modules/admin/assessments";
+import { AdminEmailTemplateSchema } from "./modules/admin/emailTemplates";
 
 export default defineSchema({
   users: defineTable(UserSchema).index("by_email", ["email"]),
@@ -26,4 +28,6 @@ export default defineSchema({
     .index("by_company", ["company_id"])
     .index("by_company_type", ["company_id", "type"]),
   notifications: defineTable(NotificationSchema).index("by_company", ["company_id"]).index("by_user", ["user_id"]),
+  admin_assessments: defineTable(AdminAssessmentSchema).index("by_type", ["type"]),
+  admin_email_templates: defineTable(AdminEmailTemplateSchema).index("by_type", ["type"]),
 });
