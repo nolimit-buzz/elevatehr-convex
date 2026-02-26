@@ -275,3 +275,114 @@ export const getRecruiterDetails = adminQuery({
     };
   },
 });
+
+export const getRecruiterActivityLogs = adminQuery({
+  args: { companyId: v.id("companies") },
+  handler: async (ctx, args) => {
+    const company = await ctx.db.get(args.companyId);
+    if (!company) return [];
+
+    const users = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("company_id"), company._id))
+      .collect();
+
+    const userMap = new Map(users.map((u) => [u._id, `${u.first_name} ${u.last_name}`]));
+    const primaryAdminName = users.length > 0 ? `${users[0].first_name} ${users[0].last_name}` : "System";
+
+    const jobs = await ctx.db
+      .query("jobs")
+      .withIndex("by_company", (q) => q.eq("company_id", company._id))
+      .collect();
+
+    const assessments = await ctx.db
+      .query("assessments")
+      .withIndex("by_company", (q) => q.eq("company_id", company._id))
+      .collect();
+
+    const applications = await ctx.db
+      .query("applications")
+      .withIndex("by_company", (q) => q.eq("company_id", company._id))
+      .collect();
+
+    const allActivity = [
+      {
+        id: `company-${company._id}`,
+        action: "Company Created",
+        details: `Registered company account for ${company.company_name}`,
+        timestamp: company._creationTime,
+        user: primaryAdminName,
+      },
+      ...jobs.map((j) => ({
+        id: `job-${j._id}`,
+        action: "Job Posted",
+        details: `Posted new job: ${j.title}`,
+        timestamp: j._creationTime,
+        user: j.created_by ? userMap.get(j.created_by) || "Unknown User" : primaryAdminName,
+      })),
+      ...assessments.map((a) => ({
+        id: `assessment-${a._id}`,
+        action: "Assessment Created",
+        details: `Created assessment: ${a.title}`,
+        timestamp: a._creationTime,
+        user: a.created_by ? userMap.get(a.created_by) || "Unknown User" : primaryAdminName,
+      })),
+      ...applications.map((app) => {
+        const job = jobs.find((j) => j._id === app.job_id);
+        return {
+          id: `app-${app._id}`,
+          action: "Application Received",
+          details: `New application for ${job?.title || "Unknown Job"}`,
+          timestamp: app._creationTime,
+          user: "Candidate",
+        };
+      }),
+    ];
+
+    return allActivity.sort((a, b) => b.timestamp - a.timestamp);
+  },
+});
+
+export const getRecruiterJobDetails = adminQuery({
+  args: { jobId: v.id("jobs") },
+  handler: async (ctx, args) => {
+    const job = await ctx.db.get(args.jobId);
+    if (!job) return null;
+
+    const company = await ctx.db.get(job.company_id);
+
+    const applications = await ctx.db
+      .query("applications")
+      .withIndex("by_job", (q) => q.eq("job_id", job._id))
+      .collect();
+
+    const candidates = applications.map((app) => {
+      return {
+        id: app._id,
+        name: app.name || "Unknown Candidate",
+        jobTitle: job.title,
+        stage: app.stage,
+        appliedAt: new Date(app._creationTime).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+        skills: app.cv_analysis?.skills || [],
+      };
+    });
+
+    return {
+      id: job._id,
+      title: job.title,
+      status: job.status,
+      companyName: company?.company_name || "Unknown Company",
+      employmentType: job.job_type || "Full-time",
+      workMode: job.work_model || "Onsite",
+      location: job.location || "Not specified",
+      skills: job.skills || [],
+      about: job.description || "No description provided.",
+      responsibilities: job.responsibilities || [],
+      candidates,
+    };
+  },
+});

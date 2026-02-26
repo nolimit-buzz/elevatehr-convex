@@ -19,27 +19,27 @@ import type { NewRecruiterPayload } from "./NewRecruiterModal";
 type Props = {
   open: boolean;
   onClose: () => void;
-  recruiter: MockRecruiter;
+  recruiter: any;
 };
 
 type EditableRecruiter = NewRecruiterPayload;
 
-const buildInitialValues = (recruiter: MockRecruiter): EditableRecruiter => {
-  const [firstName, ...rest] = recruiter.primaryAdmin.split(" ");
+const buildInitialValues = (recruiter: any): EditableRecruiter => {
+  const [firstName, ...rest] = (recruiter.primaryAdmin || "").split(" ");
   const lastName = rest.join(" ");
 
   return {
-    company_name: recruiter.companyName,
-    industry: recruiter.industry,
+    company_name: recruiter.companyName || "",
+    industry: recruiter.industry || "",
     company_logo: null,
-    company_website: "",
+    company_website: recruiter.website || "",
     booking_link: "",
-    number_of_employees: "",
-    about_company: "",
+    number_of_employees: recruiter.employees || "",
+    about_company: recruiter.about || "",
     first_name: firstName ?? "",
     last_name: lastName ?? "",
     job_title: "",
-    email: recruiter.email,
+    email: recruiter.email || "",
     phone_number: "",
     password: "",
   };
@@ -100,13 +100,7 @@ export default function EditRecruiterModal({ open, onClose, recruiter }: Props) 
               />
             </Grid>
             <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                label="Industry"
-                name="industry"
-                value={values.industry}
-                onChange={handleChange}
-              />
+              <TextField fullWidth label="Industry" name="industry" value={values.industry} onChange={handleChange} />
             </Grid>
             <Grid item xs={12} md={6}>
               <TextField
@@ -183,12 +177,7 @@ export default function EditRecruiterModal({ open, onClose, recruiter }: Props) 
                     Transparent SVG or PNG works best.
                   </Typography>
                 </Box>
-                <input
-                  type="file"
-                  accept="image/*"
-                  hidden
-                  onChange={handleFileChange}
-                />
+                <input type="file" accept="image/*" hidden onChange={handleFileChange} />
               </Box>
               {values.company_logo && (
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: "block" }}>
@@ -287,11 +276,15 @@ export default function EditRecruiterModal({ open, onClose, recruiter }: Props) 
         <Button onClick={onClose} sx={{ textTransform: "none" }}>
           Cancel
         </Button>
-        <Button type="submit" variant="contained" sx={{ textTransform: "none", fontWeight: 600 }} onClick={handleSubmit}>
+        <Button
+          type="submit"
+          variant="contained"
+          sx={{ textTransform: "none", fontWeight: 600 }}
+          onClick={handleSubmit}
+        >
           Save changes
         </Button>
       </DialogActions>
     </Dialog>
   );
 }
-

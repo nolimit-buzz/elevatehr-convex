@@ -17,7 +17,7 @@ import {
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { ADMIN_CARD_SX } from "../../../styles";
-import { MOCK_AUDIT_LOG, MOCK_RECRUITERS } from "../../../mock-data";
+import { useAdminRecruiterDetails, useAdminRecruiterActivityLogs } from "@/queries/admin.queries";
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   borderBottom: `1px solid ${theme.palette.divider}`,
@@ -31,7 +31,8 @@ export default function RecruiterActivityLogsPage() {
   const router = useRouter();
   const companyId = params.companyId as string;
 
-  const recruiter = MOCK_RECRUITERS.find((r) => r.id === companyId);
+  const { details: recruiter } = useAdminRecruiterDetails(companyId);
+  const { logs, isLoading } = useAdminRecruiterActivityLogs(companyId);
 
   return (
     <Box sx={{ width: "100%", pb: 4 }}>
@@ -92,18 +93,31 @@ export default function RecruiterActivityLogsPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {MOCK_AUDIT_LOG.map((entry) => (
-              <TableRow key={entry.id} hover>
-                <StyledTableCell>{new Date(entry.timestamp).toLocaleString()}</StyledTableCell>
-                <StyledTableCell>{entry.action}</StyledTableCell>
-                <StyledTableCell>{entry.details}</StyledTableCell>
-                <StyledTableCell>{entry.user}</StyledTableCell>
+            {isLoading ? (
+              <TableRow>
+                <StyledTableCell colSpan={4} align="center">
+                  Loading...
+                </StyledTableCell>
               </TableRow>
-            ))}
+            ) : logs?.length === 0 ? (
+              <TableRow>
+                <StyledTableCell colSpan={4} align="center">
+                  No activity logs found.
+                </StyledTableCell>
+              </TableRow>
+            ) : (
+              logs?.map((entry) => (
+                <TableRow key={entry.id} hover>
+                  <StyledTableCell>{new Date(entry.timestamp).toLocaleString()}</StyledTableCell>
+                  <StyledTableCell>{entry.action}</StyledTableCell>
+                  <StyledTableCell>{entry.details}</StyledTableCell>
+                  <StyledTableCell>{entry.user}</StyledTableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>
     </Box>
   );
 }
-

@@ -27,7 +27,6 @@ import {
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { ADMIN_CARD_SX } from "../../../styles";
-import { type MockJobRow } from "../../../mock-data";
 import { useAdminRecruiterDetails } from "@/queries/admin.queries";
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
@@ -130,39 +129,57 @@ export default function RecruiterJobsPage() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {MOCK_JOBS.map((j) => (
-              <TableRow key={j.id} hover>
-                <StyledTableCell>{j.title}</StyledTableCell>
-                <StyledTableCell>
-                  <Chip
-                    size="small"
-                    label={j.status}
-                    sx={{
-                      borderRadius: 2,
-                      bgcolor:
-                        j.status === "active" ? "success.dark" : j.status === "closed" ? "error.dark" : "action.hover",
-                      color: j.status === "active" || j.status === "closed" ? "common.white" : "text.secondary",
-                    }}
-                  />
-                </StyledTableCell>
-                <StyledTableCell>{j.createdAt}</StyledTableCell>
-                <StyledTableCell align="right">
-                  <IconButton
-                    size="small"
-                    onClick={(e) => handleOpenJobMenu(e, j)}
-                    sx={{
-                      color: "text.secondary",
-                      borderRadius: 2,
-                      border: "1px solid",
-                      borderColor: "divider",
-                      "&:hover": { bgcolor: "action.hover" },
-                    }}
-                  >
-                    <EllipsisHorizontalIcon style={{ width: 18, height: 18 }} />
-                  </IconButton>
+            {isLoading ? (
+              <TableRow>
+                <StyledTableCell colSpan={4} align="center">
+                  Loading...
                 </StyledTableCell>
               </TableRow>
-            ))}
+            ) : recruiter?.jobs?.length === 0 ? (
+              <TableRow>
+                <StyledTableCell colSpan={4} align="center">
+                  No jobs found.
+                </StyledTableCell>
+              </TableRow>
+            ) : (
+              recruiter?.jobs?.map((j) => (
+                <TableRow key={j.id} hover>
+                  <StyledTableCell>{j.title}</StyledTableCell>
+                  <StyledTableCell>
+                    <Chip
+                      size="small"
+                      label={j.status}
+                      sx={{
+                        borderRadius: 2,
+                        bgcolor:
+                          j.status === "active"
+                            ? "success.dark"
+                            : j.status === "closed"
+                              ? "error.dark"
+                              : "action.hover",
+                        color: j.status === "active" || j.status === "closed" ? "common.white" : "text.secondary",
+                      }}
+                    />
+                  </StyledTableCell>
+                  <StyledTableCell>{j.postedDate}</StyledTableCell>
+                  <StyledTableCell align="right">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => handleOpenJobMenu(e, j)}
+                      sx={{
+                        color: "text.secondary",
+                        borderRadius: 2,
+                        border: "1px solid",
+                        borderColor: "divider",
+                        "&:hover": { bgcolor: "action.hover" },
+                      }}
+                    >
+                      <EllipsisHorizontalIcon style={{ width: 18, height: 18 }} />
+                    </IconButton>
+                  </StyledTableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>

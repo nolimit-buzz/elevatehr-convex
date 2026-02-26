@@ -26,85 +26,9 @@ import {
   ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 import { ADMIN_CARD_SX } from "../../../../styles";
-import { MOCK_JOBS, MOCK_RECRUITERS, MOCK_CANDIDATES, type MockCandidate } from "../../../../mock-data";
+import { useAdminRecruiterJobDetails } from "@/queries/admin.queries";
 
 const heroIconStyle = { width: 18, height: 18, color: "rgba(17,17,17,0.58)" };
-
-const JOB_DETAILS: Record<
-  string,
-  {
-    employmentType: string;
-    workMode: string;
-    location: string;
-    skills: string[];
-    about: string;
-    responsibilities: string[];
-  }
-> = {
-  j1: {
-    employmentType: "Full‑time",
-    workMode: "Onsite",
-    location: "Lagos, Nigeria",
-    skills: [
-      "React",
-      "TypeScript",
-      "UI Engineering",
-      "Testing",
-      "Design Systems",
-      "Performance",
-    ],
-    about:
-      "As a Senior Frontend Developer, you will shape the candidate and recruiter experience across our platform. You will collaborate with product, design, and backend teams to ship accessible, performant interfaces that feel delightful to use.",
-    responsibilities: [
-      "Design, build, and maintain React/TypeScript frontends used by recruiters and candidates.",
-      "Work closely with designers to translate Figma files into high‑quality, pixel‑perfect interfaces.",
-      "Improve performance, accessibility, and reliability of existing features.",
-      "Partner with backend engineers to define APIs and data contracts.",
-      "Contribute to our shared component library and design system.",
-    ],
-  },
-  j2: {
-    employmentType: "Full‑time",
-    workMode: "Remote",
-    location: "Remote, GMT+1/+2",
-    skills: [
-      "Node.js",
-      "API Design",
-      "PostgreSQL",
-      "Microservices",
-      "Monitoring",
-      "Security",
-    ],
-    about:
-      "As a Backend Engineer, you will own core services that power assessments, applications, and recruiter workflows. You will design APIs that are secure, scalable, and easy to evolve.",
-    responsibilities: [
-      "Design and implement backend services in Node.js with a focus on reliability and observability.",
-      "Collaborate with frontend engineers to design clear, well‑versioned APIs.",
-      "Optimize database schemas and queries for performance.",
-      "Implement monitoring, alerting, and automated tests for new features.",
-    ],
-  },
-  j3: {
-    employmentType: "Contract",
-    workMode: "Hybrid",
-    location: "Lagos, Nigeria",
-    skills: [
-      "AWS",
-      "Kubernetes",
-      "CI/CD",
-      "Observability",
-      "Security",
-      "Scripting",
-    ],
-    about:
-      "As a DevOps Engineer, you will be responsible for the health of our infrastructure and CI/CD pipelines. You will enable teams to ship confidently and frequently.",
-    responsibilities: [
-      "Maintain and evolve our cloud infrastructure and deployment pipelines.",
-      "Work with engineering teams to design reliable, observable services.",
-      "Improve security, backups, and disaster‑recovery processes.",
-    ],
-  },
-};
 
 export default function RecruiterJobDetailPage() {
   const params = useParams();
@@ -112,25 +36,19 @@ export default function RecruiterJobDetailPage() {
   const companyId = params.companyId as string;
   const jobId = params.jobId as string;
 
-  const job = MOCK_JOBS.find((j) => j.id === jobId);
-  const recruiter = MOCK_RECRUITERS.find((r) => r.id === companyId);
+  const { jobDetails: job, isLoading } = useAdminRecruiterJobDetails(jobId);
   const [tab, setTab] = React.useState<0 | 1>(1);
 
-  const allCandidatesForJob: MockCandidate[] = React.useMemo(
-    () => MOCK_CANDIDATES.filter((c) => c.jobTitle === job?.title),
-    [job?.title],
-  );
+  const allCandidatesForJob = job?.candidates || [];
   const [applicationsStage, setApplicationsStage] = React.useState(0);
 
-  const detail = JOB_DETAILS[jobId] ?? {
-    employmentType: "Full‑time",
-    workMode: "Onsite",
-    location: recruiter ? `Office location for ${recruiter.companyName}` : "Onsite",
-    skills: [],
-    about:
-      "This role was created as part of our mock data set. You can update this copy once real job descriptions are wired in.",
-    responsibilities: [],
-  };
+  if (isLoading) {
+    return (
+      <Box sx={{ width: "100%", pb: 4 }}>
+        <Typography color="text.secondary">Loading job details...</Typography>
+      </Box>
+    );
+  }
 
   if (!job) {
     return (
@@ -176,30 +94,30 @@ export default function RecruiterJobDetailPage() {
 
         <Stack direction="row" spacing={1} flexWrap="wrap">
           <Button
-          variant="contained"
-          color="primary"
-          sx={{
-            textTransform: "none",
-            fontWeight: 600,
-            borderRadius: 999,
-            px: 2.5,
-            boxShadow: "none",
-            "&:hover": { boxShadow: "none", bgcolor: "primary.dark" },
-          }}
+            variant="contained"
+            color="primary"
+            sx={{
+              textTransform: "none",
+              fontWeight: 600,
+              borderRadius: 999,
+              px: 2.5,
+              boxShadow: "none",
+              "&:hover": { boxShadow: "none", bgcolor: "primary.dark" },
+            }}
           >
             Publish job
           </Button>
           <Button
-          variant="contained"
+            variant="contained"
             color="error"
-          sx={{
-            textTransform: "none",
-            fontWeight: 600,
-            borderRadius: 999,
-            px: 2.5,
-            boxShadow: "none",
-            "&:hover": { boxShadow: "none", bgcolor: "error.dark" },
-          }}
+            sx={{
+              textTransform: "none",
+              fontWeight: 600,
+              borderRadius: 999,
+              px: 2.5,
+              boxShadow: "none",
+              "&:hover": { boxShadow: "none", bgcolor: "error.dark" },
+            }}
           >
             Delete job
           </Button>
@@ -451,13 +369,13 @@ export default function RecruiterJobDetailPage() {
           <Stack direction="row" spacing={1} sx={{ mb: 1.5, flexWrap: "wrap" }}>
             <Chip
               icon={<BriefcaseIcon style={heroIconStyle} />}
-              label={detail.employmentType}
+              label={job.employmentType}
               size="small"
               sx={{ borderRadius: 999, "& .MuiChip-icon": { ml: 0.5 } }}
             />
             <Chip
               icon={<ClockIcon style={heroIconStyle} />}
-              label={detail.workMode}
+              label={job.workMode}
               size="small"
               sx={{ borderRadius: 999, "& .MuiChip-icon": { ml: 0.5 } }}
             />
@@ -466,7 +384,7 @@ export default function RecruiterJobDetailPage() {
           <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
             <MapPinIcon style={heroIconStyle} />
             <Typography variant="body2" color="text.secondary">
-              {detail.location}
+              {job.location}
             </Typography>
           </Stack>
 
@@ -483,8 +401,8 @@ export default function RecruiterJobDetailPage() {
             Skills required
           </Typography>
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: 3 }}>
-            {detail.skills.length ? (
-              detail.skills.map((skill) => (
+            {job.skills.length ? (
+              job.skills.map((skill) => (
                 <Chip
                   key={skill}
                   label={skill}
@@ -507,15 +425,15 @@ export default function RecruiterJobDetailPage() {
             About the role
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            {detail.about}
+            {job.about}
           </Typography>
 
           <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
             Job responsibilities
           </Typography>
-          {detail.responsibilities.length ? (
+          {job.responsibilities.length ? (
             <Stack component="ul" sx={{ pl: 2, m: 0, listStyleType: "disc" }} spacing={0.75}>
-              {detail.responsibilities.map((item) => (
+              {job.responsibilities.map((item) => (
                 <Box component="li" key={item}>
                   <Typography variant="body2" color="text.secondary">
                     {item}
@@ -533,4 +451,3 @@ export default function RecruiterJobDetailPage() {
     </Box>
   );
 }
-

@@ -32,3 +32,19 @@ export const useAdminRecruiterDetails = (companyId: string) => {
     isLoading: details === undefined,
   };
 };
+
+export const useAdminRecruiterActivityLogs = (companyId: string) => {
+  const logs = useQuery(api.modules.admin.getRecruiterActivityLogs, { companyId: companyId as any });
+  return {
+    logs,
+    isLoading: logs === undefined,
+  };
+};
+
+export const useAdminRecruiterJobDetails = (jobId: string) => {
+  const jobDetails = useQuery(api.modules.admin.getRecruiterJobDetails, { jobId: jobId as any });
+  return {
+    jobDetails,
+    isLoading: jobDetails === undefined,
+  };
+};
