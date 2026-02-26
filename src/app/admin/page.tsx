@@ -1,21 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  Box,
-  Grid,
-  Paper,
-  Typography,
-  Stack,
-  Link,
-  IconButton,
-  useTheme,
-} from "@mui/material";
-import {
-  MOCK_GLOBAL_KPIS,
-  MOCK_RECRUITER_GROWTH,
-  MOCK_RECENT_ACTIVITY,
-} from "./mock-data";
+import { Box, Grid, Paper, Typography, Stack, Link, IconButton, useTheme } from "@mui/material";
 import dynamic from "next/dynamic";
 import type { ApexOptions } from "apexcharts";
 import {
@@ -29,23 +15,19 @@ import {
 } from "@heroicons/react/24/outline";
 import { ADMIN_CARD_SX } from "./styles";
 import NewRecruiterModal from "./components/NewRecruiterModal";
+import { useAdminDashboardStats } from "@/queries/admin.queries";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 const iconSize = { width: 24, height: 24 };
 const quickActionIconSize = { width: 20, height: 20 };
 const cardSx = { ...ADMIN_CARD_SX, boxShadow: "none" };
-const kpiCards = [
-  { id: "recruiters", title: "Total Recruiters", subtitle: "Active recruiter accounts", value: "3", icon: <UserGroupIcon style={iconSize} /> },
-  { id: "activeJobs", title: "Active Jobs", subtitle: "Open positions", value: "2", icon: <BriefcaseIcon style={iconSize} /> },
-  { id: "candidates", title: "Candidates", subtitle: "Total applicants", value: "3", icon: <UserGroupIcon style={iconSize} /> },
-  { id: "assessments", title: "Assessments", subtitle: "Completed this month", value: "2", icon: <ClipboardDocumentCheckIcon style={iconSize} /> },
-];
 
 const getGrowthChartOptions = (
   primaryColor: string,
   axisColor: string,
-  gridColor: string
+  gridColor: string,
+  categories: string[],
 ): ApexOptions =>
   ({
     chart: { type: "area", toolbar: { show: false }, zoom: { enabled: false } },
@@ -54,7 +36,7 @@ const getGrowthChartOptions = (
     dataLabels: { enabled: false },
     stroke: { curve: "smooth", width: 2 },
     xaxis: {
-      categories: MOCK_RECRUITER_GROWTH.map((d) => d.month),
+      categories,
       labels: { style: { colors: axisColor, fontSize: "12px" } },
     },
     yaxis: {
@@ -63,11 +45,7 @@ const getGrowthChartOptions = (
     },
     grid: { borderColor: gridColor, strokeDashArray: 4 },
     tooltip: { theme: "light" },
-  } as ApexOptions);
-
-const growthSeries = [
-  { name: "Recruiters", data: MOCK_RECRUITER_GROWTH.map((d) => d.count) },
-];
+  }) as ApexOptions;
 
 const quickActions = [
   {
@@ -93,11 +71,47 @@ const quickActions = [
 export default function AdminDashboardPage() {
   const theme = useTheme();
   const [newRecruiterOpen, setNewRecruiterOpen] = useState(false);
+  const { stats, isLoading } = useAdminDashboardStats();
+
   const growthChartOptions = getGrowthChartOptions(
     theme.palette.primary.main,
     theme.palette.text.secondary as string,
-    theme.palette.divider
+    theme.palette.divider,
+    stats?.recruiterGrowth.map((d) => d.month) || [],
   );
+
+  const growthSeries = [{ name: "Recruiters", data: stats?.recruiterGrowth.map((d) => d.count) || [] }];
+
+  const kpiCards = [
+    {
+      id: "recruiters",
+      title: "Total Recruiters",
+      subtitle: "Active recruiter accounts",
+      value: stats?.kpis.totalRecruiters ?? 0,
+      icon: <UserGroupIcon style={iconSize} />,
+    },
+    {
+      id: "activeJobs",
+      title: "Active Jobs",
+      subtitle: "Open positions",
+      value: stats?.kpis.activeJobs ?? 0,
+      icon: <BriefcaseIcon style={iconSize} />,
+    },
+    {
+      id: "candidates",
+      title: "Candidates",
+      subtitle: "Total applicants",
+      value: stats?.kpis.candidates ?? 0,
+      icon: <UserGroupIcon style={iconSize} />,
+    },
+    {
+      id: "assessments",
+      title: "Assessments",
+      subtitle: "Completed this month",
+      value: stats?.kpis.assessments ?? 0,
+      icon: <ClipboardDocumentCheckIcon style={iconSize} />,
+    },
+  ];
 
   return (
     <Box sx={{ width: "100%", pb: 4 }}>
@@ -142,7 +156,12 @@ export default function AdminDashboardPage() {
                 </Box>
               </Stack>
               <Box sx={{ mt: "auto", pt: 2 }}>
-                <Typography variant="h2" fontWeight={700} color="text.primary" sx={{ letterSpacing: "-0.02em", lineHeight: 1.2 }}>
+                <Typography
+                  variant="h2"
+                  fontWeight={700}
+                  color="text.primary"
+                  sx={{ letterSpacing: "-0.02em", lineHeight: 1.2 }}
+                >
                   {card.value}
                 </Typography>
               </Box>
@@ -172,7 +191,7 @@ export default function AdminDashboardPage() {
               </Link>
             </Box>
             <Stack spacing={0}>
-              {MOCK_RECENT_ACTIVITY.map((item) => (
+              {stats?.recentActivity.map((item) => (
                 <Box
                   key={item.id}
                   sx={{
@@ -198,6 +217,11 @@ export default function AdminDashboardPage() {
                   </IconButton>
                 </Box>
               ))}
+              {(!stats?.recentActivity || stats.recentActivity.length === 0) && (
+                <Typography variant="body2" color="text.secondary" sx={{ py: 2, textAlign: "center" }}>
+                  No recent activity
+                </Typography>
+              )}
             </Stack>
           </Paper>
         </Grid>
@@ -214,7 +238,7 @@ export default function AdminDashboardPage() {
               Quick Actions
             </Typography>
             <Stack spacing={0.5}>
-              {quickActions.map((action) => (
+              {quickActions.map((action) =>
                 action.label === "New Recruiter" ? (
                   <Box
                     key={action.label}
@@ -278,8 +302,8 @@ export default function AdminDashboardPage() {
                       <ChevronRightIcon style={quickActionIconSize} />
                     </Box>
                   </Link>
-                )
-              ))}
+                ),
+              )}
             </Stack>
           </Paper>
           <Paper
@@ -309,11 +333,7 @@ export default function AdminDashboardPage() {
           </Paper>
         </Grid>
       </Grid>
-      <NewRecruiterModal
-        open={newRecruiterOpen}
-        onClose={() => setNewRecruiterOpen(false)}
-      />
+      <NewRecruiterModal open={newRecruiterOpen} onClose={() => setNewRecruiterOpen(false)} />
     </Box>
   );
 }
-

@@ -59,6 +59,22 @@ export const authedAction = customAction(baseAction, {
   },
 });
 
+export const adminQuery = customQuery(baseQuery, {
+  args: {},
+  input: async (ctx) => {
+    // For now, ignore authentication on admin
+    return { ctx: {}, args: {} };
+  },
+});
+
+export const adminMutation = customMutation(baseMutation, {
+  args: {},
+  input: async (ctx) => {
+    // For now, ignore authentication on admin
+    return { ctx: {}, args: {} };
+  },
+});
+
 export const isSuperAdmin = (user: Doc<"users"> | null) => {
   if (!user || user.role !== "super") throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
   return true;
