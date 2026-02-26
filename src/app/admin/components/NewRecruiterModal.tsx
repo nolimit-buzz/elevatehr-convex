@@ -11,8 +11,14 @@ import {
   Grid,
   TextField,
   Typography,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
 import { ArrowUpTrayIcon } from "@heroicons/react/24/outline";
+import { useImpersonation } from "../context/ImpersonationContext";
+import { useAdminCreateCompanyMutation, useAdminGenerateLogoUploadUrl } from "@/queries/admin.queries";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export type NewRecruiterPayload = {
   company_name: string;
@@ -33,7 +39,7 @@ export type NewRecruiterPayload = {
 type Props = {
   open: boolean;
   onClose: () => void;
-  onSubmit?: (payload: NewRecruiterPayload) => void;
+  onSuccess?: () => void;
 };
 
 const initialState: NewRecruiterPayload = {
@@ -52,13 +58,18 @@ const initialState: NewRecruiterPayload = {
   password: "",
 };
 
-export default function NewRecruiterModal({ open, onClose, onSubmit }: Props) {
+export default function NewRecruiterModal({ open, onClose, onSuccess }: Props) {
+  const router = useRouter();
+  const { startImpersonation } = useImpersonation();
   const [step, setStep] = useState<1 | 2>(1);
   const [values, setValues] = useState<NewRecruiterPayload>(initialState);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  const createCompanyMutation = useAdminCreateCompanyMutation();
+  const generateUploadUrlMutation = useAdminGenerateLogoUploadUrl();
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setValues((prev) => ({ ...prev, [name]: value }));
   };
@@ -71,32 +82,132 @@ export default function NewRecruiterModal({ open, onClose, onSubmit }: Props) {
   const handleClose = () => {
     setStep(1);
     setValues(initialState);
+    setError(null);
     onClose();
   };
 
   const handleNext = () => {
+    // Validate first step fields
+    if (!values.company_name.trim()) {
+      setError("Company name is required");
+      return;
+    }
+    if (!values.industry.trim()) {
+      setError("Industry is required");
+      return;
+    }
+    setError(null);
     setStep(2);
   };
 
   const handleBack = () => {
+    setError(null);
     setStep(1);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (onSubmit) {
-      onSubmit(values);
-    } else {
-      // Placeholder until wired to backend
-      console.log("New recruiter payload", values);
+
+    // Validate required fields
+    if (!values.first_name.trim()) {
+      setError("First name is required");
+      return;
     }
-    handleClose();
+    if (!values.last_name.trim()) {
+      setError("Last name is required");
+      return;
+    }
+    if (!values.email.trim()) {
+      setError("Email is required");
+      return;
+    }
+    if (!values.password.trim()) {
+      setError("Password is required");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      let logoStorageId: any = undefined;
+
+      // Upload company logo if provided
+      if (values.company_logo) {
+        try {
+          // Step 1: Get upload URL
+          const uploadUrl = await generateUploadUrlMutation();
+
+          // Step 2: Upload file to the URL
+          const uploadResponse = await fetch(uploadUrl, {
+            method: "POST",
+            headers: { "Content-Type": values.company_logo.type },
+            body: values.company_logo,
+          });
+
+          if (!uploadResponse.ok) {
+            throw new Error("Failed to upload company logo");
+          }
+
+          const { storageId } = await uploadResponse.json();
+          logoStorageId = storageId;
+        } catch (uploadError) {
+          console.error("Logo upload error:", uploadError);
+          setError("Failed to upload company logo. Proceeding without logo.");
+          // Continue without logo
+        }
+      }
+
+      // Create the company and admin user
+      const result = await createCompanyMutation({
+        company: {
+          company_name: values.company_name,
+          company_website: values.company_website || undefined,
+          booking_link: values.booking_link || undefined,
+          number_of_employees: values.number_of_employees || undefined,
+          about_company: values.about_company || undefined,
+        },
+        user: {
+          first_name: values.first_name,
+          last_name: values.last_name,
+          email: values.email,
+          phone_number: values.phone_number || undefined,
+          password: values.password,
+          job_title: values.job_title || undefined,
+        },
+        logoStorageId,
+      });
+
+      toast.success("Company created successfully!");
+      handleClose();
+
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        // Optionally impersonate the newly created company
+        startImpersonation(values.company_name);
+        // Refresh the recruiters list
+        router.refresh();
+      }
+    } catch (err: any) {
+      console.error("Error creating company:", err);
+      const errorMessage = err?.message || "Failed to create company. Please try again.";
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
       <DialogTitle>Create new recruiter</DialogTitle>
       <DialogContent dividers>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
           {step === 1 && (
             <>
@@ -208,12 +319,7 @@ export default function NewRecruiterModal({ open, onClose, onSubmit }: Props) {
                         Transparent SVG or PNG works best.
                       </Typography>
                     </Box>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      hidden
-                      onChange={handleFileChange}
-                    />
+                    <input type="file" accept="image/*" hidden onChange={handleFileChange} />
                   </Box>
                   {values.company_logo && (
                     <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: "block" }}>
@@ -320,16 +426,17 @@ export default function NewRecruiterModal({ open, onClose, onSubmit }: Props) {
       </DialogContent>
       <DialogActions sx={{ px: 3, py: 2 }}>
         {step === 2 && (
-          <Button onClick={handleBack} sx={{ textTransform: "none" }}>
+          <Button onClick={handleBack} disabled={isSubmitting} sx={{ textTransform: "none" }}>
             Back
           </Button>
         )}
-        <Button onClick={handleClose} sx={{ textTransform: "none" }}>
+        <Button onClick={handleClose} disabled={isSubmitting} sx={{ textTransform: "none" }}>
           Cancel
         </Button>
         {step === 1 ? (
           <Button
             variant="contained"
+            disabled={isSubmitting}
             sx={{ textTransform: "none", fontWeight: 600 }}
             onClick={handleNext}
           >
@@ -338,14 +445,20 @@ export default function NewRecruiterModal({ open, onClose, onSubmit }: Props) {
         ) : (
           <Button
             variant="contained"
+            disabled={isSubmitting}
             sx={{ textTransform: "none", fontWeight: 600 }}
             onClick={handleSubmit}
           >
-            Create recruiter
+            {isSubmitting ? (
+              <>
+                <CircularProgress size={20} sx={{ mr: 1 }} /> Creating...
+              </>
+            ) : (
+              "Create recruiter"
+            )}
           </Button>
         )}
       </DialogActions>
     </Dialog>
   );
 }
-

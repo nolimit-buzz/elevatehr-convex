@@ -393,7 +393,15 @@ export default function RecruiterDirectoryPage() {
         </MenuItem>
       </Menu>
 
-      <NewRecruiterModal open={newRecruiterOpen} onClose={() => setNewRecruiterOpen(false)} />
+      <NewRecruiterModal
+        open={newRecruiterOpen}
+        onClose={() => setNewRecruiterOpen(false)}
+        onSuccess={() => {
+          setNewRecruiterOpen(false);
+          // Trigger a refresh of the recruiters list
+          window.location.reload();
+        }}
+      />
     </Box>
   );
 }

@@ -1,5 +1,18 @@
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { FunctionArgs } from "convex/server";
+
+export type AdminCreateCompanyInput = FunctionArgs<typeof api.modules.admin.createCompany>;
+
+export const useAdminCreateCompanyMutation = () => {
+  const mutation = useMutation(api.modules.admin.createCompany);
+  return mutation;
+};
+
+export const useAdminGenerateLogoUploadUrl = () => {
+  const mutation = useMutation(api.modules.admin.generateCompanyLogoUploadUrl);
+  return mutation;
+};
 
 export const useAdminDashboardStats = () => {
   const stats = useQuery(api.modules.admin.getDashboardStats);

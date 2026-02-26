@@ -1,5 +1,95 @@
-import { adminQuery } from "../utils/permission";
-import { v } from "convex/values";
+import { adminQuery, adminMutation } from "../utils/permission";
+import { v, ConvexError } from "convex/values";
+import { CompanySchema } from "./company";
+import { UserSchema } from "./user";
+import { Constants } from "../utils/constants";
+import { hashPassword } from "../utils/validation";
+import { getMe } from "../utils/helpers";
+
+const TEMPLATE_TYPES = [
+  "skill_assessment",
+  "technical_assessment",
+  "online_assessment_1",
+  "online_assessment_2",
+  "interviews",
+  "acceptance",
+  "archived",
+  "rejection",
+] as const;
+
+function getDefaultTemplateContent(type: string): string {
+  switch (type) {
+    case "skill_assessment":
+      return `<p>Dear {{candidate_name}},</p>
+<p>Congratulations! You have been selected to proceed to the skill assessment stage for the {{job_title}} position.</p>
+<p>Please complete the assessment at your earliest convenience.</p>
+<p>Best regards,<br/>{{company_name}} Team</p>`;
+    case "technical_assessment":
+      return `<p>Dear {{candidate_name}},</p>
+<p>You have been invited to complete a technical assessment for the {{job_title}} position.</p>
+<p>Please click the link below to access your assessment.</p>
+<p>Best regards,<br/>{{company_name}} Team</p>`;
+    case "online_assessment_1":
+      return `<p>Dear {{candidate_name}},</p>
+<p>You have been invited to complete an online assessment for the {{job_title}} position.</p>
+<p>Please click the link below to get started.</p>
+<p>Best regards,<br/>{{company_name}} Team</p>`;
+    case "online_assessment_2":
+      return `<p>Dear {{candidate_name}},</p>
+<p>You have been invited to complete a second online assessment for the {{job_title}} position.</p>
+<p>Please click the link below to continue.</p>
+<p>Best regards,<br/>{{company_name}} Team</p>`;
+    case "interviews":
+      return `<p>Dear {{candidate_name}},</p>
+<p>We are pleased to invite you for an interview for the {{job_title}} position.</p>
+<p>Our team will reach out to schedule a convenient time.</p>
+<p>Best regards,<br/>{{company_name}} Team</p>`;
+    case "acceptance":
+      return `<p>Dear {{candidate_name}},</p>
+<p>We are thrilled to offer you the {{job_title}} position at {{company_name}}!</p>
+<p>Please review the attached offer letter and let us know if you have any questions.</p>
+<p>Best regards,<br/>{{company_name}} Team</p>`;
+    case "archived":
+      return `<p>Dear {{candidate_name}},</p>
+<p>Thank you for your interest in the {{job_title}} position at {{company_name}}.</p>
+<p>After careful consideration, we have decided to move forward with other candidates.</p>
+<p>We wish you the best in your job search.</p>
+<p>Best regards,<br/>{{company_name}} Team</p>`;
+    case "rejection":
+      return `<p>Dear {{candidate_name}},</p>
+<p>Thank you for applying for the {{job_title}} position at {{company_name}}.</p>
+<p>After careful consideration, we have decided to move forward with other candidates.</p>
+<p>We wish you the best in your future endeavors.</p>
+<p>Best regards,<br/>{{company_name}} Team</p>`;
+    default:
+      return `<p>Dear {{candidate_name}},</p>
+<p>Thank you for your application.</p>
+<p>Best regards,<br/>{{company_name}} Team</p>`;
+  }
+}
+
+function getDefaultTemplateSubject(type: string): string {
+  switch (type) {
+    case "skill_assessment":
+      return "Skill Assessment Invitation - {{job_title}}";
+    case "technical_assessment":
+      return "Technical Assessment - {{job_title}}";
+    case "online_assessment_1":
+      return "Online Assessment - {{job_title}}";
+    case "online_assessment_2":
+      return "Second Online Assessment - {{job_title}}";
+    case "interviews":
+      return "Interview Invitation - {{job_title}}";
+    case "acceptance":
+      return "Job Offer - {{job_title}}";
+    case "archived":
+      return "Application Update - {{job_title}}";
+    case "rejection":
+      return "Application Status - {{job_title}}";
+    default:
+      return "Application Update - {{job_title}}";
+  }
+}
 
 export const getDashboardStats = adminQuery({
   args: {},
@@ -384,5 +474,100 @@ export const getRecruiterJobDetails = adminQuery({
       responsibilities: job.responsibilities || [],
       candidates,
     };
+  },
+});
+
+// Admin mutation to create a new company with primary admin user
+export const createCompany = adminMutation({
+  args: {
+    company: CompanySchema,
+    user: UserSchema.omit("company_id", "is_active", "role"),
+    logoStorageId: v.optional(v.id("_storage")),
+  },
+  handler: async (ctx, args) => {
+    // Check if company already exists
+    const companyExist = await ctx.db
+      .query("companies")
+      .filter((e) => e.eq(e.field("company_name"), args.company.company_name))
+      .first();
+
+    if (companyExist)
+      throw new ConvexError({
+        message: Constants.ERROR.ALREADY_EXIST,
+        code: 401,
+      });
+
+    // Check if user already exists
+    const userExist = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("email"), args.user.email))
+      .first();
+
+    if (userExist)
+      throw new ConvexError({
+        message: Constants.ERROR.ALREADY_EXIST,
+        code: 401,
+      });
+
+    // Convert storage ID to URL if provided
+    let logoUrl: string | undefined;
+    if (args.logoStorageId) {
+      const url = await ctx.storage.getUrl(args.logoStorageId);
+      if (!url) {
+        throw new ConvexError({
+          message: "Failed to get logo URL",
+          code: 500,
+        });
+      }
+      logoUrl = url;
+    }
+
+    // Create the company with the logo URL if available
+    const companyData = {
+      ...args.company,
+      company_logo: logoUrl,
+    };
+
+    const newCompany = await ctx.db.insert("companies", companyData);
+
+    // Seed initial email templates for the new company
+    for (const type of TEMPLATE_TYPES) {
+      await ctx.db.insert("email_templates", {
+        company_id: newCompany,
+        type,
+        subject: getDefaultTemplateSubject(type),
+        content: getDefaultTemplateContent(type),
+        is_default: true,
+      });
+    }
+
+    // Hash password and create the admin user
+    const hashedPassword = hashPassword(args.user.password);
+    const newUser = await ctx.db.insert("users", {
+      ...args.user,
+      password: hashedPassword,
+      company_id: newCompany,
+      is_active: true,
+      role: "admin",
+    });
+
+    if (!newUser)
+      throw new ConvexError({
+        message: Constants.ERROR.CREATE_ERROR,
+        code: 401,
+      });
+
+    return {
+      companyId: newCompany,
+      message: Constants.SUCCESS.COMPANY_CREATE,
+    };
+  },
+});
+
+// Admin mutation to generate upload URL for company logo
+export const generateCompanyLogoUploadUrl = adminMutation({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
   },
 });
