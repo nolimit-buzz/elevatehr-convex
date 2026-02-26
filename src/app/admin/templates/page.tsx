@@ -4,7 +4,7 @@ import React from "react";
 import { Box, Button, Paper, Typography, Chip, IconButton } from "@mui/material";
 import { PlusIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import { MOCK_EMAIL_TEMPLATES } from "../mock-data";
-import { ADMIN_CARD_SX, ADMIN_CARD_SHADOW } from "../styles";
+import { ADMIN_CARD_SX } from "../styles";
 
 export default function GlobalCommunicationTemplatesPage() {
   return (
@@ -26,7 +26,6 @@ export default function GlobalCommunicationTemplatesPage() {
             fontWeight: 600,
             borderRadius: 2,
             px: 2,
-            boxShadow: ADMIN_CARD_SHADOW,
           }}
         >
           + New Template

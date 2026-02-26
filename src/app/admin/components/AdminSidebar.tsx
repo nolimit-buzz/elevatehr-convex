@@ -35,7 +35,11 @@ const SidebarRoot = styled(Box)(({ theme }) => ({
   backgroundColor: theme.palette.background.paper,
   display: "flex",
   flexDirection: "column",
-  boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+  boxShadow: "none",
+  position: "fixed",
+  top: 0,
+  left: 0,
+  zIndex: theme.zIndex.drawer,
 }));
 
 const NavItem = styled(ListItemButton)(({ theme }) => ({
@@ -172,7 +176,6 @@ export default function AdminSidebar() {
               color: "text.primary",
               border: "none",
               cursor: "pointer",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
               fontWeight: 600,
               fontSize: "0.8125rem",
               "&:hover": { bgcolor: "background.paper", opacity: 0.95 },

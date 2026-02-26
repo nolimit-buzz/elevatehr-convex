@@ -331,16 +331,16 @@ export default function RecruiterDirectoryPage() {
         onClose={handleCloseMenu}
         PaperProps={{ sx: { ...ADMIN_CARD_SX, minWidth: 200 } }}
       >
-        <MenuItem onClick={handleViewDeepDive} sx={{ borderRadius: 2, mx: 1, fontSize: "0.875rem" }}>
-          <Box component="span" sx={{ mr: 1, display: "inline-flex" }}><UserIcon style={{ width: 24, height: 24 }} /></Box>
+        <MenuItem onClick={handleViewDeepDive} sx={{ borderRadius: 2, mx: 1, fontSize: "0.8125rem" }}>
+          <Box component="span" sx={{ mr: 1, display: "inline-flex" }}><UserIcon style={{ width: 18, height: 18 }} /></Box>
           View Profile
         </MenuItem>
-        <MenuItem onClick={handleLoginAs} sx={{ borderRadius: 2, mx: 1, fontSize: "0.875rem" }}>
-          <Box component="span" sx={{ mr: 1, display: "inline-flex" }}><ArrowTopRightOnSquareIcon style={{ width: 24, height: 24 }} /></Box>
+        <MenuItem onClick={handleLoginAs} sx={{ borderRadius: 2, mx: 1, fontSize: "0.8125rem" }}>
+          <Box component="span" sx={{ mr: 1, display: "inline-flex" }}><ArrowTopRightOnSquareIcon style={{ width: 18, height: 18 }} /></Box>
           Impersonate
         </MenuItem>
-        <MenuItem onClick={handleCloseMenu} sx={{ borderRadius: 2, mx: 1, fontSize: "0.875rem", color: "error.main" }}>
-          <Box component="span" sx={{ mr: 1, display: "inline-flex" }}><PowerIcon style={{ width: 24, height: 24 }} /></Box>
+        <MenuItem onClick={handleCloseMenu} sx={{ borderRadius: 2, mx: 1, fontSize: "0.8125rem", color: "error.main" }}>
+          <Box component="span" sx={{ mr: 1, display: "inline-flex" }}><PowerIcon style={{ width: 18, height: 18 }} /></Box>
           Toggle Access
         </MenuItem>
       </Menu>

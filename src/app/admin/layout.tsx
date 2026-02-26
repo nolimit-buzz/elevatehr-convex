@@ -2,7 +2,7 @@
 
 import { Box } from "@mui/material";
 import { usePathname } from "next/navigation";
-import AdminSidebar from "./components/AdminSidebar";
+import AdminSidebar, { SIDEBAR_WIDTH } from "./components/AdminSidebar";
 import AdminHeader from "./components/AdminHeader";
 import ImpersonationBanner from "./components/ImpersonationBanner";
 import { ImpersonationProvider, useImpersonation } from "./context/ImpersonationContext";
@@ -32,9 +32,21 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh" }}>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        bgcolor: "background.default",
+      }}
+    >
       <AdminSidebar />
-      <Box sx={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <Box
+        sx={{
+          ml: `${SIDEBAR_WIDTH}px`,
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         {impersonation && (
           <ImpersonationBanner companyName={impersonation.companyName} onExit={exitImpersonation} />
         )}
@@ -44,8 +56,6 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             flex: 1,
             px: { xs: 3, md: "120px" },
             py: 3,
-            bgcolor: "background.default",
-            overflow: "auto",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",

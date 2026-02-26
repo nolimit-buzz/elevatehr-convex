@@ -21,7 +21,6 @@ export default function ImpersonationBanner({ companyName, onExit }: Impersonati
         alignItems: "center",
         justifyContent: "center",
         gap: 2,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
       }}
     >
       <Typography variant="body2" fontWeight={600}>

@@ -4,7 +4,7 @@ import React from "react";
 import { Box, Button, Paper, Typography, Chip, Link, IconButton } from "@mui/material";
 import { PlusIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import { MOCK_ASSESSMENT_TEMPLATES } from "../mock-data";
-import { ADMIN_CARD_SX, ADMIN_CARD_SHADOW } from "../styles";
+import { ADMIN_CARD_SX } from "../styles";
 
 export default function MasterAssessmentLibraryPage() {
   return (
@@ -18,7 +18,7 @@ export default function MasterAssessmentLibraryPage() {
             Create and distribute test templates to your recruiters.
           </Typography>
         </Box>
-          <Button
+        <Button
           variant="contained"
           startIcon={<PlusIcon style={{ width: 24, height: 24 }} />}
           sx={{
@@ -26,7 +26,6 @@ export default function MasterAssessmentLibraryPage() {
             fontWeight: 600,
             borderRadius: 2,
             px: 2,
-            boxShadow: ADMIN_CARD_SHADOW,
           }}
         >
           + New Master Template

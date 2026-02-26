@@ -9,5 +9,5 @@ export const ADMIN_CARD_SX = {
   bgcolor: "background.paper",
   border: "1px solid",
   borderColor: "divider",
-  boxShadow: ADMIN_CARD_SHADOW,
+  boxShadow: "none",
 } as const;
