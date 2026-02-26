@@ -325,7 +325,7 @@ export default function AdminDashboardPage() {
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
               New recruiter signups over time.
             </Typography>
-            {typeof window !== "undefined" && (
+            {typeof window !== "undefined" && stats && (
               <Box sx={{ flex: 1, minHeight: 200 }}>
                 <Chart options={growthChartOptions} series={growthSeries} type="area" height={260} />
               </Box>
