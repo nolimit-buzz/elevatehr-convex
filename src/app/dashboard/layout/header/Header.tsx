@@ -194,11 +194,25 @@ const Header = () => {
     },
   }));
 
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  useEffect(() => {
+    try {
+      const userProfileStr = localStorage.getItem("userProfile");
+      if (userProfileStr) {
+        const userProfile = JSON.parse(userProfileStr);
+        setIsSuperAdmin(userProfile.personalInfo?.role === "super");
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
   const links = [
     { href: "/dashboard", title: "Dashboard", icon: <DashboardRoundedIcon /> },
     { href: "/dashboard/assessments", title: "Assessments", icon: <DescriptionRoundedIcon /> },
     { href: "/dashboard/applications", title: "Applications", icon: <DescriptionRoundedIcon /> },
     { href: "/dashboard/job-listings", title: "Job Listings", icon: <WorkHistoryRoundedIcon /> },
+    ...(isSuperAdmin ? [{ href: "/admin", title: "Admin", icon: <DashboardRoundedIcon /> }] : []),
   ];
 
   return (
