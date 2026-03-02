@@ -50,6 +50,34 @@ export function useAuthedAction<Action extends FunctionReference<"action">>(acti
   };
 }
 
+export function useAdminQuery<Query extends FunctionReference<"query">>(
+  query: Query,
+  args?: Parameters<typeof useBaseQuery<Query>>[1]
+) {
+  const token = typeof window !== "undefined" ? localStorage.getItem(DefaultConstants.tokenName) : null;
+
+  const finalArgs = !token ? "skip" : args === "skip" ? "skip" : { ...(args || {}), token };
+
+  // @ts-expect-error - Token injection modifies the args type
+  return useBaseQuery(query, finalArgs);
+}
+
+export function useAdminMutation<Mutation extends FunctionReference<"mutation">>(mutation: Mutation) {
+  const baseMutation = useBaseMutation(mutation);
+  type MutationFn = ReturnType<typeof useBaseMutation<Mutation>>;
+
+  return (args?: Parameters<MutationFn>[0]) => {
+    const currentToken = typeof window !== "undefined" ? localStorage.getItem(DefaultConstants.tokenName) : null;
+
+    if (!currentToken) {
+      return Promise.reject(new Error("Not authenticated"));
+    }
+    const argsWithToken = { ...(args || {}), token: currentToken };
+    // @ts-expect-error - Token injection modifies the args type
+    return baseMutation(argsWithToken);
+  };
+}
+
 // Response type for unified handling
 export type ConvexResponse<T> = { result: T; error: null } | { result: T | null; error: string | null };
 

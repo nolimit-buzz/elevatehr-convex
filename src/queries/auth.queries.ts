@@ -12,7 +12,6 @@ export const AuthQueries = () => {
   const meMutation = useAuthedMutation(api.modules.auth.Me);
   const changePasswordMutation = useAuthedMutation(api.modules.auth.ChangePassword);
   const updateProfileMutation = useAuthedMutation(api.modules.auth.UpdateProfile);
-
   const Me = async () => {
     return useConvexResponse(meMutation({}));
   };

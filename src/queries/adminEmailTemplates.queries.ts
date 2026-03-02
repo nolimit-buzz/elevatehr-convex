@@ -1,5 +1,5 @@
-import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { useAdminQuery, useAdminMutation } from "@/app/convex.setup";
 
 export type AdminEmailTemplateType =
   | "skill_assessment"
@@ -18,13 +18,13 @@ export interface SaveAdminEmailTemplateInput {
 }
 
 export const useAdminEmailTemplatesList = () => {
-  return useQuery(api.modules.admin.emailTemplates.list, {});
+  return useAdminQuery(api.modules.admin.emailTemplates.list, {});
 };
 
 export const useAdminEmailTemplateByType = (type: AdminEmailTemplateType) => {
-  return useQuery(api.modules.admin.emailTemplates.getByType, { type });
+  return useAdminQuery(api.modules.admin.emailTemplates.getByType, { type });
 };
 
 export const AdminEmailTemplateQueries = {
-  useSave: () => useMutation(api.modules.admin.emailTemplates.save),
+  useSave: () => useAdminMutation(api.modules.admin.emailTemplates.save),
 };

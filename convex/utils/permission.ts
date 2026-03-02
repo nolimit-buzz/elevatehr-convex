@@ -60,18 +60,24 @@ export const authedAction = customAction(baseAction, {
 });
 
 export const adminQuery = customQuery(baseQuery, {
-  args: {},
-  input: async (ctx) => {
-    // For now, ignore authentication on admin
-    return { ctx: {}, args: {} };
+  args: { token: v.optional(v.string()) },
+  input: async (ctx, { token }) => {
+    const user = await getUserFromToken(ctx, token);
+    if (!user || user.role !== "admin") {
+      throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
+    }
+    return { ctx: { user }, args: {} };
   },
 });
 
 export const adminMutation = customMutation(baseMutation, {
-  args: {},
-  input: async (ctx) => {
-    // For now, ignore authentication on admin
-    return { ctx: {}, args: {} };
+  args: { token: v.optional(v.string()) },
+  input: async (ctx, { token }) => {
+    const user = await getUserFromToken(ctx, token);
+    if (!user || user.role !== "admin") {
+      throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
+    }
+    return { ctx: { user }, args: {} };
   },
 });
 

@@ -5,17 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Box, Stack, Typography, Paper } from "@mui/material";
 import PageContainer from "@/app/dashboard/components/container/PageContainer";
-import AuthLogin from "@/app/dashboard/components/auth/AuthLogin";
+import AdminAuthLogin from "@/app/admin/components/AdminAuthLogin";
 
 export default function AdminLoginPage() {
   const router = useRouter();
 
   return (
-    <PageContainer
-      title="Admin login"
-      description="ElevateHR admin and reseller sign in"
-      customStyle={{ padding: 0 }}
-    >
+    <PageContainer title="Admin login" description="ElevateHR admin and reseller sign in" customStyle={{ padding: 0 }}>
       <Box
         sx={{
           minHeight: "100vh",
@@ -39,32 +35,19 @@ export default function AdminLoginPage() {
           }}
         >
           <Stack spacing={1.5} mb={3}>
-            <Typography
-              variant="h4"
-              fontWeight={700}
-              sx={{ letterSpacing: "-0.02em", color: "#1a1a1a" }}
-            >
+            <Typography variant="h4" fontWeight={700} sx={{ letterSpacing: "-0.02em", color: "#1a1a1a" }}>
               Admin login
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Sign in as an ElevateHR admin or reseller to manage recruiters and
-              tenants.
+              Sign in as an ElevateHR admin or reseller to manage recruiters and tenants.
             </Typography>
           </Stack>
 
-          <AuthLogin onSuccess={() => void router.push("/admin")} />
+          <AdminAuthLogin onSuccess={() => void router.push("/admin")} />
 
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ display: "block", mt: 2 }}
-          >
+          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 2 }}>
             Need the standard recruiter login?{" "}
-            <Typography
-              component={Link}
-              href="/"
-              sx={{ color: "primary.main", fontWeight: 600 }}
-            >
+            <Typography component={Link} href="/" sx={{ color: "primary.main", fontWeight: 600 }}>
               Go to main login
             </Typography>
           </Typography>
@@ -73,4 +56,3 @@ export default function AdminLoginPage() {
     </PageContainer>
   );
 }
-

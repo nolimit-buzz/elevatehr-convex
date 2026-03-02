@@ -1,9 +1,9 @@
 import { v, ConvexError } from "convex/values";
-import { QueryCtx, mutation, query } from "../_generated/server";
+import { mutation } from "../_generated/server";
 import { UserSchema } from "./user";
 import { generateToken, hashPassword, verifyPassword } from "../utils/validation";
 import { Constants } from "../utils/constants";
-import { authedMutation, authedQuery } from "../utils/permission";
+import { authedMutation } from "../utils/permission";
 import { Id } from "../_generated/dataModel";
 import { getMe } from "../utils/helpers";
 
@@ -131,5 +131,27 @@ export const UpdateProfile = authedMutation({
     await ctx.db.patch(userId, args);
 
     return { message: Constants.SUCCESS.USER_UPDATE };
+  },
+});
+
+export const CreateAdmin = mutation({
+  args: UserSchema.omit("is_active", "role"),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .first();
+
+    if (existing) throw new ConvexError({ message: Constants.ERROR.ALREADY_EXIST, code: 409 });
+
+    args.password = hashPassword(args.password);
+    const newAdmin = await ctx.db.insert("users", {
+      ...args,
+      is_active: true,
+      role: "admin",
+    });
+
+    if (!newAdmin) throw new ConvexError({ message: Constants.ERROR.CREATE_ERROR, code: 500 });
+    return { message: Constants.SUCCESS.USER_CREATE };
   },
 });

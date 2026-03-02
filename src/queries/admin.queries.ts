@@ -1,21 +1,19 @@
-import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { FunctionArgs } from "convex/server";
+import { useAdminQuery, useAdminMutation } from "@/app/convex.setup";
 
 export type AdminCreateCompanyInput = FunctionArgs<typeof api.modules.admin.createCompany>;
 
 export const useAdminCreateCompanyMutation = () => {
-  const mutation = useMutation(api.modules.admin.createCompany);
-  return mutation;
+  return useAdminMutation(api.modules.admin.createCompany);
 };
 
 export const useAdminGenerateLogoUploadUrl = () => {
-  const mutation = useMutation(api.modules.admin.generateCompanyLogoUploadUrl);
-  return mutation;
+  return useAdminMutation(api.modules.admin.generateCompanyLogoUploadUrl);
 };
 
 export const useAdminDashboardStats = () => {
-  const stats = useQuery(api.modules.admin.getDashboardStats);
+  const stats = useAdminQuery(api.modules.admin.getDashboardStats);
   return {
     stats,
     isLoading: stats === undefined,
@@ -23,7 +21,7 @@ export const useAdminDashboardStats = () => {
 };
 
 export const useAdminRecentActivity = () => {
-  const activity = useQuery(api.modules.admin.getRecentActivity);
+  const activity = useAdminQuery(api.modules.admin.getRecentActivity);
   return {
     activity,
     isLoading: activity === undefined,
@@ -31,7 +29,7 @@ export const useAdminRecentActivity = () => {
 };
 
 export const useAdminRecruiters = () => {
-  const recruiters = useQuery(api.modules.admin.getRecruiters);
+  const recruiters = useAdminQuery(api.modules.admin.getRecruiters);
   return {
     recruiters,
     isLoading: recruiters === undefined,
@@ -39,7 +37,7 @@ export const useAdminRecruiters = () => {
 };
 
 export const useAdminRecruiterDetails = (companyId: string) => {
-  const details = useQuery(api.modules.admin.getRecruiterDetails, { companyId: companyId as any });
+  const details = useAdminQuery(api.modules.admin.getRecruiterDetails, { companyId: companyId as any });
   return {
     details,
     isLoading: details === undefined,
@@ -47,7 +45,7 @@ export const useAdminRecruiterDetails = (companyId: string) => {
 };
 
 export const useAdminRecruiterActivityLogs = (companyId: string) => {
-  const logs = useQuery(api.modules.admin.getRecruiterActivityLogs, { companyId: companyId as any });
+  const logs = useAdminQuery(api.modules.admin.getRecruiterActivityLogs, { companyId: companyId as any });
   return {
     logs,
     isLoading: logs === undefined,
@@ -55,7 +53,7 @@ export const useAdminRecruiterActivityLogs = (companyId: string) => {
 };
 
 export const useAdminRecruiterJobDetails = (jobId: string) => {
-  const jobDetails = useQuery(api.modules.admin.getRecruiterJobDetails, { jobId: jobId as any });
+  const jobDetails = useAdminQuery(api.modules.admin.getRecruiterJobDetails, { jobId: jobId as any });
   return {
     jobDetails,
     isLoading: jobDetails === undefined,
@@ -63,6 +61,5 @@ export const useAdminRecruiterJobDetails = (jobId: string) => {
 };
 
 export const useAdminUpdateRecruiterMutation = () => {
-  const mutation = useMutation(api.modules.admin.updateRecruiter);
-  return mutation;
+  return useAdminMutation(api.modules.admin.updateRecruiter);
 };
