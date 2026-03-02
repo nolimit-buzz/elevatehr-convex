@@ -306,8 +306,8 @@ interface Assessment {
 
 interface AssessmentStepProps {
   assessments: Assessment[];
-  selectedAssessment: Assessment | null;
-  handleAssessmentChange: (assessment: Assessment | null) => void;
+  selectedAssessments: Id<"assessments">[];
+  handleAssessmentsChange: (assessmentIds: Id<"assessments">[]) => void;
 }
 
 interface FormData {
@@ -751,10 +751,24 @@ const FormBuilderField: React.FC<FormBuilderFieldProps> = ({
 
 const AssessmentStep: React.FC<AssessmentStepProps> = ({
   assessments,
-  selectedAssessment,
-  handleAssessmentChange,
+  selectedAssessments,
+  handleAssessmentsChange,
 }) => {
   const theme = useTheme();
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [activeAssessment, setActiveAssessment] = useState<Assessment | null>(
+    null,
+  );
+
+  const openDetails = (assessment: Assessment) => {
+    setActiveAssessment(assessment);
+    setDetailsOpen(true);
+  };
+
+  const closeDetails = () => {
+    setDetailsOpen(false);
+    setActiveAssessment(null);
+  };
 
   return (
     <Stack spacing={3} width="100%" padding="28px">
@@ -818,86 +832,127 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
         </Stack>
         <FormControl fullWidth>
           <Select
-            value={selectedAssessment ? selectedAssessment.id : ""}
+            multiple
+            value={selectedAssessments}
             onChange={(e) => {
-              const value = e.target.value;
-              if (!value) {
-                handleAssessmentChange(null);
-                return;
-              }
-              const selected = assessments.find((a) => a.id === value);
-              if (selected) {
-                handleAssessmentChange(selected);
-              }
+              const value = e.target.value as Id<"assessments">[];
+              handleAssessmentsChange(value);
             }}
             displayEmpty
-            renderValue={(value) => {
-              if (!value) return "Select from your list of assessments";
-              const assessment = assessments.find((a) => a.id === value);
-              if (!assessment) return "Select from your list of assessments";
+            renderValue={(selected) => {
+              const selectedIds = selected as Id<"assessments">[];
+              if (!selectedIds || selectedIds.length === 0)
+                return "Select from your list of assessments";
 
-              return (
-                <Stack spacing={0.5} width="100%">
-                  <Typography sx={{ fontWeight: 500 }}>
-                    {assessment.level} {assessment.title}
-                  </Typography>
-                  <Stack direction="row" spacing={1} alignItems="center">
+              const selectedItems = assessments.filter((a) =>
+                selectedIds.includes(a.id as Id<"assessments">),
+              );
+
+              if (selectedItems.length === 0)
+                return "Select from your list of assessments";
+
+              if (selectedItems.length === 1) {
+                const assessment = selectedItems[0];
+                return (
+                  <Stack spacing={0.5} width="100%">
+                    <Typography sx={{ fontWeight: 500 }}>
+                      {assessment.level} {assessment.title}
+                    </Typography>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "rgba(17, 17, 17, 0.68)" }}
+                      >
+                        {assessment.type
+                          ? assessment.type
+                              .replace(/_/g, " ")
+                              .replace(/\b\w/g, (c) => c.toUpperCase())
+                          : ""}
+                      </Typography>
+                    </Stack>
+                    <Stack
+                      direction="row"
+                      spacing={0.5}
+                      flexWrap="wrap"
+                      useFlexGap
+                    >
+                      {assessment.skills
+                        ? (Array.isArray(assessment.skills)
+                            ? assessment.skills
+                            : assessment.skills.split(",")
+                          )
+                            .slice(0, 2)
+                            .map((skill, index) => (
+                              <Chip
+                                key={index}
+                                label={
+                                  typeof skill === "string"
+                                    ? skill.trim()
+                                    : skill
+                                }
+                                size="small"
+                                sx={{
+                                  height: "20px",
+                                  fontSize: "0.75rem",
+                                  backgroundColor: "rgba(68, 68, 226, 0.08)",
+                                  color: "#4444E2",
+                                  "& .MuiChip-label": {
+                                    px: 1,
+                                  },
+                                }}
+                              />
+                            ))
+                        : null}
+                    </Stack>
                     <Typography
                       variant="caption"
-                      sx={{ color: "rgba(17, 17, 17, 0.68)" }}
+                      sx={{
+                        color: "rgba(17, 17, 17, 0.68)",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
                     >
-                      {assessment.type
-                        ? assessment.type
-                            .replace(/_/g, " ")
-                            .replace(/\b\w/g, (c) => c.toUpperCase())
-                        : ""}
+                      {assessment.description}
                     </Typography>
                   </Stack>
-                  <Stack
-                    direction="row"
-                    spacing={0.5}
-                    flexWrap="wrap"
-                    useFlexGap
-                  >
-                    {assessment.skills
-                      ? (Array.isArray(assessment.skills)
-                          ? assessment.skills
-                          : assessment.skills.split(",")
-                        )
-                          .slice(0, 2)
-                          .map((skill, index) => (
-                            <Chip
-                              key={index}
-                              label={
-                                typeof skill === "string" ? skill.trim() : skill
-                              }
-                              size="small"
-                              sx={{
-                                height: "20px",
-                                fontSize: "0.75rem",
-                                backgroundColor: "rgba(68, 68, 226, 0.08)",
-                                color: "#4444E2",
-                                "& .MuiChip-label": {
-                                  px: 1,
-                                },
-                              }}
-                            />
-                          ))
-                      : null}
-                  </Stack>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: "rgba(17, 17, 17, 0.68)",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {assessment.description}
+                );
+              }
+
+              // Multiple selected: show a compact summary
+              return (
+                <Stack spacing={0.5} width="100%">
+                  <Typography sx={{ fontWeight: 500, mb: 0.5 }}>
+                    {selectedItems.length} assessments selected
                   </Typography>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {selectedItems.map((assessment) => (
+                      <Typography
+                        key={assessment.id}
+                        sx={{
+                          fontSize: "0.85rem",
+                          color: "rgba(17, 17, 17, 0.84)",
+                          backgroundColor: "rgba(17, 17, 17, 0.06)",
+                          borderRadius: "8px",
+                          px: 1,
+                          py: 0.25,
+                          cursor: "pointer",
+                          "&:hover": {
+                            backgroundColor: "rgba(17, 17, 17, 0.08)",
+                          },
+                        }}
+                        onClick={(e) => {
+                          // prevent Select from immediately reopening/closing
+                          e.stopPropagation();
+                          openDetails(assessment);
+                        }}
+                      >
+                        {assessment.title}
+                      </Typography>
+                    ))}
+                  </Stack>
                 </Stack>
               );
             }}
@@ -927,35 +982,144 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
                 Select from your list of assessments
               </Typography>
             </MenuItem>
-            {assessments.map((assessment) => (
-              <MenuItem
-                key={assessment.id}
-                value={assessment.id}
-                sx={{
-                  py: 1.5,
-                  px: 2,
-                  "&:hover": {
-                    backgroundColor: "rgba(68, 68, 226, 0.04)",
-                  },
-                  "&.Mui-selected": {
-                    backgroundColor: "rgba(68, 68, 226, 0.08)",
+            {assessments.map((assessment) => {
+              const isSelected = selectedAssessments.includes(
+                assessment.id as Id<"assessments">,
+              );
+              return (
+                <MenuItem
+                  key={assessment.id}
+                  value={assessment.id}
+                  sx={{
+                    py: 1.5,
+                    px: 2,
                     "&:hover": {
-                      backgroundColor: "rgba(68, 68, 226, 0.12)",
+                      backgroundColor: "rgba(68, 68, 226, 0.04)",
                     },
-                  },
-                }}
-              >
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <Checkbox></Checkbox>
-                  <Typography>
-                    {assessment.level} {assessment.title}
-                  </Typography>
-                </Stack>
-              </MenuItem>
-            ))}
+                    "&.Mui-selected": {
+                      backgroundColor: "rgba(68, 68, 226, 0.08)",
+                      "&:hover": {
+                        backgroundColor: "rgba(68, 68, 226, 0.12)",
+                      },
+                    },
+                  }}
+                >
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Checkbox checked={isSelected} />
+                    <Typography>
+                      {assessment.level} {assessment.title}
+                    </Typography>
+                  </Stack>
+                </MenuItem>
+              );
+            })}
           </Select>
         </FormControl>
       </Stack>
+
+      {/* Assessment Details Dialog */}
+      <Dialog
+        open={detailsOpen}
+        onClose={closeDetails}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: "12px",
+            maxWidth: "520px",
+          },
+        }}
+      >
+        <Box sx={{ position: "relative" }}>
+          <IconButton
+            onClick={closeDetails}
+            sx={{
+              position: "absolute",
+              right: 8,
+              top: 8,
+              color: "rgba(17, 17, 17, 0.6)",
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+          <DialogTitle
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+              gap: 1,
+              color: "rgba(17, 17, 17, 0.92)",
+              fontSize: "20px",
+              fontWeight: 600,
+              py: 3,
+              px: 4,
+            }}
+          >
+            {activeAssessment
+              ? `${activeAssessment.level || ""} ${activeAssessment.title}`
+              : "Assessment details"}
+            {activeAssessment?.type && (
+              <Typography
+                variant="body2"
+                sx={{ color: "rgba(17, 17, 17, 0.68)" }}
+              >
+                {activeAssessment.type
+                  .replace(/_/g, " ")
+                  .replace(/\b\w/g, (c) => c.toUpperCase())}
+              </Typography>
+            )}
+          </DialogTitle>
+        </Box>
+        <DialogContent sx={{ pt: 1, pb: 3, px: 4 }}>
+          {activeAssessment && (
+            <Stack spacing={2}>
+              {activeAssessment.skills && (
+                <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                  {(Array.isArray(activeAssessment.skills)
+                    ? activeAssessment.skills
+                    : activeAssessment.skills.split(",")
+                  ).map((skill, index) => (
+                    <Chip
+                      key={index}
+                      label={typeof skill === "string" ? skill.trim() : skill}
+                      size="small"
+                      sx={{
+                        height: "22px",
+                        fontSize: "0.75rem",
+                        backgroundColor: "rgba(68, 68, 226, 0.08)",
+                        color: "#4444E2",
+                        "& .MuiChip-label": {
+                          px: 1,
+                        },
+                      }}
+                    />
+                  ))}
+                </Stack>
+              )}
+              {activeAssessment.description && (
+                <Typography
+                  variant="body2"
+                  sx={{ color: "rgba(17, 17, 17, 0.8)" }}
+                >
+                  {activeAssessment.description}
+                </Typography>
+              )}
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 4, pb: 3 }}>
+          <Button
+            onClick={closeDetails}
+            variant="contained"
+            sx={{
+              borderRadius: "8px",
+              textTransform: "none",
+            }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 };
@@ -998,8 +1162,6 @@ const AboutTheJob = () => {
     customFieldsRef.current = customFields;
   }, [customFields]);
   const [currentStep, setCurrentStep] = useState(1);
-  const [selectedAssessment, setSelectedAssessment] =
-    useState<Assessment | null>(null);
   const [showDialog, setShowDialog] = useState(false);
   const [jobUrl, setJobUrl] = useState("");
   const [notification, setNotification] = useState<{
@@ -1152,55 +1314,7 @@ const AboutTheJob = () => {
     }
   }, [convexAssessments]);
 
-  // Set selected assessment when either assessments or job data is loaded
-  useEffect(() => {
-    // Check if we have assessments, an assessment ID, and no currently selected assessment
-    if (
-      assessments.length > 0 &&
-      formData.assessments &&
-      formData.assessments.length > 0 &&
-      !selectedAssessment
-    ) {
-      const assessmentId = formData.assessments[0];
-      const assessment = assessments.find((a) => a.id === assessmentId);
-      if (assessment) {
-        setSelectedAssessment(assessment);
-      }
-    }
-  }, [assessments, formData.assessments, selectedAssessment]);
-
-  // Ensure assessment is selected when user navigates to assessment step
-  useEffect(() => {
-    if (
-      currentStep === 3 &&
-      assessments.length > 0 &&
-      formData.assessments &&
-      formData.assessments.length > 0 &&
-      !selectedAssessment
-    ) {
-      const assessmentId = formData.assessments[0];
-      const assessment = assessments.find((a) => a.id === assessmentId);
-      if (assessment) {
-        setSelectedAssessment(assessment);
-      }
-    }
-  }, [currentStep, assessments, formData.assessments, selectedAssessment]);
-
-  // Initial check for assessment when component mounts
-  useEffect(() => {
-    if (
-      assessments.length > 0 &&
-      formData.assessments &&
-      formData.assessments.length > 0 &&
-      !selectedAssessment
-    ) {
-      const assessmentId = formData.assessments[0];
-      const assessment = assessments.find((a) => a.id === assessmentId);
-      if (assessment) {
-        setSelectedAssessment(assessment);
-      }
-    }
-  }, []); // Empty dependency array - runs only once
+  // formData.assessments already tracks selected assessment IDs
 
   const handleChange = (field: string, value: string) => {
     setFormData((prevData) => ({
@@ -1381,12 +1495,10 @@ const AboutTheJob = () => {
     });
   };
 
-  const handleAssessmentChange = (assessment: Assessment | null) => {
-    setSelectedAssessment(assessment);
-    // Also update the formData to keep it in sync
+  const handleAssessmentsChange = (assessmentIds: Id<"assessments">[]) => {
     setFormData((prev) => ({
       ...prev,
-      assessments: assessment ? [assessment.id as Id<"assessments">] : [],
+      assessments: assessmentIds,
     }));
   };
 
@@ -1560,9 +1672,10 @@ const AboutTheJob = () => {
             parseInt(formData.salary_max.replace(/,/g, "")) || undefined,
           skills: formData.skills,
           experience_level: formData.level,
-          assessments: selectedAssessment
-            ? [selectedAssessment.id as Id<"assessments">]
-            : undefined,
+          assessments:
+            formData.assessments && formData.assessments.length > 0
+              ? (formData.assessments as Id<"assessments">[])
+              : undefined,
           application_form: {
             required_fields: transformedRequiredFields,
             custom_fields: transformedCustomFields,
@@ -2053,8 +2166,10 @@ const AboutTheJob = () => {
         return (
           <AssessmentStep
             assessments={assessments}
-            selectedAssessment={selectedAssessment}
-            handleAssessmentChange={handleAssessmentChange}
+            selectedAssessments={
+              (formData.assessments as Id<"assessments">[]) || []
+            }
+            handleAssessmentsChange={handleAssessmentsChange}
           />
         );
       default:
