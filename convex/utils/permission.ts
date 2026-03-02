@@ -64,7 +64,6 @@ export const adminQuery = customQuery(baseQuery, {
   args: { token: v.optional(v.string()) },
   input: async (ctx, { token }) => {
     const user = await getUserFromToken(ctx, token);
-    console.log("Admin Mutation - User from token:", user);
     if (!user || user.role !== "admin") {
       throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
     }
@@ -76,7 +75,7 @@ export const adminMutation = customMutation(baseMutation, {
   args: { token: v.optional(v.string()) },
   input: async (ctx, { token }) => {
     const user = await getUserFromToken(ctx, token);
-    console.log("Admin Mutation - User from token:", user);
+
     if (!user || user.role !== "admin") {
       throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
     }
