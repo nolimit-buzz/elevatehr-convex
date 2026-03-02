@@ -5,7 +5,7 @@ import { ConvexError } from "convex/values";
 
 export function useAuthedQuery<Query extends FunctionReference<"query">>(
   query: Query,
-  args?: Parameters<typeof useBaseQuery<Query>>[1]
+  args?: Parameters<typeof useBaseQuery<Query>>[1],
 ) {
   const token = typeof window !== "undefined" ? localStorage.getItem(DefaultConstants.tokenName) : null;
 
@@ -52,7 +52,7 @@ export function useAuthedAction<Action extends FunctionReference<"action">>(acti
 
 export function useAdminQuery<Query extends FunctionReference<"query">>(
   query: Query,
-  args?: Parameters<typeof useBaseQuery<Query>>[1]
+  args?: Parameters<typeof useBaseQuery<Query>>[1],
 ) {
   const token = typeof window !== "undefined" ? localStorage.getItem(DefaultConstants.tokenName) : null;
 
@@ -68,10 +68,8 @@ export function useAdminMutation<Mutation extends FunctionReference<"mutation">>
 
   return (args?: Parameters<MutationFn>[0]) => {
     const currentToken = typeof window !== "undefined" ? localStorage.getItem(DefaultConstants.tokenName) : null;
+    if (!currentToken) return Promise.reject(new Error("Not authenticated"));
 
-    if (!currentToken) {
-      return Promise.reject(new Error("Not authenticated"));
-    }
     const argsWithToken = { ...(args || {}), token: currentToken };
     // @ts-expect-error - Token injection modifies the args type
     return baseMutation(argsWithToken);

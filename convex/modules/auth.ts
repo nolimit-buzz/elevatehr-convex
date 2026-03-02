@@ -63,11 +63,11 @@ export const AdminLogin = mutation({
   },
   handler: async (ctx, { email, password }) => {
     const user = await ctx.db
-      .query("users")
+      .query("admins")
       .withIndex("by_email", (q) => q.eq("email", email))
       .first();
 
-    if (!user || user.role !== "admin") throw new ConvexError({ message: Constants.ERROR.WRONG_USER, code: 401 });
+    if (!user) throw new ConvexError({ message: Constants.ERROR.WRONG_USER, code: 401 });
 
     const validPassword = verifyPassword({ password, hashedPassword: user.password });
     if (!validPassword) throw new ConvexError({ message: Constants.ERROR.WRONG_USER, code: 401 });
@@ -142,14 +142,14 @@ export const CreateAdmin = mutation({
   args: UserSchema.omit("is_active", "role"),
   handler: async (ctx, args) => {
     const existing = await ctx.db
-      .query("users")
+      .query("admins")
       .withIndex("by_email", (q) => q.eq("email", args.email))
       .first();
 
     if (existing) throw new ConvexError({ message: Constants.ERROR.ALREADY_EXIST, code: 409 });
 
     args.password = hashPassword(args.password);
-    const newAdmin = await ctx.db.insert("users", {
+    const newAdmin = await ctx.db.insert("admins", {
       ...args,
       is_active: true,
       role: "admin",

@@ -11,6 +11,7 @@ import { AdminEmailTemplateSchema } from "./modules/admin/emailTemplates";
 
 export default defineSchema({
   users: defineTable(UserSchema).index("by_email", ["email"]),
+  admins: defineTable(UserSchema).index("by_email", ["email"]),
   companies: defineTable(CompanySchema).index("by_company_name", ["company_name"]),
   jobs: defineTable(JobSchema)
     .index("by_company", ["company_id"])
