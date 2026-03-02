@@ -61,3 +61,8 @@ export const useAdminRecruiterJobDetails = (jobId: string) => {
     isLoading: jobDetails === undefined,
   };
 };
+
+export const useAdminUpdateRecruiterMutation = () => {
+  const mutation = useMutation(api.modules.admin.updateRecruiter);
+  return mutation;
+};

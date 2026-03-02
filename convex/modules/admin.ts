@@ -571,3 +571,76 @@ export const generateCompanyLogoUploadUrl = adminMutation({
     return await ctx.storage.generateUploadUrl();
   },
 });
+
+// Admin mutation to update a recruiter's company and primary admin details
+export const updateRecruiter = adminMutation({
+  args: {
+    companyId: v.id("companies"),
+    company: v.object({
+      company_name: v.optional(v.string()),
+      company_website: v.optional(v.string()),
+      number_of_employees: v.optional(v.string()),
+      about_company: v.optional(v.string()),
+      booking_link: v.optional(v.string()),
+    }),
+    user: v.object({
+      first_name: v.optional(v.string()),
+      last_name: v.optional(v.string()),
+      email: v.optional(v.string()),
+      job_title: v.optional(v.string()),
+      phone_number: v.optional(v.string()),
+      password: v.optional(v.string()),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const company = await ctx.db.get(args.companyId);
+    if (!company) throw new ConvexError({ message: "Company not found", code: 404 });
+
+    const companyPatch: Partial<{
+      company_name: string;
+      company_website: string;
+      number_of_employees: string;
+      about_company: string;
+      booking_link: string;
+    }> = {};
+    if (args.company.company_name !== undefined) companyPatch.company_name = args.company.company_name;
+    if (args.company.company_website !== undefined) companyPatch.company_website = args.company.company_website;
+    if (args.company.number_of_employees !== undefined)
+      companyPatch.number_of_employees = args.company.number_of_employees;
+    if (args.company.about_company !== undefined) companyPatch.about_company = args.company.about_company;
+    if (args.company.booking_link !== undefined) companyPatch.booking_link = args.company.booking_link;
+
+    if (Object.keys(companyPatch).length > 0) {
+      await ctx.db.patch(args.companyId, companyPatch);
+    }
+
+    const primaryAdmin = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("company_id"), args.companyId))
+      .order("asc")
+      .first();
+
+    if (primaryAdmin) {
+      const userPatch: Partial<{
+        first_name: string;
+        last_name: string;
+        email: string;
+        job_title: string;
+        phone_number: string;
+        password: string;
+      }> = {};
+      if (args.user.first_name !== undefined) userPatch.first_name = args.user.first_name;
+      if (args.user.last_name !== undefined) userPatch.last_name = args.user.last_name;
+      if (args.user.email !== undefined) userPatch.email = args.user.email;
+      if (args.user.job_title !== undefined) userPatch.job_title = args.user.job_title;
+      if (args.user.phone_number !== undefined) userPatch.phone_number = args.user.phone_number;
+      if (args.user.password) userPatch.password = hashPassword(args.user.password);
+
+      if (Object.keys(userPatch).length > 0) {
+        await ctx.db.patch(primaryAdmin._id, userPatch);
+      }
+    }
+
+    return { success: true };
+  },
+});

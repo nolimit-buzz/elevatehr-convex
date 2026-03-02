@@ -15,6 +15,7 @@ import {
 import { ArrowUpTrayIcon } from "@heroicons/react/24/outline";
 import type { MockRecruiter } from "../mock-data";
 import type { NewRecruiterPayload } from "./NewRecruiterModal";
+import { useAdminUpdateRecruiterMutation } from "@/queries/admin.queries";
 
 type Props = {
   open: boolean;
@@ -47,6 +48,8 @@ const buildInitialValues = (recruiter: any): EditableRecruiter => {
 
 export default function EditRecruiterModal({ open, onClose, recruiter }: Props) {
   const [values, setValues] = useState<EditableRecruiter>(() => buildInitialValues(recruiter));
+  const [isSaving, setIsSaving] = useState(false);
+  const updateRecruiter = useAdminUpdateRecruiterMutation();
 
   useEffect(() => {
     if (open) {
@@ -64,12 +67,34 @@ export default function EditRecruiterModal({ open, onClose, recruiter }: Props) 
     setValues((prev) => ({ ...prev, company_logo: file }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Placeholder until wired to backend
-    // Here we would call a mutation to persist changes
-    console.log("Updated recruiter profile", recruiter.id, values);
-    onClose();
+    setIsSaving(true);
+    try {
+      await updateRecruiter({
+        companyId: recruiter.id as any,
+        company: {
+          company_name: values.company_name || undefined,
+          company_website: values.company_website || undefined,
+          number_of_employees: values.number_of_employees || undefined,
+          about_company: values.about_company || undefined,
+          booking_link: values.booking_link || undefined,
+        },
+        user: {
+          first_name: values.first_name || undefined,
+          last_name: values.last_name || undefined,
+          email: values.email || undefined,
+          job_title: values.job_title || undefined,
+          phone_number: values.phone_number || undefined,
+          password: values.password || undefined,
+        },
+      });
+      onClose();
+    } catch (err) {
+      console.error("Failed to update recruiter", err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -279,10 +304,11 @@ export default function EditRecruiterModal({ open, onClose, recruiter }: Props) 
         <Button
           type="submit"
           variant="contained"
+          disabled={isSaving}
           sx={{ textTransform: "none", fontWeight: 600 }}
           onClick={handleSubmit}
         >
-          Save changes
+          {isSaving ? "Saving…" : "Save changes"}
         </Button>
       </DialogActions>
     </Dialog>
