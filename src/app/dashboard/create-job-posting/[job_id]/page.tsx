@@ -855,67 +855,26 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
                 const assessment = selectedItems[0];
                 return (
                   <Stack spacing={0.5} width="100%">
-                    <Typography sx={{ fontWeight: 500 }}>
-                      {assessment.level} {assessment.title}
-                    </Typography>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Typography
-                        variant="caption"
-                        sx={{ color: "rgba(17, 17, 17, 0.68)" }}
-                      >
-                        {assessment.type
-                          ? assessment.type
-                              .replace(/_/g, " ")
-                              .replace(/\b\w/g, (c) => c.toUpperCase())
-                          : ""}
-                      </Typography>
-                    </Stack>
-                    <Stack
-                      direction="row"
-                      spacing={0.5}
-                      flexWrap="wrap"
-                      useFlexGap
-                    >
-                      {assessment.skills
-                        ? (Array.isArray(assessment.skills)
-                            ? assessment.skills
-                            : assessment.skills.split(",")
-                          )
-                            .slice(0, 2)
-                            .map((skill, index) => (
-                              <Chip
-                                key={index}
-                                label={
-                                  typeof skill === "string"
-                                    ? skill.trim()
-                                    : skill
-                                }
-                                size="small"
-                                sx={{
-                                  height: "20px",
-                                  fontSize: "0.75rem",
-                                  backgroundColor: "rgba(68, 68, 226, 0.08)",
-                                  color: "#4444E2",
-                                  "& .MuiChip-label": {
-                                    px: 1,
-                                  },
-                                }}
-                              />
-                            ))
-                        : null}
-                    </Stack>
                     <Typography
-                      variant="caption"
                       sx={{
-                        color: "rgba(17, 17, 17, 0.68)",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
+                        fontSize: "0.85rem",
+                        color: "rgba(17, 17, 17, 0.84)",
+                        backgroundColor: "rgba(17, 17, 17, 0.06)",
+                        borderRadius: "8px",
+                        px: 1,
+                        py: 0.25,
+                        cursor: "pointer",
+                        width: "fit-content",
+                        "&:hover": {
+                          backgroundColor: "rgba(17, 17, 17, 0.08)",
+                        },
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openDetails(assessment);
                       }}
                     >
-                      {assessment.description}
+                      {assessment.level} {assessment.title}
                     </Typography>
                   </Stack>
                 );
@@ -938,6 +897,8 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
                           borderRadius: "8px",
                           px: 1,
                           py: 0.25,
+                          mr: 0.5,
+                          mb: 0.5,
                           cursor: "pointer",
                           "&:hover": {
                             backgroundColor: "rgba(17, 17, 17, 0.08)",
@@ -971,8 +932,20 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
             }}
             MenuProps={{
               PaperProps: {
-                style: {
+                sx: {
                   maxWidth: 500,
+                  borderRadius: "12px",
+                  boxShadow: "0 12px 30px rgba(15, 23, 42, 0.18)",
+                  "&::-webkit-scrollbar": {
+                    width: "4px",
+                  },
+                  "&::-webkit-scrollbar-track": {
+                    backgroundColor: "transparent",
+                  },
+                  "&::-webkit-scrollbar-thumb": {
+                    backgroundColor: "rgba(15, 23, 42, 0.22)",
+                    borderRadius: "999px",
+                  },
                 },
               },
             }}
@@ -993,6 +966,8 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
                   sx={{
                     py: 1.5,
                     px: 2,
+                    mb: 1,
+                    alignItems: "flex-start",
                     "&:hover": {
                       backgroundColor: "rgba(68, 68, 226, 0.04)",
                     },
@@ -1004,11 +979,78 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({
                     },
                   }}
                 >
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Checkbox checked={isSelected} />
-                    <Typography>
-                      {assessment.level} {assessment.title}
-                    </Typography>
+                  <Stack direction="row" spacing={1.5} alignItems="flex-start">
+                    <Checkbox
+                      size="small"
+                      checked={isSelected}
+                      sx={{
+                        mt: 0.5,
+                        p: 0,
+                        "& .MuiSvgIcon-root": {
+                          fontSize: 18,
+                        },
+                      }}
+                    />
+                    <Stack spacing={0.5} width="100%">
+                      <Typography sx={{ fontWeight: 500 }}>
+                        {assessment.level} {assessment.title}
+                      </Typography>
+                      {assessment.type && (
+                        <Typography
+                          variant="caption"
+                          sx={{ color: "rgba(17, 17, 17, 0.68)" }}
+                        >
+                          {assessment.type
+                            .replace(/_/g, " ")
+                            .replace(/\b\w/g, (c) => c.toUpperCase())}
+                        </Typography>
+                      )}
+                      {assessment.skills && (
+                        <Stack
+                          direction="row"
+                          spacing={0.5}
+                          flexWrap="wrap"
+                          useFlexGap
+                        >
+                          {(Array.isArray(assessment.skills)
+                            ? assessment.skills
+                            : assessment.skills.split(",")
+                          )
+                            .slice(0, 3)
+                            .map((skill, index) => (
+                              <Chip
+                                key={index}
+                                label={
+                                  typeof skill === "string"
+                                    ? skill.trim()
+                                    : skill
+                                }
+                                size="small"
+                                sx={{
+                                  height: "20px",
+                                  fontSize: "0.75rem",
+                                  backgroundColor: "rgba(68, 68, 226, 0.08)",
+                                  color: "#4444E2",
+                                  "& .MuiChip-label": {
+                                    px: 1,
+                                  },
+                                }}
+                              />
+                            ))}
+                        </Stack>
+                      )}
+                      {assessment.description && (
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "rgba(17, 17, 17, 0.68)",
+                            whiteSpace: "normal",
+                          }}
+                        >
+                          {assessment.description}
+                        </Typography>
+                      )}
+                    </Stack>
                   </Stack>
                 </MenuItem>
               );
