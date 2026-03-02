@@ -71,7 +71,16 @@ export default function AdminSidebar() {
 
   return (
     <SidebarRoot>
-      <Box sx={{ p: 2.5, borderBottom: "1px solid", borderColor: "divider", display: "flex", alignItems: "center", gap: 1.5 }}>
+      <Box
+        sx={{
+          p: 2.5,
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+        }}
+      >
         <Box
           sx={{
             width: 36,
@@ -93,20 +102,11 @@ export default function AdminSidebar() {
       <Box sx={{ py: 2, px: 1.5 }}>
         <List sx={{ pt: 0 }}>
           {navItems.map((item) => {
-            const isSelected =
-              pathname === item.href ||
-              (item.href !== "/admin" && pathname.startsWith(item.href));
+            const isSelected = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
             return (
-              <NavItem
-                key={item.href}
-                selected={isSelected}
-                onClick={() => router.push(item.href)}
-              >
+              <NavItem key={item.href} selected={isSelected} onClick={() => router.push(item.href)}>
                 <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>{item.icon}</ListItemIcon>
-                <ListItemText
-                  primary={item.label}
-                  primaryTypographyProps={{ fontWeight: 500, fontSize: "0.875rem" }}
-                />
+                <ListItemText primary={item.label} primaryTypographyProps={{ fontWeight: 500, fontSize: "0.875rem" }} />
               </NavItem>
             );
           })}
@@ -224,12 +224,16 @@ export default function AdminSidebar() {
           gap: 1.5,
         }}
       >
-        <Avatar sx={{ width: 36, height: 36, bgcolor: "primary.main", fontSize: "0.875rem" }}>
-          AD
-        </Avatar>
+        <Avatar sx={{ width: 36, height: 36, bgcolor: "primary.main", fontSize: "0.875rem" }}>AD</Avatar>
         <Box>
-          <Typography variant="caption" fontWeight={700} color="text.secondary" display="block" sx={{ letterSpacing: "0.05em" }}>
-            SUPER ADMIN
+          <Typography
+            variant="caption"
+            fontWeight={700}
+            color="text.secondary"
+            display="block"
+            sx={{ letterSpacing: "0.05em" }}
+          >
+            ADMIN
           </Typography>
           <Typography variant="caption" color="text.secondary">
             SaaS Reseller

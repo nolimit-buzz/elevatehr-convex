@@ -81,11 +81,6 @@ export const adminMutation = customMutation(baseMutation, {
   },
 });
 
-export const isSuperAdmin = (user: Doc<"users"> | null) => {
-  if (!user || user.role !== "super") throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
-  return true;
-};
-
 export const isAdmin = (user: Doc<"users"> | null) => {
   if (!user || user.role !== "admin") throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
   return true;

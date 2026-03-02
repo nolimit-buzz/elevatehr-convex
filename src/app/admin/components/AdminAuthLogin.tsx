@@ -2,7 +2,9 @@
 import React, { useState } from "react";
 import { Box, Stack, Button, CircularProgress, Alert } from "@mui/material";
 import CustomTextField from "@/app/dashboard/components/forms/theme-elements/CustomTextField";
-import { AuthQueries } from "@/queries/auth.queries";
+import { useMutation } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
+import { useConvexResponse } from "@/app/convex.setup";
 import { DefaultConstants } from "@/app/constants/defaults";
 
 interface AdminAuthLoginProps {
@@ -10,7 +12,7 @@ interface AdminAuthLoginProps {
 }
 
 export default function AdminAuthLogin({ onSuccess }: AdminAuthLoginProps) {
-  const { Login } = AuthQueries();
+  const adminLoginMutation = useMutation(api.modules.auth.AdminLogin);
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
@@ -52,15 +54,11 @@ export default function AdminAuthLogin({ onSuccess }: AdminAuthLoginProps) {
 
     setLoading(true);
 
-    const { result, error } = await Login({ email: formData.email, password: formData.password }).finally(() =>
-      setLoading(false),
-    );
+    const { result, error } = await useConvexResponse(
+      adminLoginMutation({ email: formData.email, password: formData.password }),
+    ).finally(() => setLoading(false));
 
     if (error) return setErrorMessage(error || "Login failed. Please try again.");
-
-    if (result?.personalInfo?.role !== "admin") {
-      return setErrorMessage("Access denied. Admin account required.");
-    }
 
     if (result?.token) {
       localStorage.setItem(DefaultConstants.tokenName, result.token);
@@ -69,7 +67,6 @@ export default function AdminAuthLogin({ onSuccess }: AdminAuthLoginProps) {
         "userProfile",
         JSON.stringify({
           personalInfo: result?.personalInfo,
-          companyInfo: result?.companyInfo,
           notifications: result?.notifications,
         }),
       );

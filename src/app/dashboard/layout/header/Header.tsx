@@ -200,7 +200,7 @@ const Header = () => {
       const userProfileStr = localStorage.getItem("userProfile");
       if (userProfileStr) {
         const userProfile = JSON.parse(userProfileStr);
-        setIsSuperAdmin(userProfile.personalInfo?.role === "super");
+        setIsSuperAdmin(userProfile.personalInfo?.role === "admin");
       }
     } catch {
       // ignore

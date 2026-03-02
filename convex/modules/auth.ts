@@ -56,32 +56,36 @@ export const Login = mutation({
   },
 });
 
-export const CreateSuper = mutation({
-  args: UserSchema.omit("is_active", "company_id", "role"),
-  handler: async (ctx, args) => {
-    const hasSuper = await ctx.db
-      .query("users")
-      .filter((q) => q.eq(q.field("role"), "super"))
-      .first();
-
-    if (hasSuper) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
-
+export const AdminLogin = mutation({
+  args: {
+    email: v.string(),
+    password: v.string(),
+  },
+  handler: async (ctx, { email, password }) => {
     const user = await ctx.db
       .query("users")
-      .filter((q) => q.eq(q.field("email"), args.email))
+      .withIndex("by_email", (q) => q.eq("email", email))
       .first();
 
-    if (user) throw new ConvexError({ message: Constants.ERROR.CREATE_ERROR, code: 401 });
+    if (!user || user.role !== "admin") throw new ConvexError({ message: Constants.ERROR.WRONG_USER, code: 401 });
 
-    args.password = hashPassword(args.password);
-    const newUser = await ctx.db.insert("users", {
-      ...args,
-      is_active: true,
-      role: "super",
-    });
+    const validPassword = verifyPassword({ password, hashedPassword: user.password });
+    if (!validPassword) throw new ConvexError({ message: Constants.ERROR.WRONG_USER, code: 401 });
 
-    if (!newUser) throw new ConvexError({ message: Constants.ERROR.CREATE_ERROR, code: 401 });
-    return { message: "Super Admin Created" };
+    const userPayload = {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      company_id: user.company_id,
+    };
+
+    const token = await generateToken(userPayload);
+    const { password: _, ...userWithoutPassword } = user;
+    return {
+      token,
+      personalInfo: userWithoutPassword,
+      notifications: {},
+    };
   },
 });
 

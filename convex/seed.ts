@@ -3,5 +3,5 @@ const adminUser = {
   first_name: "Segun",
   last_name: "Olamide",
   password: "segunolamide71@yahoo.com",
-  role: "super",
+  role: "admin",
 };

@@ -5,7 +5,7 @@ export const UserSchema = v.object({
   last_name: v.string(),
   email: v.string(),
   password: v.string(),
-  role: v.union(v.literal("admin"), v.literal("super")),
+  role: v.literal("admin"),
   job_title: v.optional(v.string()),
   phone_number: v.optional(v.string()),
   company_id: v.optional(v.id("companies")),
