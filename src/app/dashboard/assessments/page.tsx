@@ -660,7 +660,7 @@ export default function AssessmentsPage() {
         open={selectTypeOpen}
         onClose={() => setSelectTypeOpen(false)}
         maxWidth="xs"
-        slotProps={{ backdrop: { sx: { backgroundColor: "rgba(0, 0, 0, 0.4)", backdropFilter: "blur(0.4px)" } } }}
+        slotProps={{ backdrop: { sx: { backgroundColor: "rgba(17, 17, 17, 0.32)", backdropFilter: "blur(4px)" } } }}
         PaperProps={{ sx: { borderRadius: "20px", p: 0, bgcolor: "rgba(241, 244, 249, 1)" } }}
       >
         <DialogContent sx={{ p: { xs: 3, md: 4 }, position: "relative", bgcolor: "rgba(241, 244, 249, 1)", minWidth: { xs: 320, md: 400 } }}>
@@ -807,7 +807,7 @@ export default function AssessmentsPage() {
         open={deleteDialogOpen}
         onClose={handleDeleteCancel}
         maxWidth="xs"
-        slotProps={{ backdrop: { sx: { backgroundColor: "rgba(0, 0, 0, 0.4)", backdropFilter: "blur(0.4px)" } } }}
+        slotProps={{ backdrop: { sx: { backgroundColor: "rgba(17, 17, 17, 0.32)", backdropFilter: "blur(4px)" } } }}
         PaperProps={{ sx: { borderRadius: "20px", p: 0, bgcolor: "rgba(241, 244, 249, 1)" } }}
       >
         <DialogContent sx={{ p: { xs: 3, md: 4 }, position: "relative", bgcolor: "rgba(241, 244, 249, 1)", minWidth: { xs: 320, md: 400 } }}>

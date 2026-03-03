@@ -33,8 +33,8 @@ export default function AssessmentSuccessModal({
       slotProps={{
         backdrop: {
           sx: { 
-            backgroundColor: "rgba(0, 0, 0, 0.4)",
-            backdropFilter: "blur(0.4px)",
+            backgroundColor: "rgba(17, 17, 17, 0.32)",
+            backdropFilter: "blur(4px)",
           },
         },
       }}
