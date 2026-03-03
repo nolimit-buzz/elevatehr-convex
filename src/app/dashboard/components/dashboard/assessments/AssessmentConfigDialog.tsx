@@ -96,13 +96,17 @@ export default function AssessmentConfigDialog({
           minWidth: { xs: 320, md: 600 },
           maxHeight: "90vh",
           overflowY: "auto",
+          scrollbarWidth: "none",
+          "&::-webkit-scrollbar": { width: "0.1px" },
+          "&::-webkit-scrollbar-track": { background: "transparent" },
+          "&::-webkit-scrollbar-thumb": { background: "transparent" },
         }}
       >
         <IconButton
           onClick={onClose}
-          sx={{ position: "absolute", top: 24, right: 24, zIndex: 1 }}
+          sx={{ position: "absolute", top: 10, right: 16, zIndex: 1,bgcolor:"rgba(235, 235, 235, 1)",borderRadius:"50%",width:"30px",height:"30px" }}
         >
-          <CloseIcon sx={{ fontSize: 28, color: "rgba(17, 17, 17, 0.32)" }} />
+          <CloseIcon sx={{ fontSize: 14, color: "rgba(17, 17, 17, 0.84)" }} />
         </IconButton>
         <Typography
           sx={{

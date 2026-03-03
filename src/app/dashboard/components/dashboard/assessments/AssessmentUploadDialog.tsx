@@ -6,12 +6,11 @@ import {
   IconButton,
   Typography,
   Stack,
+  Box,
   Button,
   LinearProgress,
-  Box,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import AssessmentCancelModal from "./AssessmentCancelModal";
 
 interface AssessmentUploadDialogProps {
   open: boolean;
@@ -31,23 +30,7 @@ export default function AssessmentUploadDialog({
   importRows,
   importing,
   importProgress,
-  onImport,
-  onCancelImport,
 }: AssessmentUploadDialogProps) {
-  const [showCancelModal, setShowCancelModal] = React.useState(false);
-
-  const handleCloseClick = () => {
-    if (importing) {
-      setShowCancelModal(true);
-    } else {
-      onClose();
-    }
-  };
-
-  const handleConfirmCancel = () => {
-    setShowCancelModal(false);
-    onCancelImport();
-  };
   return (
     <Dialog
       open={open}
@@ -65,7 +48,8 @@ export default function AssessmentUploadDialog({
         sx: {
           borderRadius: "8px",
           p: 0,
-          maxWidth: "720px",
+          maxWidth: "600px",
+          width: "100%",
           bgcolor: "rgba(241, 244, 249, 1)",
         },
       }}
@@ -75,20 +59,20 @@ export default function AssessmentUploadDialog({
           p: { xs: 3, md: 4 },
           position: "relative",
           bgcolor: "rgba(241, 244, 249, 1)",
-          minWidth: { xs: 320, md: 720 },
+          minWidth: { xs: 320, md: 600 },
           width: "100%",
         }}
       >
         <IconButton
-          onClick={handleCloseClick}
-          sx={{ position: "absolute", top: 20, right: 20, zIndex: 1 }}
+          onClick={onClose}
+          sx={{ position: "absolute", top: 10, right: 16, zIndex: 1, bgcolor: "rgba(235, 235, 235, 1)", borderRadius: "50%", width: "30px", height: "30px" }}
         >
-          <CloseIcon sx={{ fontSize: 28, color: "rgba(17, 17, 17, 0.32)" }} />
+          <CloseIcon sx={{ fontSize: 14, color: "rgba(17, 17, 17, 0.84)" }} />
         </IconButton>
 
         <Typography
           sx={{
-             fontSize: 20,
+            fontSize: 20,
             color: "rgba(17, 17, 17, 0.92)",
             fontWeight: 600,
             mb: 3,
@@ -97,31 +81,31 @@ export default function AssessmentUploadDialog({
           Upload assessment file
         </Typography>
 
-        {importFile && importRows.length > 0 && (
+        {importFile && (
           <Stack mt={3} spacing={1.5}>
             <Typography
-                sx={{ fontSize: 14, color: "rgba(34, 34, 79, 0.72)", width: "100%", fontWeight: 400  }}
+              sx={{ fontSize: 14, color: "rgba(34, 34, 79, 0.72)", fontWeight: 400 }}
             >
-              Ready to import: {importRows.length} rows from {importFile.name}
+              File selected: <strong>{importFile.name}</strong>
+              {importRows.length > 0 && <> — {importRows.length} rows detected</>}
             </Typography>
             <Button
               variant="contained"
-              onClick={onImport}
-              disabled={importing}
+              onClick={() => {}}
               sx={{
                 bgcolor: "#4444E2",
-                borderRadius: "12px",
+                borderRadius: "8px",
                 textTransform: "none",
+                fontWeight: 600,
                 py: 1.25,
-                "&:hover": { bgcolor: "#5656E6" },
                 alignSelf: "flex-start",
+                "&:hover": { bgcolor: "#5656E6" },
               }}
             >
-              {importing
-                ? `Importing ${importProgress.done}/${importProgress.total}`
-                : "Import assessments"}
+              Upload Assessment
             </Button>
 
+            {/* Progress bar — shown when import is externally triggered */}
             {importing && (
               <Box sx={{ width: "100%", mt: 1 }}>
                 <LinearProgress
@@ -147,13 +131,13 @@ export default function AssessmentUploadDialog({
             )}
           </Stack>
         )}
-      </DialogContent>
 
-      <AssessmentCancelModal
-        open={showCancelModal}
-        onClose={() => setShowCancelModal(false)}
-        onConfirm={handleConfirmCancel}
-      />
+        {!importFile && (
+          <Typography sx={{ fontSize: 14, color: "rgba(34, 34, 79, 0.48)", fontWeight: 400 }}>
+            No file selected yet.
+          </Typography>
+        )}
+      </DialogContent>
     </Dialog>
   );
 }
