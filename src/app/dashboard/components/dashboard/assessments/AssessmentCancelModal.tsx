@@ -25,16 +25,25 @@ export default function AssessmentCancelModal({
     <Dialog
       open={open}
       onClose={onClose}
+      slotProps={{
+        backdrop: {
+          sx: { 
+            backgroundColor: "rgba(0, 0, 0, 0.4)",
+            backdropFilter: "blur(0.4px)",
+          },
+        },
+      }}
       PaperProps={{
         sx: {
           borderRadius: "12px",
           width: "100%",
           maxWidth: "420px",
           boxShadow: "0 20px 40px rgba(0,0,0,0.1)",
+          bgcolor: "rgba(241, 244, 249, 1)",
         },
       }}
     >
-      <DialogContent sx={{ p: 4, textAlign: "center" }}>
+      <DialogContent sx={{ p: 4, textAlign: "center", bgcolor: "rgba(241, 244, 249, 1)" }}>
         <Box
           sx={{
             width: 64,

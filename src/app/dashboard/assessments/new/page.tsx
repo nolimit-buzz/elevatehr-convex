@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
-import { Snackbar, Alert } from "@mui/material";
+import { Snackbar, Alert, Box } from "@mui/material";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   AssessmentQueries,
@@ -718,7 +718,7 @@ export default function CreateAssessmentPage() {
   }, [jobTitle]);
 
   return (
-    <>
+    <Box sx={{ bgcolor: "#F6F7FB", minHeight: "100vh" }}>
       <input
         ref={importInputRef}
         type="file"
@@ -842,6 +842,6 @@ export default function CreateAssessmentPage() {
           {snackbarMessage}
         </Alert>
       </Snackbar>
-    </>
+    </Box>
   );
 }

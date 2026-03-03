@@ -29,12 +29,21 @@ export default function AssessmentTypeDialog({
       open={open}
       onClose={onClose}
       maxWidth="md"
+      slotProps={{
+        backdrop: {
+          sx: { 
+            backgroundColor: "rgba(0, 0, 0, 0.4)",
+            backdropFilter: "blur(0.4px)",
+          },
+        },
+      }}
       PaperProps={{
         sx: {
-          borderRadius: "8px",
+          borderRadius: "20px",
           p: 0,
           maxWidth: "580px",
           width: "100%",
+          bgcolor: "rgba(241, 244, 249, 1)",
         },
       }}
     >
@@ -42,7 +51,7 @@ export default function AssessmentTypeDialog({
         sx={{
           p: { xs: 3, md: 5 },
           position: "relative",
-          bgcolor: "rgba(255, 255, 255, 1)",
+          bgcolor: "rgba(241, 244, 249, 1)",
           minWidth: { xs: 320, md: 580 },
            maxWidth: "580px",
           width: "100%",

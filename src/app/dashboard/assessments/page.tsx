@@ -510,10 +510,18 @@ export default function AssessmentsPage() {
         open={selectTypeOpen}
         onClose={() => setSelectTypeOpen(false)}
         maxWidth="xs"
-        PaperProps={{ sx: { borderRadius: "20px", p: 0, bgcolor: "#fff" } }}
+        slotProps={{
+          backdrop: {
+            sx: {
+              backgroundColor: "rgba(0, 0, 0, 0.4)",
+              backdropFilter: "blur(0.4px)",
+            },
+          },
+        }}
+        PaperProps={{ sx: { borderRadius: "20px", p: 0, bgcolor: "rgba(241, 244, 249, 1)" } }}
       >
         <DialogContent
-          sx={{ p: { xs: 3, md: 4 }, position: "relative", bgcolor: "#fff", minWidth: { xs: 320, md: 400 } }}
+          sx={{ p: { xs: 3, md: 4 }, position: "relative", bgcolor: "rgba(241, 244, 249, 1)", minWidth: { xs: 320, md: 400 } }}
         >
           <Typography sx={{ fontWeight: 700, fontSize: 20, color: "rgba(17, 17, 17, 0.92)", mb: 3, textAlign: "left" }}>
             Select Assessment Type
@@ -615,7 +623,7 @@ export default function AssessmentsPage() {
                 fill="#DC3545"
               />
               <path
-                d="M15.21 22.75H8.79C5.3 22.75 5.16 20.82 5.05 19.26L4.4 9.19C4.37 8.78 4.69 8.42 5.1 8.39C5.52 8.37 5.87 8.68 5.9 9.09L6.55 19.16C6.66 20.68 6.7 21.25 8.79 21.25H15.21C17.31 21.25 17.35 20.68 17.45 19.16L18.1 9.09C18.13 8.68 18.49 8.37 18.9 8.39C19.31 8.42 19.63 8.77 19.6 9.19L18.95 19.26C18.84 20.82 18.7 22.75 15.21 22.75Z"
+                d="M15.21 22.75H8.79C5.3 22.75 5.16 20.82 5.05 19.26L4.4 9.19C4.37 8.78 4.69 8.42 5.10 8.39C5.52 8.37 5.87 8.68 5.90 9.09L6.55 19.16C6.66 20.68 6.70 21.25 8.79 21.25H15.21C17.31 21.25 17.35 20.68 17.45 19.16L18.10 9.09C18.13 8.68 18.49 8.37 18.90 8.39C19.31 8.42 19.63 8.77 19.60 9.19L18.95 19.26C18.84 20.82 18.70 22.75 15.21 22.75Z"
                 fill="#DC3545"
               />
               <path
@@ -733,10 +741,18 @@ export default function AssessmentsPage() {
         open={deleteDialogOpen}
         onClose={handleDeleteCancel}
         maxWidth="xs"
-        PaperProps={{ sx: { borderRadius: "20px", p: 0, bgcolor: "#fff" } }}
+        slotProps={{
+          backdrop: {
+            sx: {
+              backgroundColor: "rgba(0, 0, 0, 0.4)",
+              backdropFilter: "blur(0.4px)",
+            },
+          },
+        }}
+        PaperProps={{ sx: { borderRadius: "20px", p: 0, bgcolor: "rgba(241, 244, 249, 1)" } }}
       >
         <DialogContent
-          sx={{ p: { xs: 3, md: 4 }, position: "relative", bgcolor: "#fff", minWidth: { xs: 320, md: 400 } }}
+          sx={{ p: { xs: 3, md: 4 }, position: "relative", bgcolor: "rgba(241, 244, 249, 1)", minWidth: { xs: 320, md: 400 } }}
         >
           <Typography sx={{ fontWeight: 700, fontSize: 20, color: "rgba(17, 17, 17, 0.92)", mb: 2, textAlign: "left" }}>
             Delete Assessment
