@@ -39,8 +39,10 @@ export default function EditAssessmentPage() {
   const [jobTitle, setJobTitle] = React.useState("");
   const [level, setLevel] = React.useState("");
   const [skills, setSkills] = React.useState<string[]>([]);
-  const [numberOfOpenTextQuestions, setNumberOfOpenTextQuestions] = React.useState("");
-  const [numberOfMultiChoiceQuestions, setNumberOfMultiChoiceQuestions] = React.useState("");
+  const [numberOfOpenTextQuestions, setNumberOfOpenTextQuestions] =
+    React.useState("");
+  const [numberOfMultiChoiceQuestions, setNumberOfMultiChoiceQuestions] =
+    React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [success, setSuccess] = React.useState(false);
@@ -53,13 +55,17 @@ export default function EditAssessmentPage() {
   const [value, setValue] = useState("");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success");
+  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">(
+    "success",
+  );
   const [assessmentOptions, setAssessmentOptions] = useState("2");
   const [generatedSkills, setGeneratedSkills] = useState<string[]>([]);
   const [isGeneratingSkills, setIsGeneratingSkills] = useState(false);
   const [isGeneratingContent, setIsGeneratingContent] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [savedAssessmentId, setSavedAssessmentId] = useState<string | null>(null);
+  const [savedAssessmentId, setSavedAssessmentId] = useState<string | null>(
+    null,
+  );
 
   const {
     GenerateSkills,
@@ -86,7 +92,11 @@ export default function EditAssessmentPage() {
       setSkills(assessment.skills || []);
       setAssessmentDescription(assessment.description || "");
       setValue(assessment.technical_content || "");
-      setAssessmentOptions(assessment.assessment_options ? String(assessment.assessment_options) : "2");
+      setAssessmentOptions(
+        assessment.assessment_options
+          ? String(assessment.assessment_options)
+          : "2",
+      );
       setShowFormBuilder(false);
       setOpen(true);
     } else {
@@ -102,7 +112,9 @@ export default function EditAssessmentPage() {
 
   useEffect(() => {
     if (jobTitle && skills.length > 0) {
-      setAssessmentDescription(`${jobTitle} assessment covering the following skills: ${skills.join(", ")}. This assessment is designed to evaluate candidates' knowledge and expertise in these areas.`);
+      setAssessmentDescription(
+        `${jobTitle} assessment covering the following skills: ${skills.join(", ")}. This assessment is designed to evaluate candidates' knowledge and expertise in these areas.`,
+      );
     }
   }, [jobTitle, skills]);
 
@@ -122,10 +134,15 @@ export default function EditAssessmentPage() {
           description: assessmentDescription,
           level: level || undefined,
           skills,
-          questions: questions.map((q) => ({ question: q.question, type: q.type, options: q.type === "multi-choice" ? q.options : [] })),
+          questions: questions.map((q) => ({
+            question: q.question,
+            type: q.type,
+            options: q.type === "multi-choice" ? q.options : [],
+          })),
         },
       });
-      if (updateError || !result) throw new Error(updateError || "Failed to update assessment");
+      if (updateError || !result)
+        throw new Error(updateError || "Failed to update assessment");
       setSavedAssessmentId(id);
       setShowSuccessModal(true);
       setSaveSuccess(true);
@@ -140,13 +157,22 @@ export default function EditAssessmentPage() {
     try {
       const { result, error: updateError } = await UpdateAssessment({
         assessmentId: id as any,
-        data: { title: jobTitle, level: level || undefined, skills, technical_content: value, assessment_options: parseInt(assessmentOptions) },
+        data: {
+          title: jobTitle,
+          level: level || undefined,
+          skills,
+          technical_content: value,
+          assessment_options: parseInt(assessmentOptions),
+        },
       });
-      if (updateError || !result) throw new Error(updateError || "Failed to update assessment");
+      if (updateError || !result)
+        throw new Error(updateError || "Failed to update assessment");
       setSavedAssessmentId(id);
       setShowSuccessModal(true);
     } catch (err: any) {
-      setSnackbarMessage(err.message || "An error occurred while saving the assessment.");
+      setSnackbarMessage(
+        err.message || "An error occurred while saving the assessment.",
+      );
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
     }
@@ -154,15 +180,23 @@ export default function EditAssessmentPage() {
 
   const handleGenerateTechnicalContent = async () => {
     if (!jobTitle || skills.length === 0) {
-      setSnackbarMessage("Please enter a job title and at least one skill first.");
+      setSnackbarMessage(
+        "Please enter a job title and at least one skill first.",
+      );
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
       return;
     }
     setIsGeneratingContent(true);
     try {
-      const { result, error: genError } = await GenerateTechnicalContent({ jobTitle, level: level || undefined, skills, assessmentOptions: parseInt(assessmentOptions) || 2 });
-      if (genError || !result) throw new Error(genError || "Failed to generate content");
+      const { result, error: genError } = await GenerateTechnicalContent({
+        jobTitle,
+        level: level || undefined,
+        skills,
+        assessmentOptions: parseInt(assessmentOptions) || 2,
+      });
+      if (genError || !result)
+        throw new Error(genError || "Failed to generate content");
       if (result.status === "success" && result.content) {
         setValue(result.content);
         setSnackbarMessage("Assessment content generated successfully!");
@@ -172,7 +206,9 @@ export default function EditAssessmentPage() {
         throw new Error("Invalid response from server");
       }
     } catch (err: any) {
-      setSnackbarMessage(err.message || "An error occurred while generating content.");
+      setSnackbarMessage(
+        err.message || "An error occurred while generating content.",
+      );
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
     } finally {
@@ -183,8 +219,14 @@ export default function EditAssessmentPage() {
   const generateSkills = async () => {
     setIsGeneratingSkills(true);
     try {
-      const { result, error } = await GenerateSkills({ jobTitle, jobDescription: assessmentDescription || "" });
-      if (error) { console.error("Error generating skills:", error); return; }
+      const { result, error } = await GenerateSkills({
+        jobTitle,
+        jobDescription: assessmentDescription || "",
+      });
+      if (error) {
+        console.error("Error generating skills:", error);
+        return;
+      }
       if (result) setGeneratedSkills([...result.technical, ...result.soft]);
     } catch (error) {
       console.error("Error generating skills:", error);
@@ -194,22 +236,68 @@ export default function EditAssessmentPage() {
   };
 
   const handleQuestionChange = (idx: number, field: string, value: any) =>
-    setQuestions((prev) => prev.map((q, i) => (i === idx ? { ...q, [field]: value } : q)));
+    setQuestions((prev) =>
+      prev.map((q, i) => (i === idx ? { ...q, [field]: value } : q)),
+    );
 
   const handleTypeChange = (idx: number, newType: string) =>
-    setQuestions((prev) => prev.map((q, i) => i === idx ? { ...q, type: newType, options: newType === "multi-choice" ? (q.options?.length ? q.options : [""]) : [] } : q));
+    setQuestions((prev) =>
+      prev.map((q, i) =>
+        i === idx
+          ? {
+              ...q,
+              type: newType,
+              options:
+                newType === "multi-choice"
+                  ? q.options?.length
+                    ? q.options
+                    : [""]
+                  : [],
+            }
+          : q,
+      ),
+    );
 
   const handleOptionChange = (qIdx: number, optIdx: number, value: string) =>
-    setQuestions((prev) => prev.map((q, i) => i === qIdx ? { ...q, options: q.options.map((opt: string, j: number) => j === optIdx ? value : opt) } : q));
+    setQuestions((prev) =>
+      prev.map((q, i) =>
+        i === qIdx
+          ? {
+              ...q,
+              options: q.options.map((opt: string, j: number) =>
+                j === optIdx ? value : opt,
+              ),
+            }
+          : q,
+      ),
+    );
 
   const handleAddOption = (qIdx: number) =>
-    setQuestions((prev) => prev.map((q, i) => i === qIdx ? { ...q, options: [...q.options, ""] } : q));
+    setQuestions((prev) =>
+      prev.map((q, i) =>
+        i === qIdx ? { ...q, options: [...q.options, ""] } : q,
+      ),
+    );
 
   const handleRemoveOption = (qIdx: number, optIdx: number) =>
-    setQuestions((prev) => prev.map((q, i) => i === qIdx ? { ...q, options: q.options.filter((_: string, j: number) => j !== optIdx) } : q));
+    setQuestions((prev) =>
+      prev.map((q, i) =>
+        i === qIdx
+          ? {
+              ...q,
+              options: q.options.filter((_: string, j: number) => j !== optIdx),
+            }
+          : q,
+      ),
+    );
 
-  const handleDeleteQuestion = (idx: number) => setQuestions((prev) => prev.filter((_, i) => i !== idx));
-  const handleAddQuestion = () => setQuestions((prev) => [...prev, { question: "", type: "open-text", options: [] }]);
+  const handleDeleteQuestion = (idx: number) =>
+    setQuestions((prev) => prev.filter((_, i) => i !== idx));
+  const handleAddQuestion = () =>
+    setQuestions((prev) => [
+      ...prev,
+      { question: "", type: "open-text", options: [] },
+    ]);
 
   // While redirecting (no id), render nothing
   if (!id) return null;
@@ -289,8 +377,17 @@ export default function EditAssessmentPage() {
         router={router}
       />
 
-      <Snackbar open={snackbarOpen} autoHideDuration={4000} onClose={() => setSnackbarOpen(false)} anchorOrigin={{ vertical: "top", horizontal: "center" }}>
-        <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: "100%" }}>
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity={snackbarSeverity}
+          sx={{ width: "100%" }}
+        >
           {snackbarMessage}
         </Alert>
       </Snackbar>
