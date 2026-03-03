@@ -635,18 +635,9 @@ export default function AssessmentsPage() {
                       </Typography>
                     )}
                     <Divider sx={{ my: 1.5, borderColor: "#E4E7EC" }} />
-                    <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
-                      {a.responses !== undefined && (
-                        <Typography sx={{ fontSize: 13, color: "rgba(17, 17, 17, 0.48)", fontWeight: 400 }}>
-                          {a.responses} responses
-                        </Typography>
-                      )}
-                      {a.duration && (
-                        <Typography sx={{ fontSize: 13, color: "rgba(17, 17, 17, 0.48)", fontWeight: 400 }}>
-                          {a.duration}
-                        </Typography>
-                      )}
-                    </Stack>
+                    <Typography sx={{ fontSize: 13, color: "rgba(17, 17, 17, 0.48)", fontWeight: 400 }}>
+                      {formatType(a.type)}
+                    </Typography>
                   </Box>
                 </Card>
               </Grid>
