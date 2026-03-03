@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -26,7 +26,20 @@ import { useTheme } from "@mui/material/styles";
 import SearchIcon from "@mui/icons-material/Search";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
-import { useAssessmentsList, AssessmentQueries, type Id } from "@/queries/assessment.queries";
+import * as XLSX from "xlsx";
+import { pdfjs } from "react-pdf";
+import mammoth from "mammoth";
+import {
+  useAssessmentsList,
+  AssessmentQueries,
+  type Id,
+} from "@/queries/assessment.queries";
+import AssessmentTypeDialog from "@/app/dashboard/components/dashboard/assessments/AssessmentTypeDialog";
+import AssessmentUploadDialog from "@/app/dashboard/components/dashboard/assessments/AssessmentUploadDialog";
+import AssessmentConfigDialog from "@/app/dashboard/components/dashboard/assessments/AssessmentConfigDialog";
+import TechnicalAssessmentEditor from "@/app/dashboard/components/dashboard/assessments/TechnicalAssessmentEditor";
+import AssessmentFormBuilder from "@/app/dashboard/components/dashboard/assessments/AssessmentFormBuilder";
+import AssessmentSuccessModal from "@/app/dashboard/components/dashboard/assessments/AssessmentSuccessModal";
 
 export interface Assessment {
   _id: Id<"assessments">;
@@ -43,52 +56,131 @@ export interface Assessment {
 export default function AssessmentsPage() {
   const theme = useTheme();
   const router = useRouter();
-  const [selectTypeOpen, setSelectTypeOpen] = useState(false);
-  const [selectedType, setSelectedType] = useState("technical_assessment");
 
-  // Use Convex query for assessments
+  // ─── List & delete state ───────────────────────────────────────────────────
   const assessmentsData = useAssessmentsList();
   const assessments = assessmentsData ?? [];
   const loading = assessmentsData === undefined;
 
-  // Convex mutations
-  const { RemoveAssessment } = AssessmentQueries();
+  const { RemoveAssessment, GenerateSkills, GenerateQuestions, GenerateTechnicalContent, CreateAssessment, CreateTechnicalAssessment, UpdateAssessment } = AssessmentQueries();
 
-  // Menu and delete state
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [assessmentToDelete, setAssessmentToDelete] = useState<Assessment | null>(null);
   const [deleting, setDeleting] = useState(false);
-
-  // Header menu state
   const [headerMenuAnchorEl, setHeaderMenuAnchorEl] = useState<null | HTMLElement>(null);
 
-  // Snackbar state
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success");
 
-  const formatType = (type: string) => {
-    return type
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
+  // ─── Creation flow state ───────────────────────────────────────────────────
+  // "selectType" is the first step (pick type dropdown on this page)
+  const [selectTypeOpen, setSelectTypeOpen] = useState(false);
+  const [selectedType, setSelectedType] = useState("technical_assessment");
+
+  // After type is selected, open the creation sub-modals
+  const [creationOpen, setCreationOpen] = useState(false);
+  const [entryStep, setEntryStep] = useState<"choose" | "upload" | "form">("choose");
+  const [creationType, setCreationType] = useState<string | null>(null);
+
+  const importInputRef = useRef<HTMLInputElement | null>(null);
+  const generateFromFileInputRef = useRef<HTMLInputElement | null>(null);
+  const stopImportRef = useRef(false);
+
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importRows, setImportRows] = useState<any[]>([]);
+  const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState<{ total: number; done: number }>({ total: 0, done: 0 });
+  const [sourceDocText, setSourceDocText] = useState<string>("");
+
+  const [jobTitle, setJobTitle] = useState("");
+  const [level, setLevel] = useState("");
+  const [skills, setSkills] = useState<string[]>([]);
+  const [numberOfOpenTextQuestions, setNumberOfOpenTextQuestions] = useState("");
+  const [numberOfMultiChoiceQuestions, setNumberOfMultiChoiceQuestions] = useState("");
+  const [genLoading, setGenLoading] = useState(false);
+  const [genError, setGenError] = useState<string | null>(null);
+  const [genSuccess, setGenSuccess] = useState(false);
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [showFormBuilder, setShowFormBuilder] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [assessmentDescription, setAssessmentDescription] = useState("");
+  const [editorValue, setEditorValue] = useState("");
+  const [assessmentOptions, setAssessmentOptions] = useState("2");
+  const [generatedSkills, setGeneratedSkills] = useState<string[]>([]);
+  const [isGeneratingSkills, setIsGeneratingSkills] = useState(false);
+  const [isGeneratingContent, setIsGeneratingContent] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [savedAssessmentId, setSavedAssessmentId] = useState<string | null>(null);
+
+  // ─── Effects ───────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (jobTitle && skills.length > 0) {
+      setAssessmentDescription(
+        `${jobTitle} assessment covering the following skills: ${skills.join(", ")}. This assessment is designed to evaluate candidates' knowledge and expertise in these areas.`
+      );
+    }
+  }, [jobTitle, skills]);
+
+  useEffect(() => {
+    setGeneratedSkills([]);
+  }, [jobTitle]);
+
+  // ─── Helpers ───────────────────────────────────────────────────────────────
+  const formatType = (type: string) =>
+    type.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+
+  const resetCreationState = () => {
+    setJobTitle("");
+    setLevel("");
+    setSkills([]);
+    setNumberOfOpenTextQuestions("");
+    setNumberOfMultiChoiceQuestions("");
+    setGenLoading(false);
+    setGenError(null);
+    setGenSuccess(false);
+    setQuestions([]);
+    setShowFormBuilder(false);
+    setSaveLoading(false);
+    setSaveError(null);
+    setSaveSuccess(false);
+    setAssessmentDescription("");
+    setEditorValue("");
+    setAssessmentOptions("2");
+    setGeneratedSkills([]);
+    setIsGeneratingSkills(false);
+    setIsGeneratingContent(false);
+    setShowSuccessModal(false);
+    setSavedAssessmentId(null);
+    setImportFile(null);
+    setImportRows([]);
+    setImporting(false);
+    setImportProgress({ total: 0, done: 0 });
+    setSourceDocText("");
+    setEntryStep("choose");
+    setCreationType(null);
   };
 
-  // Handle menu open for assessment cards
+  const handleCloseCreation = () => {
+    setCreationOpen(false);
+    resetCreationState();
+  };
+
+  // ─── List handlers ─────────────────────────────────────────────────────────
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, assessment: Assessment) => {
     setMenuAnchorEl(event.currentTarget);
     setSelectedAssessment(assessment);
   };
 
-  // Handle menu close for assessment cards
   const handleMenuClose = () => {
     setMenuAnchorEl(null);
     setSelectedAssessment(null);
   };
 
-  // Handle delete from menu
   const handleDeleteFromMenu = () => {
     if (selectedAssessment) {
       setAssessmentToDelete(selectedAssessment);
@@ -97,28 +189,18 @@ export default function AssessmentsPage() {
     handleMenuClose();
   };
 
-  // Handle delete confirmation
   const handleDeleteConfirm = async () => {
     if (!assessmentToDelete) return;
-
     setDeleting(true);
     try {
       const { error } = await RemoveAssessment(assessmentToDelete._id);
-
-      if (error) {
-        throw new Error(error);
-      }
-
+      if (error) throw new Error(error);
       setDeleteDialogOpen(false);
       setAssessmentToDelete(null);
-
-      // Show success message
       setSnackbarMessage("Assessment deleted successfully");
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
     } catch (err: any) {
-      console.error("Error deleting assessment:", err);
-      // Show error message
       setSnackbarMessage("Failed to delete assessment. Please try again.");
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
@@ -127,29 +209,306 @@ export default function AssessmentsPage() {
     }
   };
 
-  // Handle delete cancellation
   const handleDeleteCancel = () => {
     setDeleteDialogOpen(false);
     setAssessmentToDelete(null);
   };
 
-  // Handle header menu open
-  const handleHeaderMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setHeaderMenuAnchorEl(event.currentTarget);
+  const handleHeaderMenuOpen = (event: React.MouseEvent<HTMLElement>) => setHeaderMenuAnchorEl(event.currentTarget);
+  const handleHeaderMenuClose = () => setHeaderMenuAnchorEl(null);
+  const handleSnackbarClose = () => setSnackbarOpen(false);
+
+  // ─── Creation: entry ───────────────────────────────────────────────────────
+  const handleContinueFromTypeSelect = () => {
+    setSelectTypeOpen(false);
+    setCreationType(selectedType);
+    setEntryStep("choose");
+    setCreationOpen(true);
   };
 
-  // Handle header menu close
-  const handleHeaderMenuClose = () => {
-    setHeaderMenuAnchorEl(null);
+  const handleSelectGenerate = () => {
+    setEntryStep("form");
   };
 
-  // Handle snackbar close
-  const handleSnackbarClose = () => {
-    setSnackbarOpen(false);
+  const handleSelectUpload = () => {
+    importInputRef.current?.click();
   };
 
+  // ─── Creation: import ──────────────────────────────────────────────────────
+  const handleImportFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setImportFile(file);
+      setImportRows([]);
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: "array" });
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      const json = XLSX.utils.sheet_to_json<Record<string, any>>(worksheet, { defval: "" });
+      if (!json || json.length === 0) {
+        setSnackbarMessage("No rows found in the uploaded file.");
+        setSnackbarSeverity("error");
+        setSnackbarOpen(true);
+        return;
+      }
+      const normalized = json.map((row) => {
+        const next: Record<string, any> = {};
+        Object.entries(row).forEach(([k, v]) => { next[String(k).trim().toLowerCase()] = v; });
+        return next;
+      });
+      if (normalized.length > 50) {
+        setSnackbarMessage("Please import 50 rows or fewer at a time.");
+        setSnackbarSeverity("error");
+        setSnackbarOpen(true);
+        return;
+      }
+      setImportRows(normalized);
+      setSnackbarMessage(`Loaded ${normalized.length} rows from ${file.name}`);
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+      setEntryStep("upload");
+    } catch (err) {
+      setSnackbarMessage("Failed to read CSV/Excel file. Please check the format and try again.");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    } finally {
+      e.target.value = "";
+    }
+  };
+
+  const extractTextFromDocument = async (file: File): Promise<string> => {
+    const name = file.name.toLowerCase();
+    if (name.endsWith(".txt")) return await file.text();
+    if (name.endsWith(".docx")) {
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer });
+      return result.value || "";
+    }
+    if (name.endsWith(".pdf")) {
+      pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
+      let fullText = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        fullText += (content.items as any[]).map((item) => (item?.str ? String(item.str) : "")).join(" ") + "\n";
+      }
+      return fullText;
+    }
+    return "";
+  };
+
+  const handleImportAssessments = async () => {
+    if (importRows.length === 0) return;
+    setImporting(true);
+    setImportProgress({ total: importRows.length, done: 0 });
+    stopImportRef.current = false;
+    try {
+      for (let i = 0; i < importRows.length; i++) {
+        if (stopImportRef.current) break;
+        const row = importRows[i];
+        const rowTitle = String(row.title || row.job_title || row.name || "").trim();
+        if (!rowTitle) { setImportProgress({ total: importRows.length, done: i + 1 }); continue; }
+        const rowType = String(row.type || "online_assessment_1").trim();
+        const rowLevel = String(row.level || "").trim() || undefined;
+        const rowSkillsRaw = row.skills ?? row.skill ?? "";
+        const rowSkills = typeof rowSkillsRaw === "string"
+          ? rowSkillsRaw.split(",").map((s: string) => s.trim()).filter(Boolean)
+          : Array.isArray(rowSkillsRaw) ? rowSkillsRaw.map((s: any) => String(s).trim()).filter(Boolean) : [];
+        const skillsForGeneration = rowSkills.length ? rowSkills : ["Problem solving"];
+        const questionsJson = String(row.questions_json || "").trim();
+        const technicalContent = String(row.technical_content || row.technicalcontent || "").trim();
+
+        if (rowType === "technical_assessment") {
+          if (technicalContent) {
+            await CreateTechnicalAssessment({ title: rowTitle, level: rowLevel, skills: skillsForGeneration, technicalContent, assessmentOptions: row.assessment_options ? Number(row.assessment_options) : undefined });
+          } else {
+            const optionsCount = row.assessment_options ? Number(row.assessment_options) : 2;
+            const { result } = await GenerateTechnicalContent({ jobTitle: rowTitle, level: rowLevel, skills: skillsForGeneration, assessmentOptions: optionsCount });
+            await CreateTechnicalAssessment({ title: rowTitle, level: rowLevel, skills: skillsForGeneration, technicalContent: (result as any)?.content || "", assessmentOptions: optionsCount });
+          }
+        } else {
+          let qs: any[] = [];
+          if (questionsJson) {
+            try { const parsed = JSON.parse(questionsJson); qs = Array.isArray(parsed) ? parsed : parsed?.questions || []; } catch {}
+          }
+          if (!qs || qs.length === 0) {
+            const openCount = row.open_text_questions ? Number(row.open_text_questions) : 3;
+            const multiCount = row.multi_choice_questions ? Number(row.multi_choice_questions) : 3;
+            const { result } = await GenerateQuestions({ jobTitle: rowTitle, level: rowLevel, skills: skillsForGeneration, numberOfOpenTextQuestions: openCount, numberOfMultiChoiceQuestions: multiCount });
+            qs = (result as any)?.response?.questions || [];
+          }
+          const description = String(row.description || "").trim() || `${rowTitle} assessment covering the following skills: ${skillsForGeneration.join(", ")}.`;
+          await CreateAssessment({ title: rowTitle, description, type: rowType as any, level: rowLevel, skills: skillsForGeneration, questions: qs });
+        }
+        setImportProgress({ total: importRows.length, done: i + 1 });
+      }
+      if (stopImportRef.current) {
+        setSnackbarMessage("Import stopped.");
+        setSnackbarSeverity("error" as any);
+      } else {
+        setSnackbarMessage("Import completed.");
+        setSnackbarSeverity("success");
+        handleCloseCreation();
+      }
+      setSnackbarOpen(true);
+    } catch (err) {
+      setSnackbarMessage("Import failed. Please check your file and try again.");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    } finally {
+      setImporting(false);
+      stopImportRef.current = false;
+    }
+  };
+
+  const handleCancelImport = () => { stopImportRef.current = true; };
+
+  // ─── Creation: generate assessment ────────────────────────────────────────
+  const handleDeleteSkill = (skillToDelete: string) => setSkills((s) => s.filter((sk) => sk !== skillToDelete));
+
+  const handleCreateAssessment = async () => {
+    setGenLoading(true);
+    setGenError(null);
+    setGenSuccess(false);
+    try {
+      const { result, error } = await GenerateQuestions({
+        jobTitle,
+        level: level || undefined,
+        skills,
+        numberOfOpenTextQuestions: +numberOfOpenTextQuestions,
+        numberOfMultiChoiceQuestions: +numberOfMultiChoiceQuestions,
+      });
+      if (error || !result) throw new Error(error || "Failed to generate assessment");
+      if (result.status === "success" && result.response?.questions) {
+        setQuestions(result.response.questions);
+        setShowFormBuilder(true);
+        setCreationOpen(false);
+        setAssessmentDescription(`${jobTitle} assessment covering the following skills: ${skills.join(", ")}. This assessment includes ${numberOfOpenTextQuestions} open-text questions and ${numberOfMultiChoiceQuestions} multiple-choice questions to evaluate the candidate's knowledge and expertise.`);
+      } else {
+        throw new Error("Invalid response from server");
+      }
+      setGenSuccess(true);
+    } catch (err: any) {
+      setGenError(err.message || "An error occurred");
+    } finally {
+      setGenLoading(false);
+    }
+  };
+
+  const handleSaveAssessment = async () => {
+    setSaveLoading(true);
+    setSaveError(null);
+    setSaveSuccess(false);
+    try {
+      const { result, error: createError } = await CreateAssessment({
+        title: jobTitle,
+        description: assessmentDescription,
+        type: "online_assessment_1",
+        level: level || undefined,
+        skills,
+        questions: questions.map((q) => ({ question: q.question, type: q.type, options: q.type === "multi-choice" ? q.options : [] })),
+      });
+      if (createError || !result) throw new Error(createError || "Failed to save assessment");
+      setSavedAssessmentId(result.assessment_id);
+      setShowSuccessModal(true);
+      setSaveSuccess(true);
+    } catch (err: any) {
+      setSaveError(err.message || "An error occurred");
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  const handleSaveTechnicalAssessment = async () => {
+    try {
+      const { result, error: createError } = await CreateTechnicalAssessment({
+        title: jobTitle,
+        level: level || undefined,
+        skills,
+        technicalContent: editorValue,
+        assessmentOptions: parseInt(assessmentOptions),
+      });
+      if (createError || !result) throw new Error(createError || "Failed to save assessment");
+      setSavedAssessmentId(result.assessment_id);
+      setShowSuccessModal(true);
+    } catch (err: any) {
+      setSnackbarMessage(err.message || "An error occurred while saving the assessment.");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    }
+  };
+
+  const handleGenerateTechnicalContent = async () => {
+    if (!jobTitle || skills.length === 0) {
+      setSnackbarMessage("Please enter a job title and at least one skill first.");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+    setIsGeneratingContent(true);
+    try {
+      const { result, error } = await GenerateTechnicalContent({ jobTitle, level: level || undefined, skills, assessmentOptions: parseInt(assessmentOptions) || 2 });
+      if (error || !result) throw new Error(error || "Failed to generate content");
+      if (result.status === "success" && result.content) {
+        setEditorValue(result.content);
+        setAssessmentDescription(`${jobTitle} technical assessment covering the following skills: ${skills.join(", ")}. This assessment includes ${assessmentOptions} practical tasks to evaluate candidates' hands-on expertise.`);
+        setSnackbarMessage("Assessment content generated successfully!");
+        setSnackbarSeverity("success");
+        setSnackbarOpen(true);
+      } else {
+        throw new Error("Invalid response from server");
+      }
+    } catch (err: any) {
+      setSnackbarMessage(err.message || "An error occurred while generating content.");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    } finally {
+      setIsGeneratingContent(false);
+    }
+  };
+
+  const generateSkills = async () => {
+    setIsGeneratingSkills(true);
+    try {
+      const { result, error } = await GenerateSkills({ jobTitle, jobDescription: sourceDocText || assessmentDescription || "" });
+      if (error) { console.error("Error generating skills:", error); return; }
+      if (result) setGeneratedSkills([...result.technical, ...result.soft]);
+    } catch (error) {
+      console.error("Error generating skills:", error);
+    } finally {
+      setIsGeneratingSkills(false);
+    }
+  };
+
+  // ─── Question helpers ──────────────────────────────────────────────────────
+  const handleQuestionChange = (idx: number, field: string, value: any) =>
+    setQuestions((prev) => prev.map((q, i) => (i === idx ? { ...q, [field]: value } : q)));
+
+  const handleTypeChange = (idx: number, newType: string) =>
+    setQuestions((prev) => prev.map((q, i) => i === idx ? { ...q, type: newType, options: newType === "multi-choice" ? (q.options?.length ? q.options : [""]) : [] } : q));
+
+  const handleOptionChange = (qIdx: number, optIdx: number, value: string) =>
+    setQuestions((prev) => prev.map((q, i) => i === qIdx ? { ...q, options: q.options.map((opt: string, j: number) => j === optIdx ? value : opt) } : q));
+
+  const handleAddOption = (qIdx: number) =>
+    setQuestions((prev) => prev.map((q, i) => i === qIdx ? { ...q, options: [...q.options, ""] } : q));
+
+  const handleRemoveOption = (qIdx: number, optIdx: number) =>
+    setQuestions((prev) => prev.map((q, i) => i === qIdx ? { ...q, options: q.options.filter((_: string, j: number) => j !== optIdx) } : q));
+
+  const handleDeleteQuestion = (idx: number) => setQuestions((prev) => prev.filter((_, i) => i !== idx));
+  const handleAddQuestion = () => setQuestions((prev) => [...prev, { question: "", type: "open-text", options: [] }]);
+
+  // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <Box sx={{ bgcolor: "#F6F7FB", minHeight: "100vh" }}>
+      {/* Hidden file inputs */}
+      <input ref={importInputRef} type="file" hidden accept=".csv,.xlsx,.xls" onChange={handleImportFileChange} />
+      <input ref={generateFromFileInputRef} type="file" hidden accept=".pdf,.docx,.txt" />
+
       <Container maxWidth={false} sx={{ maxWidth: "1440px", py: 4 }}>
         {/* Banner */}
         <Box
@@ -175,13 +534,8 @@ export default function AssessmentsPage() {
               placeholder="Search"
               size="small"
               sx={{
-                "& fieldset": {
-                  border: "none !important",
-                },
-                "& .MuiInputBase-input::placeholder": {
-                  color: "rgba(255, 255, 255)",
-                  opacity: 0.84,
-                },
+                "& fieldset": { border: "none !important" },
+                "& .MuiInputBase-input::placeholder": { color: "rgba(255, 255, 255)", opacity: 0.84 },
               }}
               InputProps={{
                 startAdornment: (
@@ -197,7 +551,6 @@ export default function AssessmentsPage() {
                 bgcolor: "#fff",
                 color: "rgba(17, 17, 17, 0.92)",
                 fontSize: "16px",
-                fontStyle: "normal",
                 fontWeight: 500,
                 lineHeight: "100%",
                 letterSpacing: "0.16px",
@@ -206,9 +559,7 @@ export default function AssessmentsPage() {
                 px: 3,
                 py: 1.5,
                 textTransform: "none",
-                "&:hover": {
-                  bgcolor: "#F4F4FF",
-                },
+                "&:hover": { bgcolor: "#F4F4FF" },
               }}
               onClick={() => setSelectTypeOpen(true)}
             >
@@ -216,7 +567,8 @@ export default function AssessmentsPage() {
             </Button>
           </Stack>
         </Box>
-        {/* No error message for failed to fetch assessments */}
+
+        {/* Assessment List */}
         {loading ? (
           <Grid container spacing={3}>
             {Array.from({ length: 8 }).map((_, idx) => (
@@ -232,16 +584,7 @@ export default function AssessmentsPage() {
             ))}
           </Grid>
         ) : assessments.length === 0 ? (
-          <Box
-            sx={{
-              textAlign: "center",
-              mt: 10,
-              color: "rgba(17, 17, 17, 0.48)",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
+          <Box sx={{ textAlign: "center", mt: 10, color: "rgba(17, 17, 17, 0.48)", display: "flex", flexDirection: "column", alignItems: "center" }}>
             <AssignmentOutlinedIcon sx={{ fontSize: 64, color: "#D6D6F6", mb: 3 }} />
             <Typography sx={{ fontSize: 24, fontWeight: 500, color: "rgba(17, 17, 17, 0.48)" }}>
               Your assessments will appear here
@@ -254,7 +597,6 @@ export default function AssessmentsPage() {
                 <Card
                   sx={{
                     height: "100%",
-                    // p: 3,
                     borderRadius: "12px",
                     boxShadow: "none",
                     bgcolor: "#fff",
@@ -265,239 +607,46 @@ export default function AssessmentsPage() {
                     gap: 0.5,
                     transition: "box-shadow 0.2s",
                     position: "relative",
+                    cursor: "pointer",
                   }}
+                  onClick={() => router.push(`/dashboard/assessments/new?type=${a.type}&id=${a._id}`)}
                 >
-                  {/* Menu Icon - Already Added */}
                   <Box sx={{ position: "absolute", top: 12, right: 12, zIndex: 1 }}>
                     <IconButton
                       size="small"
-                      onClick={(e) => handleMenuOpen(e, a)}
-                      sx={{
-                        color: "rgba(17, 17, 17, 0.48)",
-                        "&:hover": {
-                          backgroundColor: "rgba(17, 17, 17, 0.08)",
-                          color: "rgba(17, 17, 17, 0.68)",
-                        },
-                      }}
+                      onClick={(e) => { e.stopPropagation(); handleMenuOpen(e, a); }}
+                      sx={{ color: "rgba(17, 17, 17, 0.48)", "&:hover": { backgroundColor: "rgba(17, 17, 17, 0.08)", color: "rgba(17, 17, 17, 0.68)" } }}
                     >
                       <MoreVertIcon />
                     </IconButton>
                   </Box>
-
-                  {/* Card Content */}
                   <Box sx={{ p: 3 }}>
-                    <Box
-                      sx={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        bgcolor: a.color,
-                        borderRadius: "20px",
-                        // px: '12px',
-                        py: "6px",
-                        mb: 1.5,
-                        height: 32,
-                        minWidth: 0,
-                        width: "max-content",
-                      }}
-                    >
-                      <Box sx={{ display: "flex", alignItems: "center", height: 20 }}>
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path
-                            d="M2.5 18.3333H17.5"
-                            stroke={
-                              a.level === "Senior"
-                                ? "rgba(79, 27, 85, 0.72)"
-                                : a.level === "Junior"
-                                  ? "rgba(125, 88, 15, 0.72)"
-                                  : a.level === "Mid-level"
-                                    ? "rgba(36, 115, 127, 0.72)"
-                                    : "#4F1B55"
-                            }
-                            strokeWidth="1.25"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          <path
-                            d="M4.66665 6.98315H3.33333C2.875 6.98315 2.5 7.35815 2.5 7.81649V14.9998C2.5 15.4582 2.875 15.8332 3.33333 15.8332H4.66665C5.12498 15.8332 5.49998 15.4582 5.49998 14.9998V7.81649C5.49998 7.35815 5.12498 6.98315 4.66665 6.98315Z"
-                            stroke={
-                              a.level === "Senior"
-                                ? "rgba(79, 27, 85, 0.72)"
-                                : a.level === "Junior"
-                                  ? "rgba(125, 88, 15, 0.72)"
-                                  : a.level === "Mid-level"
-                                    ? "rgba(36, 115, 127, 0.72)"
-                                    : "#4F1B55"
-                            }
-                            strokeWidth="1.25"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          <path
-                            d="M10.6666 4.32495H9.33333C8.875 4.32495 8.5 4.69995 8.5 5.15828V14.9999C8.5 15.4583 8.875 15.8333 9.33333 15.8333H10.6666C11.125 15.8333 11.5 15.4583 11.5 14.9999V5.15828C11.5 4.69995 11.125 4.32495 10.6666 4.32495Z"
-                            stroke={
-                              a.level === "Senior"
-                                ? "rgba(79, 27, 85, 0.72)"
-                                : a.level === "Junior"
-                                  ? "rgba(125, 88, 15, 0.72)"
-                                  : a.level === "Mid-level"
-                                    ? "rgba(36, 115, 127, 0.72)"
-                                    : "#4F1B55"
-                            }
-                            strokeWidth="1.25"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          <path
-                            d="M16.6666 1.66675H15.3333C14.875 1.66675 14.5 2.04175 14.5 2.50008V15.0001C14.5 15.4584 14.875 15.8334 15.3333 15.8334H16.6666C17.125 15.8334 17.5 15.4584 17.5 15.0001V2.50008C17.5 2.04175 17.125 1.66675 16.6666 1.66675Z"
-                            stroke={
-                              a.level === "Senior"
-                                ? "rgba(79, 27, 85, 0.72)"
-                                : a.level === "Junior"
-                                  ? "rgba(125, 88, 15, 0.72)"
-                                  : a.level === "Mid-level"
-                                    ? "rgba(36, 115, 127, 0.72)"
-                                    : "#4F1B55"
-                            }
-                            strokeWidth="1.25"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </Box>
-                      <Typography
-                        sx={{ color: a.text_color, fontWeight: 600, fontSize: 16, ml: 0.5, mr: 0.5, lineHeight: 1 }}
-                      >
+                    <Box sx={{ display: "inline-flex", alignItems: "center", gap: "6px", bgcolor: a.color, borderRadius: "20px", py: "6px", mb: 1.5, height: 32, minWidth: 0 }}>
+                      <Typography sx={{ fontSize: 12, fontWeight: 500, color: a.text_color, px: "10px", whiteSpace: "nowrap" }}>
                         {formatType(a.type)}
                       </Typography>
                     </Box>
-                    <Typography
-                      variant="subtitle1"
-                      sx={{
-                        fontWeight: 600,
-                        fontSize: "20px",
-                        fontStyle: "normal",
-                        color: "rgba(17, 17, 17, 0.92)",
-                        lineHeight: "120%", // 24px
-                        letterSpacing: "0.1px",
-                        mb: 0.5,
-                        leadingTrim: "both",
-                        textEdge: "cap",
-                        maxWidth: "280px",
-                      }}
-                    >
+                    <Typography sx={{ fontWeight: 700, fontSize: 16, color: "rgba(17, 17, 17, 0.92)", mb: 0.5, lineHeight: 1.3 }}>
                       {a.title}
                     </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        color: "rgba(17, 17, 17, 0.84)",
-                        fontSize: "14px",
-                        fontStyle: "normal",
-                        fontWeight: 400,
-                        lineHeight: "138%",
-                        letterSpacing: "0.14px",
-                        mb: 2,
-                      }}
-                    >
-                      {a.description}
-                    </Typography>
-                  </Box>
-                  {/* Custom Badge */}
-
-                  {/* Card Footer */}
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "flex-start",
-                      alignItems: "center",
-                      gap: 3,
-                      borderTop: "1px solid #EEEFF2",
-                      borderBottomLeftRadius: "12px",
-                      borderBottomRightRadius: "12px",
-                      bgcolor: "#fff",
-                      mt: "auto",
-                      px: 2,
-                      // py: 1.5,
-                    }}
-                  >
-                    <Button
-                      // variant="outlined"
-                      size="small"
-                      sx={{
-                        borderColor: "#D0D5DD",
-                        color: "#111",
-                        fontWeight: 500,
-                        fontSize: "14px",
-                        borderRadius: "8px",
-                        px: 1,
-                        py: 0.5,
-                        my: 1.2,
-                        textTransform: "none",
-                        boxShadow: "none",
-                        bgcolor: "#fff",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 0.5,
-                        "&:hover": {
-                          borderColor: "#B0B5C0",
-                          bgcolor: "#F9F9FB",
-                        },
-                      }}
-                      onClick={() => router.push(`/dashboard/assessments/new?type=${a.type}&id=${a._id}`)}
-                    >
-                      <Box component="span" sx={{ display: "flex", alignItems: "center", mr: 0.5 }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path
-                            d="M5.53999 19.5201C4.92999 19.5201 4.35999 19.31 3.94999 18.92C3.42999 18.43 3.17999 17.69 3.26999 16.89L3.63999 13.65C3.70999 13.04 4.07999 12.23 4.50999 11.79L12.72 3.10005C14.77 0.930049 16.91 0.870049 19.08 2.92005C21.25 4.97005 21.31 7.11005 19.26 9.28005L11.05 17.97C10.63 18.42 9.84999 18.84 9.23999 18.9401L6.01999 19.49C5.84999 19.5 5.69999 19.5201 5.53999 19.5201ZM15.93 2.91005C15.16 2.91005 14.49 3.39005 13.81 4.11005L5.59999 12.8101C5.39999 13.0201 5.16999 13.5201 5.12999 13.8101L4.75999 17.05C4.71999 17.38 4.79999 17.65 4.97999 17.82C5.15999 17.99 5.42999 18.05 5.75999 18L8.97999 17.4501C9.26999 17.4001 9.74999 17.14 9.94999 16.93L18.16 8.24005C19.4 6.92005 19.85 5.70005 18.04 4.00005C17.24 3.23005 16.55 2.91005 15.93 2.91005Z"
-                            fill="#292D32"
-                          />
-                          <path
-                            d="M17.3399 10.95C17.3199 10.95 17.2899 10.95 17.2699 10.95C14.1499 10.64 11.6399 8.26997 11.1599 5.16997C11.0999 4.75997 11.3799 4.37997 11.7899 4.30997C12.1999 4.24997 12.5799 4.52997 12.6499 4.93997C13.0299 7.35997 14.9899 9.21997 17.4299 9.45997C17.8399 9.49997 18.1399 9.86997 18.0999 10.28C18.0499 10.66 17.7199 10.95 17.3399 10.95Z"
-                            fill="#292D32"
-                          />
-                          <path
-                            d="M21 22.75H3C2.59 22.75 2.25 22.41 2.25 22C2.25 21.59 2.59 21.25 3 21.25H21C21.41 21.25 21.75 21.59 21.75 22C21.75 22.41 21.41 22.75 21 22.75Z"
-                            fill="#292D32"
-                          />
-                        </svg>
-                      </Box>
-                      Edit
-                    </Button>
-                    <Divider orientation="vertical" flexItem />
-                    <Typography
-                      component="a"
-                      target="_blank"
-                      href={`/assessment?assessment_id=${a._id}`}
-                      sx={{
-                        color: "#757575",
-                        fontSize: "14px",
-                        fontWeight: 500,
-                        textDecoration: "none",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 0.5,
-                        "&:hover": {
-                          textDecoration: "underline",
-                          color: "#757575",
-                        },
-                      }}
-                    >
-                      <Box component="span" sx={{ display: "flex", alignItems: "center", mr: 0.5 }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path
-                            d="M11.9999 16.3299C9.60992 16.3299 7.66992 14.3899 7.66992 11.9999C7.66992 9.60992 9.60992 7.66992 11.9999 7.66992C14.3899 7.66992 16.3299 9.60992 16.3299 11.9999C16.3299 14.3899 14.3899 16.3299 11.9999 16.3299ZM11.9999 9.16992C10.4399 9.16992 9.16992 10.4399 9.16992 11.9999C9.16992 13.5599 10.4399 14.8299 11.9999 14.8299C13.5599 14.8299 14.8299 13.5599 14.8299 11.9999C14.8299 10.4399 13.5599 9.16992 11.9999 9.16992Z"
-                            fill="#292D32"
-                          />
-                          <path
-                            d="M12.0001 21.02C8.24008 21.02 4.69008 18.82 2.25008 15C1.19008 13.35 1.19008 10.66 2.25008 8.99998C4.70008 5.17998 8.25008 2.97998 12.0001 2.97998C15.7501 2.97998 19.3001 5.17998 21.7401 8.99998C22.8001 10.65 22.8001 13.34 21.7401 15C19.3001 18.82 15.7501 21.02 12.0001 21.02ZM12.0001 4.47998C8.77008 4.47998 5.68008 6.41998 3.52008 9.80998C2.77008 10.98 2.77008 13.02 3.52008 14.19C5.68008 17.58 8.77008 19.52 12.0001 19.52C15.2301 19.52 18.3201 17.58 20.4801 14.19C21.2301 13.02 21.2301 10.98 20.4801 9.80998C18.3201 6.41998 15.2301 4.47998 12.0001 4.47998Z"
-                            fill="#292D32"
-                          />
-                        </svg>
-                      </Box>
-                      View Assessment
-                    </Typography>
+                    {a.description && (
+                      <Typography sx={{ fontSize: 13, color: "rgba(17, 17, 17, 0.56)", mb: 1.5, lineHeight: 1.5, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                        {a.description}
+                      </Typography>
+                    )}
+                    <Divider sx={{ my: 1.5, borderColor: "#E4E7EC" }} />
+                    <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
+                      {a.responses !== undefined && (
+                        <Typography sx={{ fontSize: 13, color: "rgba(17, 17, 17, 0.48)", fontWeight: 400 }}>
+                          {a.responses} responses
+                        </Typography>
+                      )}
+                      {a.duration && (
+                        <Typography sx={{ fontSize: 13, color: "rgba(17, 17, 17, 0.48)", fontWeight: 400 }}>
+                          {a.duration}
+                        </Typography>
+                      )}
+                    </Stack>
                   </Box>
                 </Card>
               </Grid>
@@ -505,24 +654,16 @@ export default function AssessmentsPage() {
           </Grid>
         )}
       </Container>
-      {/* New Assessment Modal */}
+
+      {/* ─── Step 1: Select Type Dialog (simple, stays on page) ─────────────── */}
       <Dialog
         open={selectTypeOpen}
         onClose={() => setSelectTypeOpen(false)}
         maxWidth="xs"
-        slotProps={{
-          backdrop: {
-            sx: {
-              backgroundColor: "rgba(0, 0, 0, 0.4)",
-              backdropFilter: "blur(0.4px)",
-            },
-          },
-        }}
+        slotProps={{ backdrop: { sx: { backgroundColor: "rgba(0, 0, 0, 0.4)", backdropFilter: "blur(0.4px)" } } }}
         PaperProps={{ sx: { borderRadius: "20px", p: 0, bgcolor: "rgba(241, 244, 249, 1)" } }}
       >
-        <DialogContent
-          sx={{ p: { xs: 3, md: 4 }, position: "relative", bgcolor: "rgba(241, 244, 249, 1)", minWidth: { xs: 320, md: 400 } }}
-        >
+        <DialogContent sx={{ p: { xs: 3, md: 4 }, position: "relative", bgcolor: "rgba(241, 244, 249, 1)", minWidth: { xs: 320, md: 400 } }}>
           <Typography sx={{ fontWeight: 700, fontSize: 20, color: "rgba(17, 17, 17, 0.92)", mb: 3, textAlign: "left" }}>
             Select Assessment Type
           </Typography>
@@ -531,51 +672,19 @@ export default function AssessmentsPage() {
             onChange={(e) => setSelectedType(e.target.value)}
             fullWidth
             displayEmpty
-            sx={{
-              mb: 3,
-              bgcolor: "#F6F7FB",
-              borderRadius: "10px",
-              fontWeight: 500,
-              fontSize: 16,
-              "& .MuiSelect-select": {
-                color: "rgba(17, 17, 17, 0.92)",
-                fontWeight: 500,
-                fontSize: 16,
-                py: 2,
-              },
-            }}
+            sx={{ mb: 3, bgcolor: "#F6F7FB", borderRadius: "10px", fontWeight: 500, fontSize: 16, "& .MuiSelect-select": { color: "rgba(17, 17, 17, 0.92)", fontWeight: 500, fontSize: 16, py: 2 } }}
           >
-            <MenuItem value="technical_assessment" sx={{ fontWeight: 400, fontSize: 15 }}>
-              Technical assessment
-            </MenuItem>
-            <MenuItem value="online_assessment_1" sx={{ fontWeight: 400, fontSize: 15 }}>
-              Online assessment
-            </MenuItem>
+            <MenuItem value="technical_assessment" sx={{ fontWeight: 400, fontSize: 15 }}>Technical assessment</MenuItem>
+            <MenuItem value="online_assessment_1" sx={{ fontWeight: 400, fontSize: 15 }}>Online assessment</MenuItem>
           </Select>
           <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
-            <Button
-              variant="outlined"
-              onClick={() => setSelectTypeOpen(false)}
-              color="inherit"
-              sx={{ fontWeight: 500, fontSize: 16, borderRadius: "8px", px: 3, py: 1 }}
-            >
+            <Button variant="outlined" onClick={() => setSelectTypeOpen(false)} color="inherit" sx={{ fontWeight: 500, fontSize: 16, borderRadius: "8px", px: 3, py: 1 }}>
               Cancel
             </Button>
             <Button
               variant="contained"
-              onClick={() => {
-                setSelectTypeOpen(false);
-                router.push(`/dashboard/assessments/new?type=${selectedType}`);
-              }}
-              sx={{
-                fontWeight: 600,
-                fontSize: 16,
-                borderRadius: "8px",
-                px: 3,
-                py: 1,
-                bgcolor: "#4444E2",
-                "&:hover": { bgcolor: "#5656E6" },
-              }}
+              onClick={handleContinueFromTypeSelect}
+              sx={{ fontWeight: 600, fontSize: 16, borderRadius: "8px", px: 3, py: 1, bgcolor: "#4444E2", "&:hover": { bgcolor: "#5656E6" } }}
             >
               Continue
             </Button>
@@ -583,226 +692,140 @@ export default function AssessmentsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Assessment Card Menu Dropdown */}
+      {/* ─── Step 2: Choose Upload vs Generate ──────────────────────────────── */}
+      <AssessmentTypeDialog
+        open={creationOpen && entryStep === "choose"}
+        onClose={handleCloseCreation}
+        onSelectUpload={handleSelectUpload}
+        onSelectGenerate={handleSelectGenerate}
+      />
+
+      {/* ─── Step 3a: Upload CSV/Excel ───────────────────────────────────────── */}
+      <AssessmentUploadDialog
+        open={creationOpen && entryStep === "upload"}
+        onClose={handleCloseCreation}
+        importFile={importFile}
+        importRows={importRows}
+        importing={importing}
+        importProgress={importProgress}
+        onImport={handleImportAssessments}
+        onCancelImport={handleCancelImport}
+      />
+
+      {/* ─── Step 3b: Configure & Generate ───────────────────────────────────── */}
+      <AssessmentConfigDialog
+        open={creationOpen && entryStep === "form"}
+        onClose={handleCloseCreation}
+        type={creationType}
+        jobTitle={jobTitle}
+        setJobTitle={setJobTitle}
+        skills={skills}
+        setSkills={setSkills}
+        generatedSkills={generatedSkills}
+        isGeneratingSkills={isGeneratingSkills}
+        generateSkills={generateSkills}
+        handleDeleteSkill={handleDeleteSkill}
+        assessmentOptions={assessmentOptions}
+        setAssessmentOptions={setAssessmentOptions}
+        numberOfOpenTextQuestions={numberOfOpenTextQuestions}
+        setNumberOfOpenTextQuestions={setNumberOfOpenTextQuestions}
+        numberOfMultiChoiceQuestions={numberOfMultiChoiceQuestions}
+        setNumberOfMultiChoiceQuestions={setNumberOfMultiChoiceQuestions}
+        error={genError}
+        success={genSuccess}
+        loading={genLoading}
+        onSubmit={creationType === "technical_assessment" ? () => setCreationOpen(false) : handleCreateAssessment}
+        id={null}
+        level={level}
+      />
+
+      {/* ─── Technical Assessment Editor (full-page overlay) ─────────────────── */}
+      {creationType === "technical_assessment" && !creationOpen && showSuccessModal === false && editorValue !== undefined && jobTitle && (
+        <TechnicalAssessmentEditor
+          jobTitle={jobTitle}
+          skills={skills}
+          assessmentDescription={assessmentDescription}
+          setAssessmentDescription={setAssessmentDescription}
+          value={editorValue}
+          setValue={setEditorValue}
+          isGeneratingContent={isGeneratingContent}
+          handleGenerateTechnicalContent={handleGenerateTechnicalContent}
+          handleSaveTechnicalAssessment={handleSaveTechnicalAssessment}
+        />
+      )}
+
+      {/* ─── Form Builder ─────────────────────────────────────────────────────── */}
+      {showFormBuilder && (
+        <AssessmentFormBuilder
+          jobTitle={jobTitle}
+          skills={skills}
+          assessmentDescription={assessmentDescription}
+          setAssessmentDescription={setAssessmentDescription}
+          questions={questions}
+          handleQuestionChange={handleQuestionChange}
+          handleTypeChange={handleTypeChange}
+          handleOptionChange={handleOptionChange}
+          handleAddOption={handleAddOption}
+          handleRemoveOption={handleRemoveOption}
+          handleDeleteQuestion={handleDeleteQuestion}
+          handleAddQuestion={handleAddQuestion}
+          saveError={saveError}
+          saveSuccess={saveSuccess}
+          saveLoading={saveLoading}
+          handleSaveAssessment={handleSaveAssessment}
+          id={null}
+        />
+      )}
+
+      {/* ─── Success Modal ────────────────────────────────────────────────────── */}
+      <AssessmentSuccessModal
+        open={showSuccessModal}
+        onClose={() => { setShowSuccessModal(false); resetCreationState(); }}
+        savedAssessmentId={savedAssessmentId}
+        router={router}
+      />
+
+      {/* ─── Card Context Menu ────────────────────────────────────────────────── */}
       <Menu
         anchorEl={menuAnchorEl}
         open={Boolean(menuAnchorEl)}
         onClose={handleMenuClose}
-        PaperProps={{
-          sx: {
-            borderRadius: "12px",
-            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)",
-            minWidth: 160,
-            mt: 1,
-          },
-        }}
+        PaperProps={{ sx: { borderRadius: "12px", boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)", minWidth: 160, mt: 1 } }}
         transformOrigin={{ horizontal: "right", vertical: "top" }}
         anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
       >
         <MenuItem
           onClick={handleDeleteFromMenu}
-          sx={{
-            color: "#DC3545",
-            fontSize: "14px",
-            fontWeight: 500,
-            py: 1.5,
-            px: 2,
-            "&:hover": {
-              backgroundColor: "rgba(220, 53, 69, 0.08)",
-            },
-          }}
+          sx={{ color: "#DC3545", fontSize: "14px", fontWeight: 500, py: 1.5, px: 2, "&:hover": { backgroundColor: "rgba(220, 53, 69, 0.08)" } }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mr: 1 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M21 6.73001C20.98 6.73001 20.95 6.73001 20.92 6.73001C15.63 6.20001 10.35 6.00001 5.12 6.53001L3.08 6.73001C2.66 6.77001 2.29 6.47001 2.25 6.05001C2.21 5.63001 2.51 5.27001 2.92 5.23001L4.96 5.03001C10.28 4.49001 15.67 4.70001 21.07 5.23001C21.48 5.27001 21.78 5.64001 21.74 6.05001C21.71 6.44001 21.38 6.73001 21 6.73001Z"
-                fill="#DC3545"
-              />
-              <path
-                d="M8.5 5.72C8.46 5.72 8.42 5.72 8.37 5.71C7.97 5.64 7.69 5.25 7.76 4.85L7.98 3.54C8.14 2.58 8.36 1.25 10.69 1.25H13.31C15.65 1.25 15.87 2.63 16.02 3.55L16.24 4.85C16.31 5.26 16.03 5.65 15.63 5.71C15.22 5.78 14.83 5.5 14.77 5.1L14.55 3.8C14.41 2.93 14.38 2.76 13.32 2.76H10.7C9.64 2.76 9.62 2.9 9.47 3.79L9.24 5.09C9.18 5.46 8.86 5.72 8.5 5.72Z"
-                fill="#DC3545"
-              />
-              <path
-                d="M15.21 22.75H8.79C5.3 22.75 5.16 20.82 5.05 19.26L4.4 9.19C4.37 8.78 4.69 8.42 5.10 8.39C5.52 8.37 5.87 8.68 5.90 9.09L6.55 19.16C6.66 20.68 6.70 21.25 8.79 21.25H15.21C17.31 21.25 17.35 20.68 17.45 19.16L18.10 9.09C18.13 8.68 18.49 8.37 18.90 8.39C19.31 8.42 19.63 8.77 19.60 9.19L18.95 19.26C18.84 20.82 18.70 22.75 15.21 22.75Z"
-                fill="#DC3545"
-              />
-              <path
-                d="M13.66 17.25H10.33C9.92 17.25 9.58 16.91 9.58 16.5C9.58 16.09 9.92 15.75 10.33 15.75H13.66C14.07 15.75 14.41 16.09 14.41 16.5C14.41 16.91 14.07 17.25 13.66 17.25Z"
-                fill="#DC3545"
-              />
-              <path
-                d="M14.5 13.25H9.5C9.09 13.25 8.75 12.91 8.75 12.5C8.75 12.09 9.09 11.75 9.5 11.75H14.5C14.91 11.75 15.25 12.09 15.25 12.5C15.25 12.91 14.91 13.25 14.5 13.25Z"
-                fill="#DC3545"
-              />
-            </svg>
-          </Box>
           Delete
         </MenuItem>
       </Menu>
 
-      {/* Header Menu Dropdown */}
-      <Menu
-        anchorEl={headerMenuAnchorEl}
-        open={Boolean(headerMenuAnchorEl)}
-        onClose={handleHeaderMenuClose}
-        PaperProps={{
-          sx: {
-            borderRadius: "12px",
-            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)",
-            minWidth: 180,
-            mt: 1,
-          },
-        }}
-        transformOrigin={{ horizontal: "right", vertical: "top" }}
-        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-      >
-        <MenuItem
-          onClick={() => {
-            // Add your header menu action here
-            handleHeaderMenuClose();
-          }}
-          sx={{
-            fontSize: "14px",
-            fontWeight: 500,
-            py: 1.5,
-            px: 2,
-            "&:hover": {
-              backgroundColor: "rgba(68, 68, 226, 0.08)",
-            },
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mr: 1 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V21C3 22.11 3.89 23 5 23H19C20.11 23 21 22.11 21 21V9ZM19 9H14V4H5V21H19V9Z"
-                fill="#292D32"
-              />
-            </svg>
-          </Box>
-          Export Data
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            // Add your header menu action here
-            handleHeaderMenuClose();
-          }}
-          sx={{
-            fontSize: "14px",
-            fontWeight: 500,
-            py: 1.5,
-            px: 2,
-            "&:hover": {
-              backgroundColor: "rgba(68, 68, 226, 0.08)",
-            },
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mr: 1 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M19 3H5C3.89 3 3 3.9 3 5V19C3 20.1 3.89 21 5 21H19C20.1 21 21 20.1 21 19V5C21 3.9 20.1 3 19 3ZM19 19H5V5H19V19Z"
-                fill="#292D32"
-              />
-              <path d="M7 12H9V17H7V12Z" fill="#292D32" />
-              <path d="M11 7H13V17H11V7Z" fill="#292D32" />
-              <path d="M15 10H17V17H15V10Z" fill="#292D32" />
-            </svg>
-          </Box>
-          View Analytics
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            // Add your header menu action here
-            handleHeaderMenuClose();
-          }}
-          sx={{
-            fontSize: "14px",
-            fontWeight: 500,
-            py: 1.5,
-            px: 2,
-            "&:hover": {
-              backgroundColor: "rgba(68, 68, 226, 0.08)",
-            },
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mr: 1 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM13 17H11V15H13V17ZM13 13H11V7H13V13Z"
-                fill="#292D32"
-              />
-            </svg>
-          </Box>
-          Help & Support
-        </MenuItem>
-      </Menu>
-
-      {/* Delete Confirmation Dialog */}
+      {/* ─── Delete Confirmation Dialog ───────────────────────────────────────── */}
       <Dialog
         open={deleteDialogOpen}
         onClose={handleDeleteCancel}
         maxWidth="xs"
-        slotProps={{
-          backdrop: {
-            sx: {
-              backgroundColor: "rgba(0, 0, 0, 0.4)",
-              backdropFilter: "blur(0.4px)",
-            },
-          },
-        }}
+        slotProps={{ backdrop: { sx: { backgroundColor: "rgba(0, 0, 0, 0.4)", backdropFilter: "blur(0.4px)" } } }}
         PaperProps={{ sx: { borderRadius: "20px", p: 0, bgcolor: "rgba(241, 244, 249, 1)" } }}
       >
-        <DialogContent
-          sx={{ p: { xs: 3, md: 4 }, position: "relative", bgcolor: "rgba(241, 244, 249, 1)", minWidth: { xs: 320, md: 400 } }}
-        >
+        <DialogContent sx={{ p: { xs: 3, md: 4 }, position: "relative", bgcolor: "rgba(241, 244, 249, 1)", minWidth: { xs: 320, md: 400 } }}>
           <Typography sx={{ fontWeight: 700, fontSize: 20, color: "rgba(17, 17, 17, 0.92)", mb: 2, textAlign: "left" }}>
             Delete Assessment
           </Typography>
           <Typography sx={{ fontSize: 16, color: "rgba(17, 17, 17, 0.68)", mb: 3, textAlign: "left" }}>
-            Are you sure you want to delete "{assessmentToDelete?.title}"? This action cannot be undone.
+            Are you sure you want to delete &quot;{assessmentToDelete?.title}&quot;? This action cannot be undone.
           </Typography>
           <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
-            <Button
-              variant="contained"
-              onClick={handleDeleteCancel}
-              // color="secondary.main"
-              sx={{
-                bgcolor: "primary.main",
-                fontWeight: 500,
-                fontSize: 16,
-                borderRadius: "8px",
-                px: 3,
-                py: 1,
-                "&:hover": {
-                  bgcolor: "primary.main",
-                  opacity: 0.95,
-                },
-              }}
-            >
+            <Button variant="contained" onClick={handleDeleteCancel} sx={{ bgcolor: "primary.main", fontWeight: 500, fontSize: 16, borderRadius: "8px", px: 3, py: 1, "&:hover": { bgcolor: "primary.main", opacity: 0.95 } }}>
               Cancel
             </Button>
             <Button
               variant="outlined"
               onClick={handleDeleteConfirm}
               disabled={deleting}
-              sx={{
-                fontWeight: 600,
-                fontSize: 16,
-                borderRadius: "8px",
-                px: 3,
-                py: 1,
-                borderColor: "#DC3545",
-                color: "#DC3545",
-                "&:hover": {
-                  borderColor: "#C82333",
-                  color: "#C82333",
-                  backgroundColor: "rgba(220, 53, 69, 0.04)",
-                },
-                "&:disabled": {
-                  borderColor: "#DC3545",
-                  color: "#DC3545",
-                  opacity: 0.6,
-                },
-              }}
+              sx={{ fontWeight: 600, fontSize: 16, borderRadius: "8px", px: 3, py: 1, borderColor: "#DC3545", color: "#DC3545", "&:hover": { borderColor: "#C82333", color: "#C82333", backgroundColor: "rgba(220, 53, 69, 0.04)" }, "&:disabled": { borderColor: "#DC3545", color: "#DC3545", opacity: 0.6 } }}
             >
               {deleting ? "Deleting..." : "Delete"}
             </Button>
@@ -810,28 +833,9 @@ export default function AssessmentsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Snackbar for notifications */}
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={4000}
-        onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
-      >
-        <Alert
-          onClose={handleSnackbarClose}
-          severity={snackbarSeverity}
-          sx={{
-            width: "100%",
-            borderRadius: "8px",
-            "& .MuiAlert-icon": {
-              fontSize: "20px",
-            },
-            "& .MuiAlert-message": {
-              fontSize: "14px",
-              fontWeight: 500,
-            },
-          }}
-        >
+      {/* ─── Snackbar ─────────────────────────────────────────────────────────── */}
+      <Snackbar open={snackbarOpen} autoHideDuration={4000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: "top", horizontal: "right" }}>
+        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: "100%", borderRadius: "8px" }}>
           {snackbarMessage}
         </Alert>
       </Snackbar>
