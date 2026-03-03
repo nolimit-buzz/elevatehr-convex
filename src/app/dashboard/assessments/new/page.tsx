@@ -28,6 +28,7 @@ export default function CreateAssessmentPage() {
   >(id ? "form" : "choose");
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const generateFromFileInputRef = useRef<HTMLInputElement | null>(null);
+  const stopImportRef = useRef(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importRows, setImportRows] = useState<any[]>([]);
   const [importing, setImporting] = useState(false);
@@ -250,8 +251,10 @@ export default function CreateAssessmentPage() {
 
     setImporting(true);
     setImportProgress({ total: importRows.length, done: 0 });
+    stopImportRef.current = false;
     try {
       for (let i = 0; i < importRows.length; i++) {
+        if (stopImportRef.current) break;
         const row = importRows[i];
 
         const rowTitle = String(
@@ -359,10 +362,15 @@ export default function CreateAssessmentPage() {
         setImportProgress({ total: importRows.length, done: i + 1 });
       }
 
-      setSnackbarMessage("Import completed.");
-      setSnackbarSeverity("success");
+      if (stopImportRef.current) {
+        setSnackbarMessage("Import stopped.");
+        setSnackbarSeverity("info" as any);
+      } else {
+        setSnackbarMessage("Import completed.");
+        setSnackbarSeverity("success");
+        router.push("/dashboard/assessments");
+      }
       setSnackbarOpen(true);
-      router.push("/dashboard/assessments");
     } catch (err) {
       console.error("Import failed:", err);
       setSnackbarMessage(
@@ -372,7 +380,12 @@ export default function CreateAssessmentPage() {
       setSnackbarOpen(true);
     } finally {
       setImporting(false);
+      stopImportRef.current = false;
     }
+  };
+
+  const handleCancelImport = () => {
+    stopImportRef.current = true;
   };
 
   const handleCreateAssessment = async () => {
@@ -736,6 +749,7 @@ export default function CreateAssessmentPage() {
         importing={importing}
         importProgress={importProgress}
         onImport={handleImportAssessments}
+        onCancelImport={handleCancelImport}
       />
 
       <AssessmentConfigDialog

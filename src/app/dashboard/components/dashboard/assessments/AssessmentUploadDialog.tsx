@@ -11,6 +11,7 @@ import {
   Box,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import AssessmentCancelModal from "./AssessmentCancelModal";
 
 interface AssessmentUploadDialogProps {
   open: boolean;
@@ -20,6 +21,7 @@ interface AssessmentUploadDialogProps {
   importing: boolean;
   importProgress: { total: number; done: number };
   onImport: () => void;
+  onCancelImport: () => void;
 }
 
 export default function AssessmentUploadDialog({
@@ -30,7 +32,22 @@ export default function AssessmentUploadDialog({
   importing,
   importProgress,
   onImport,
+  onCancelImport,
 }: AssessmentUploadDialogProps) {
+  const [showCancelModal, setShowCancelModal] = React.useState(false);
+
+  const handleCloseClick = () => {
+    if (importing) {
+      setShowCancelModal(true);
+    } else {
+      onClose();
+    }
+  };
+
+  const handleConfirmCancel = () => {
+    setShowCancelModal(false);
+    onCancelImport();
+  };
   return (
     <Dialog
       open={open}
@@ -54,7 +71,7 @@ export default function AssessmentUploadDialog({
         }}
       >
         <IconButton
-          onClick={onClose}
+          onClick={handleCloseClick}
           sx={{ position: "absolute", top: 20, right: 20, zIndex: 1 }}
         >
           <CloseIcon sx={{ fontSize: 28, color: "rgba(17, 17, 17, 0.32)" }} />
@@ -122,6 +139,12 @@ export default function AssessmentUploadDialog({
           </Stack>
         )}
       </DialogContent>
+
+      <AssessmentCancelModal
+        open={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={handleConfirmCancel}
+      />
     </Dialog>
   );
 }
