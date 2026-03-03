@@ -40,7 +40,7 @@ export default function AssessmentSuccessModal({
       }}
       PaperProps={{
         sx: {
-          borderRadius: "20px",
+          borderRadius: "8px",
           p: 0,
           maxWidth: "600px",
           width: "100%",

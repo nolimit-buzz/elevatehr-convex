@@ -39,7 +39,7 @@ export default function AssessmentTypeDialog({
       }}
       PaperProps={{
         sx: {
-          borderRadius: "20px",
+          borderRadius: "8px",
           p: 0,
           maxWidth: "580px",
           width: "100%",

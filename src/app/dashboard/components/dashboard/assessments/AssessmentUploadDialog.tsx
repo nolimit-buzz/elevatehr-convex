@@ -63,7 +63,7 @@ export default function AssessmentUploadDialog({
       }}
       PaperProps={{
         sx: {
-          borderRadius: "20px",
+          borderRadius: "8px",
           p: 0,
           maxWidth: "720px",
           bgcolor: "rgba(241, 244, 249, 1)",

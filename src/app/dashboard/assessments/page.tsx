@@ -574,11 +574,11 @@ export default function AssessmentsPage() {
             {Array.from({ length: 8 }).map((_, idx) => (
               <Grid item xs={12} sm={6} md={3} key={idx}>
                 <Box sx={{ p: 3, borderRadius: "12px", bgcolor: "#fff", border: "1px solid #E4E7EC", minHeight: 220 }}>
-                  <Skeleton variant="rectangular" width="100%" height={32} sx={{ borderRadius: "20px", mb: 2 }} />
+                  <Skeleton variant="rectangular" width="100%" height={32} sx={{ borderRadius: "8px", mb: 2 }} />
                   <Skeleton variant="text" width="80%" height={32} sx={{ mb: 1 }} />
                   <Skeleton variant="text" width="100%" height={20} sx={{ mb: 1 }} />
                   <Skeleton variant="text" width="60%" height={16} sx={{ mb: 2 }} />
-                  <Skeleton variant="rectangular" width={100} height={24} sx={{ borderRadius: "20px", mt: "auto" }} />
+                  <Skeleton variant="rectangular" width={100} height={24} sx={{ borderRadius: "8px", mt: "auto" }} />
                 </Box>
               </Grid>
             ))}
@@ -621,7 +621,7 @@ export default function AssessmentsPage() {
                     </IconButton>
                   </Box>
                   <Box sx={{ p: 3 }}>
-                    <Box sx={{ display: "inline-flex", alignItems: "center", gap: "6px", bgcolor: a.color, borderRadius: "20px", py: "6px", mb: 1.5, height: 32, minWidth: 0 }}>
+                    <Box sx={{ display: "inline-flex", alignItems: "center", gap: "6px", bgcolor: a.color, borderRadius: "8px", py: "6px", mb: 1.5, height: 32, minWidth: 0 }}>
                       <Typography sx={{ fontSize: 12, fontWeight: 500, color: a.text_color, px: "10px", whiteSpace: "nowrap" }}>
                         {formatType(a.type)}
                       </Typography>
@@ -652,7 +652,7 @@ export default function AssessmentsPage() {
         onClose={() => setSelectTypeOpen(false)}
         maxWidth="xs"
         slotProps={{ backdrop: { sx: { backgroundColor: "rgba(17, 17, 17, 0.32)", backdropFilter: "blur(4px)" } } }}
-        PaperProps={{ sx: { borderRadius: "20px", p: 0, bgcolor: "rgba(241, 244, 249, 1)" } }}
+        PaperProps={{ sx: { borderRadius: "8px", p: 0, bgcolor: "rgba(241, 244, 249, 1)" } }}
       >
         <DialogContent sx={{ p: { xs: 3, md: 4 }, position: "relative", bgcolor: "rgba(241, 244, 249, 1)", minWidth: { xs: 320, md: 400 } }}>
           <Typography sx={{ fontWeight: 700, fontSize: 20, color: "rgba(17, 17, 17, 0.92)", mb: 3, textAlign: "left" }}>
@@ -799,7 +799,7 @@ export default function AssessmentsPage() {
         onClose={handleDeleteCancel}
         maxWidth="xs"
         slotProps={{ backdrop: { sx: { backgroundColor: "rgba(17, 17, 17, 0.32)", backdropFilter: "blur(4px)" } } }}
-        PaperProps={{ sx: { borderRadius: "20px", p: 0, bgcolor: "rgba(241, 244, 249, 1)" } }}
+        PaperProps={{ sx: { borderRadius: "8px", p: 0, bgcolor: "rgba(241, 244, 249, 1)" } }}
       >
         <DialogContent sx={{ p: { xs: 3, md: 4 }, position: "relative", bgcolor: "rgba(241, 244, 249, 1)", minWidth: { xs: 320, md: 400 } }}>
           <Typography sx={{ fontWeight: 700, fontSize: 20, color: "rgba(17, 17, 17, 0.92)", mb: 2, textAlign: "left" }}>

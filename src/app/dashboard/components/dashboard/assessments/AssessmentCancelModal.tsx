@@ -35,7 +35,7 @@ export default function AssessmentCancelModal({
       }}
       PaperProps={{
         sx: {
-          borderRadius: "12px",
+          borderRadius: "8px",
           width: "100%",
           maxWidth: "420px",
           boxShadow: "0 20px 40px rgba(0,0,0,0.1)",
