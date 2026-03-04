@@ -1775,7 +1775,8 @@ const AboutTheJob = () => {
     const host =
       process.env.NEXT_PUBLIC_HOST ||
       (typeof window !== "undefined" ? window.location.origin : "");
-    window.location.href = `${host}/dashboard`;
+    // window.location.href = `${host}/dashboard`;
+    window.location.href = `/dashboard/job-posting/${jobId}/submissions?view=1`;
   };
 
   const renderStepContent = () => {
