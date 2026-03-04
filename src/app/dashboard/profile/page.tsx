@@ -467,7 +467,7 @@ const ProfilePage = () => {
     window.open(
       `https://auth.calendly.com/oauth/authorize?client_id=${process.env.NEXT_PUBLIC_CALENDLY_CLIENT_ID}&response_type=code&redirect_uri=http://localhost:3000/auth/calendly`,
       "Calendly OAuth",
-      `width=${width},height=${height},left=${left},top=${top}`
+      `width=${width},height=${height},left=${left},top=${top}`,
     );
 
     // Listen for messages from the popup
@@ -1599,8 +1599,8 @@ const ProfilePage = () => {
                                 <InfoOutlined sx={{ fontSize: 18, color: "rgba(17, 17, 17, 0.6)" }} />
                                 <Typography variant="body2" sx={{ color: "rgba(17, 17, 17, 0.6)" }}>
                                   <>
-                                    Don't have a key yet? Follow the guide to create one on the Groq dashboard and
-                                    paste it here.{" "}
+                                    Don't have a key yet? Follow the guide to create one on the Groq dashboard and paste
+                                    it here.{" "}
                                     <Link
                                       target="_blank"
                                       href="/dashboard/profile/Groq-api-key-setup"

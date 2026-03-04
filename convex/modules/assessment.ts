@@ -10,6 +10,17 @@ import {
   generateTechnicalContent,
 } from "../templates/ai/assessmentDescription";
 
+// Internal query to get the first assessment for a company (used as fallback for email links)
+export const getFirstCompanyAssessmentInternal = internalQuery({
+  args: { companyId: v.id("companies") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("assessments")
+      .withIndex("by_company", (q) => q.eq("company_id", args.companyId))
+      .first();
+  },
+});
+
 // Internal query to get company by ID (used by actions)
 export const getCompanyInternal = internalQuery({
   args: { companyId: v.id("companies") },

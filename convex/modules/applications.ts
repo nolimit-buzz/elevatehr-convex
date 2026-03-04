@@ -747,7 +747,16 @@ export const updateStage = authedMutation({
       }
 
       const prevStage = application.stage;
-      await ctx.db.patch(applicationId, { stage: args.stage });
+
+      // Auto-assign the job's first assessment when moving to skill_assessment
+      const patchData: Record<string, unknown> = { stage: args.stage };
+      if (args.stage === "skill_assessment" && !application.assessment_id) {
+        const job = await ctx.db.get(application.job_id);
+        if (job?.assessments && job.assessments.length > 0) {
+          patchData.assessment_id = job.assessments[0];
+        }
+      }
+      await ctx.db.patch(applicationId, patchData);
 
       // Update job stage counts
       const job = await ctx.db.get(application.job_id);
@@ -865,7 +874,16 @@ export const moveToStageWithEmail = authedMutation({
       }
 
       const oldStage = application.stage;
-      await ctx.db.patch(applicationId, { stage: args.stage });
+
+      // Auto-assign the job's first assessment when moving to skill_assessment
+      const patchData: Record<string, unknown> = { stage: args.stage };
+      if (args.stage === "skill_assessment" && !application.assessment_id) {
+        const jobForAssessment = await ctx.db.get(application.job_id);
+        if (jobForAssessment?.assessments && jobForAssessment.assessments.length > 0) {
+          patchData.assessment_id = jobForAssessment.assessments[0];
+        }
+      }
+      await ctx.db.patch(applicationId, patchData);
 
       // Update job stage counts
       const job = await ctx.db.get(application.job_id);
