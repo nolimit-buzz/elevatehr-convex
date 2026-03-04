@@ -1,15 +1,6 @@
 "use client";
 import React from "react";
-import {
-  Dialog,
-  DialogContent,
-  IconButton,
-  Typography,
-  Stack,
-  Box,
-  Button,
-  LinearProgress,
-} from "@mui/material";
+import { Dialog, DialogContent, IconButton, Typography, Stack, Box, Button, LinearProgress } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
 interface AssessmentUploadDialogProps {
@@ -30,6 +21,8 @@ export default function AssessmentUploadDialog({
   importRows,
   importing,
   importProgress,
+  onImport,
+  onCancelImport,
 }: AssessmentUploadDialogProps) {
   return (
     <Dialog
@@ -38,7 +31,7 @@ export default function AssessmentUploadDialog({
       maxWidth="md"
       slotProps={{
         backdrop: {
-          sx: { 
+          sx: {
             backgroundColor: "rgba(17, 17, 17, 0.32)",
             backdropFilter: "blur(4px)",
           },
@@ -65,7 +58,16 @@ export default function AssessmentUploadDialog({
       >
         <IconButton
           onClick={onClose}
-          sx={{ position: "absolute", top: 10, right: 16, zIndex: 1, bgcolor: "rgba(235, 235, 235, 1)", borderRadius: "50%", width: "30px", height: "30px" }}
+          sx={{
+            position: "absolute",
+            top: 10,
+            right: 16,
+            zIndex: 1,
+            bgcolor: "rgba(235, 235, 235, 1)",
+            borderRadius: "50%",
+            width: "30px",
+            height: "30px",
+          }}
         >
           <CloseIcon sx={{ fontSize: 14, color: "rgba(17, 17, 17, 0.84)" }} />
         </IconButton>
@@ -83,15 +85,14 @@ export default function AssessmentUploadDialog({
 
         {importFile && (
           <Stack mt={3} spacing={1.5}>
-            <Typography
-              sx={{ fontSize: 14, color: "rgba(34, 34, 79, 0.72)", fontWeight: 400 }}
-            >
+            <Typography sx={{ fontSize: 14, color: "rgba(34, 34, 79, 0.72)", fontWeight: 400 }}>
               File selected: <strong>{importFile.name}</strong>
               {importRows.length > 0 && <> — {importRows.length} rows detected</>}
             </Typography>
             <Button
               variant="contained"
-              onClick={() => {}}
+              onClick={onImport}
+              disabled={importing}
               sx={{
                 bgcolor: "#4444E2",
                 borderRadius: "8px",
@@ -121,10 +122,7 @@ export default function AssessmentUploadDialog({
                     },
                   }}
                 />
-                <Typography
-                  variant="caption"
-                  sx={{ color: "rgba(34, 34, 79, 0.56)", mt: 0.5, display: "block" }}
-                >
+                <Typography variant="caption" sx={{ color: "rgba(34, 34, 79, 0.56)", mt: 0.5, display: "block" }}>
                   {Math.round((importProgress.done / importProgress.total) * 100)}% complete
                 </Typography>
               </Box>

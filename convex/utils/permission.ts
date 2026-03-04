@@ -18,7 +18,6 @@ export type AuthedMutationCtx = MutationCtx & { user: Doc<"users"> | null };
 export type AuthedActionCtx = ActionCtx & { user: Doc<"users"> | null };
 
 async function getUserFromToken(ctx: QueryCtx | MutationCtx, token?: string) {
-  console.log("Getting user from token:", token);
   if (!token) return null;
 
   const user = await verifyToken(token);
