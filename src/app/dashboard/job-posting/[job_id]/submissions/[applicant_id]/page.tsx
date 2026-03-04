@@ -965,7 +965,11 @@ export default function ApplicantDetails() {
                       <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
                         Application Responses
                       </Typography>
-                      <Stack spacing={3}>
+                      <Stack spacing={3} sx={{
+                        bgcolor: "rgba(17, 17, 17, 0.04)",
+                        p: 2,
+                        borderRadius: 2,
+                      }}>
                         {customFieldsConfig.map((field: any) => {
                           const response = customFieldResponses[field.key];
                           if (response === undefined || response === null) return null;
@@ -978,9 +982,7 @@ export default function ApplicantDetails() {
                           return (
                             <Box key={field.key} sx={{
                               // color: "rgba(17, 17, 17, 0.92)",
-                              bgcolor: "rgba(17, 17, 17, 0.04)",
-                              p: 2,
-                              borderRadius: 2,
+
                               whiteSpace: "pre-wrap"
                             }}>
 

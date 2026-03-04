@@ -1489,11 +1489,11 @@ const AboutTheJob = () => {
             idx !== index
               ? f
               : {
-                  ...f,
-                  options: (f.options || []).filter(
-                    (_: any, optIdx: number) => optIdx !== optionIndex,
-                  ),
-                },
+                ...f,
+                options: (f.options || []).filter(
+                  (_: any, optIdx: number) => optIdx !== optionIndex,
+                ),
+              },
           );
           console.log("[handleDeleteField] Option deleted:", {
             index,
@@ -1704,8 +1704,8 @@ const AboutTheJob = () => {
           description: formData.about_role || formData.description,
           responsibilities: formData.responsibilities
             ? formData.responsibilities
-                .split("\n")
-                .filter((r: string) => r.trim())
+              .split("\n")
+              .filter((r: string) => r.trim())
             : [],
           requirements: formData.expectations.filter((e: string) => e.trim()),
           salary_min:
@@ -1751,6 +1751,8 @@ const AboutTheJob = () => {
       );
     }
   };
+
+
 
   const handleCloseNotification = () => {
     setNotification((prev) => ({ ...prev, open: false }));
