@@ -1,5 +1,11 @@
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
+## Local setup
+
+For a **detailed step-by-step guide** to setting up the project locally (Node, env vars, Convex, optional Calendly/OpenAI), see:
+
+**[docs/SETUP.md](docs/SETUP.md)**
+
 ## Getting Started
 
 First, run the development server:

@@ -22,6 +22,7 @@ import {
   Button,
   Typography,
   IconButton,
+  Checkbox,
 } from "@mui/material";
 import Stepper from "@mui/material/Stepper";
 import Step from "@mui/material/Step";
@@ -175,7 +176,9 @@ const StyledAutocomplete = styled(Autocomplete<string, true, false, true>)({
   },
 });
 
-const StyledSelect = styled(CreatableSelect<SkillOption, true, GroupBase<SkillOption>>)({
+const StyledSelect = styled(
+  CreatableSelect<SkillOption, true, GroupBase<SkillOption>>,
+)({
   ".select__control": {
     borderRadius: "8px",
     border: "0.8px solid rgba(17, 17, 17, 0.14)",
@@ -258,7 +261,9 @@ interface FieldProps {
   label: string;
   description: string;
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onChange: (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => void;
   multiline?: boolean;
   sx?: any;
   error?: string;
@@ -275,7 +280,12 @@ interface FormBuilderFieldProps {
     required?: boolean;
   };
   index: number;
-  handleChange: (index: number, key: string, value: string, optionIndex?: number | null) => void;
+  handleChange: (
+    index: number,
+    key: string,
+    value: string,
+    optionIndex?: number | null,
+  ) => void;
   handleDelete: (index: number, optionIndex?: number | null) => void;
   handleTypeChange: (index: number, type: string) => void;
   isRequired: boolean;
@@ -296,8 +306,8 @@ interface Assessment {
 
 interface AssessmentStepProps {
   assessments: Assessment[];
-  selectedAssessment: Assessment | null;
-  handleAssessmentChange: (assessment: Assessment | null) => void;
+  selectedAssessments: Id<"assessments">[];
+  handleAssessmentsChange: (assessmentIds: Id<"assessments">[]) => void;
 }
 
 interface FormData {
@@ -347,7 +357,13 @@ interface ApiError {
   message?: string;
 }
 
-const TextEditor: React.FC<TextEditorProps> = ({ label, description, value, onChange, onRegenerate }) => {
+const TextEditor: React.FC<TextEditorProps> = ({
+  label,
+  description,
+  value,
+  onChange,
+  onRegenerate,
+}) => {
   const theme = useTheme();
   return (
     <>
@@ -359,7 +375,11 @@ const TextEditor: React.FC<TextEditorProps> = ({ label, description, value, onCh
         padding="28px 24px"
       >
         <Stack spacing={1} minWidth={{ xs: "100%", sm: "280px" }}>
-          <Stack direction={{ xs: "column", sm: "row" }} alignItems={{ xs: "flex-start", sm: "center" }} spacing={1}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            alignItems={{ xs: "flex-start", sm: "center" }}
+            spacing={1}
+          >
             <Typography
               variant="subtitle1"
               sx={{
@@ -373,7 +393,11 @@ const TextEditor: React.FC<TextEditorProps> = ({ label, description, value, onCh
             >
               {label}
             </Typography>
-            <IconButton size="small" onClick={onRegenerate} sx={{ mt: { xs: 1, sm: 0 } }}>
+            <IconButton
+              size="small"
+              onClick={onRegenerate}
+              sx={{ mt: { xs: 1, sm: 0 } }}
+            >
               <RefreshIcon />
             </IconButton>
           </Stack>
@@ -487,7 +511,11 @@ const FormBuilderField: React.FC<FormBuilderFieldProps> = ({
     <Stack
       alignItems="flex-start"
       width={"100%"}
-      sx={{ padding: "20px 22px", border: "1px solid rgba(17, 17, 17, 0.14)", borderRadius: "8px" }}
+      sx={{
+        padding: "20px 22px",
+        border: "1px solid rgba(17, 17, 17, 0.14)",
+        borderRadius: "8px",
+      }}
     >
       <Stack direction={{ xs: "column", sm: "row" }} spacing={1} width={"100%"}>
         <Stack
@@ -562,7 +590,10 @@ const FormBuilderField: React.FC<FormBuilderFieldProps> = ({
                   <MenuItem value="file">Attachment</MenuItem>
                 </Select>
               </FormControl>
-              <IconButton sx={{ padding: 0 }} onClick={() => handleDelete(index)}>
+              <IconButton
+                sx={{ padding: 0 }}
+                onClick={() => handleDelete(index)}
+              >
                 <DeleteIcon />
               </IconButton>
             </Stack>
@@ -614,7 +645,12 @@ const FormBuilderField: React.FC<FormBuilderFieldProps> = ({
               ? Object.values(field.options as any)
               : []
           ).map((option, optionIndex) => (
-            <Stack key={optionIndex} direction={"row"} gap={1} alignItems={"center"}>
+            <Stack
+              key={optionIndex}
+              direction={"row"}
+              gap={1}
+              alignItems={"center"}
+            >
               <TextField
                 fullWidth
                 value={option || ""}
@@ -713,8 +749,26 @@ const FormBuilderField: React.FC<FormBuilderFieldProps> = ({
   );
 };
 
-const AssessmentStep: React.FC<AssessmentStepProps> = ({ assessments, selectedAssessment, handleAssessmentChange }) => {
+const AssessmentStep: React.FC<AssessmentStepProps> = ({
+  assessments,
+  selectedAssessments,
+  handleAssessmentsChange,
+}) => {
   const theme = useTheme();
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [activeAssessment, setActiveAssessment] = useState<Assessment | null>(
+    null,
+  );
+
+  const openDetails = (assessment: Assessment) => {
+    setActiveAssessment(assessment);
+    setDetailsOpen(true);
+  };
+
+  const closeDetails = () => {
+    setDetailsOpen(false);
+    setActiveAssessment(null);
+  };
 
   return (
     <Stack spacing={3} width="100%" padding="28px">
@@ -738,12 +792,18 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({ assessments, selectedAs
             lineHeight: "20px",
           }}
         >
-          Only accepted applicants who have been moved to the assessment stage can access this
+          Only accepted applicants who have been moved to the assessment stage
+          can access this
         </Typography>
       </Box>
 
       {/* Assessment Selection */}
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={3} alignItems="flex-start" width={"100%"}>
+      <Stack
+        direction={{ xs: "column", sm: "row" }}
+        spacing={3}
+        alignItems="flex-start"
+        width={"100%"}
+      >
         <Stack spacing={1} minWidth={"280px"}>
           <Typography
             variant="subtitle1"
@@ -772,71 +832,88 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({ assessments, selectedAs
         </Stack>
         <FormControl fullWidth>
           <Select
-            value={selectedAssessment ? selectedAssessment.id : ""}
+            multiple
+            value={selectedAssessments}
             onChange={(e) => {
-              const value = e.target.value;
-              if (!value) {
-                handleAssessmentChange(null);
-                return;
-              }
-              const selected = assessments.find((a) => a.id === value);
-              if (selected) {
-                handleAssessmentChange(selected);
-              }
+              const value = e.target.value as Id<"assessments">[];
+              handleAssessmentsChange(value);
             }}
             displayEmpty
-            renderValue={(value) => {
-              if (!value) return "Select from your list of assessments";
-              const assessment = assessments.find((a) => a.id === value);
-              if (!assessment) return "Select from your list of assessments";
+            renderValue={(selected) => {
+              const selectedIds = selected as Id<"assessments">[];
+              if (!selectedIds || selectedIds.length === 0)
+                return "Select from your list of assessments";
 
-              return (
-                <Stack spacing={0.5} width="100%">
-                  <Typography sx={{ fontWeight: 500 }}>
-                    {assessment.level} {assessment.title}
-                  </Typography>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Typography variant="caption" sx={{ color: "rgba(17, 17, 17, 0.68)" }}>
-                      {assessment.type
-                        ? assessment.type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
-                        : ""}
+              const selectedItems = assessments.filter((a) =>
+                selectedIds.includes(a.id as Id<"assessments">),
+              );
+
+              if (selectedItems.length === 0)
+                return "Select from your list of assessments";
+
+              if (selectedItems.length === 1) {
+                const assessment = selectedItems[0];
+                return (
+                  <Stack spacing={0.5} width="100%">
+                    <Typography
+                      sx={{
+                        fontSize: "0.85rem",
+                        color: "rgba(17, 17, 17, 0.84)",
+                        backgroundColor: "rgba(17, 17, 17, 0.06)",
+                        borderRadius: "8px",
+                        px: 1,
+                        py: 0.25,
+                        cursor: "pointer",
+                        width: "fit-content",
+                        "&:hover": {
+                          backgroundColor: "rgba(17, 17, 17, 0.08)",
+                        },
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openDetails(assessment);
+                      }}
+                    >
+                      {assessment.level} {assessment.title}
                     </Typography>
                   </Stack>
-                  <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-                    {assessment.skills
-                      ? (Array.isArray(assessment.skills) ? assessment.skills : assessment.skills.split(","))
-                          .slice(0, 2)
-                          .map((skill, index) => (
-                            <Chip
-                              key={index}
-                              label={typeof skill === "string" ? skill.trim() : skill}
-                              size="small"
-                              sx={{
-                                height: "20px",
-                                fontSize: "0.75rem",
-                                backgroundColor: "rgba(68, 68, 226, 0.08)",
-                                color: "#4444E2",
-                                "& .MuiChip-label": {
-                                  px: 1,
-                                },
-                              }}
-                            />
-                          ))
-                      : null}
-                  </Stack>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: "rgba(17, 17, 17, 0.68)",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {assessment.description}
+                );
+              }
+
+              // Multiple selected: show a compact summary
+              return (
+                <Stack spacing={0.5} width="100%">
+                  <Typography sx={{ fontWeight: 500, mb: 0.5 }}>
+                    {selectedItems.length} assessments selected
                   </Typography>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {selectedItems.map((assessment) => (
+                      <Typography
+                        key={assessment.id}
+                        sx={{
+                          fontSize: "0.85rem",
+                          color: "rgba(17, 17, 17, 0.84)",
+                          backgroundColor: "rgba(17, 17, 17, 0.06)",
+                          borderRadius: "8px",
+                          px: 1,
+                          py: 0.25,
+                          mr: 0.5,
+                          mb: 0.5,
+                          cursor: "pointer",
+                          "&:hover": {
+                            backgroundColor: "rgba(17, 17, 17, 0.08)",
+                          },
+                        }}
+                        onClick={(e) => {
+                          // prevent Select from immediately reopening/closing
+                          e.stopPropagation();
+                          openDetails(assessment);
+                        }}
+                      >
+                        {assessment.title}
+                      </Typography>
+                    ))}
+                  </Stack>
                 </Stack>
               );
             }}
@@ -855,85 +932,236 @@ const AssessmentStep: React.FC<AssessmentStepProps> = ({ assessments, selectedAs
             }}
             MenuProps={{
               PaperProps: {
-                style: {
+                sx: {
                   maxWidth: 500,
+                  borderRadius: "12px",
+                  boxShadow: "0 12px 30px rgba(15, 23, 42, 0.18)",
+                  "&::-webkit-scrollbar": {
+                    width: "4px",
+                  },
+                  "&::-webkit-scrollbar-track": {
+                    backgroundColor: "transparent",
+                  },
+                  "&::-webkit-scrollbar-thumb": {
+                    backgroundColor: "rgba(15, 23, 42, 0.22)",
+                    borderRadius: "999px",
+                  },
                 },
               },
             }}
           >
             <MenuItem value="" disabled>
-              <Typography sx={{ color: "rgba(17, 17, 17, 0.5)" }}>Select from your list of assessments</Typography>
+              <Typography sx={{ color: "rgba(17, 17, 17, 0.5)" }}>
+                Select from your list of assessments
+              </Typography>
             </MenuItem>
-            {assessments.map((assessment) => (
-              <MenuItem
-                key={assessment.id}
-                value={assessment.id}
-                sx={{
-                  py: 1.5,
-                  px: 2,
-                  "&:hover": {
-                    backgroundColor: "rgba(68, 68, 226, 0.04)",
-                  },
-                  "&.Mui-selected": {
-                    backgroundColor: "rgba(68, 68, 226, 0.08)",
+            {assessments.map((assessment) => {
+              const isSelected = selectedAssessments.includes(
+                assessment.id as Id<"assessments">,
+              );
+              return (
+                <MenuItem
+                  key={assessment.id}
+                  value={assessment.id}
+                  sx={{
+                    py: 1.5,
+                    px: 2,
+                    mb: 1,
+                    alignItems: "flex-start",
                     "&:hover": {
-                      backgroundColor: "rgba(68, 68, 226, 0.12)",
+                      backgroundColor: "rgba(68, 68, 226, 0.04)",
                     },
-                  },
-                }}
-              >
-                <Stack spacing={0.5} width="100%">
-                  <Typography sx={{ fontWeight: 500 }}>
-                    {assessment.level} {assessment.title}
-                  </Typography>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Typography variant="caption" sx={{ color: "rgba(17, 17, 17, 0.68)" }}>
-                      {assessment.type
-                        ? assessment.type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
-                        : ""}
-                    </Typography>
+                    "&.Mui-selected": {
+                      backgroundColor: "rgba(68, 68, 226, 0.08)",
+                      "&:hover": {
+                        backgroundColor: "rgba(68, 68, 226, 0.12)",
+                      },
+                    },
+                  }}
+                >
+                  <Stack direction="row" spacing={1.5} alignItems="flex-start">
+                    <Checkbox
+                      size="small"
+                      checked={isSelected}
+                      sx={{
+                        mt: 0.5,
+                        p: 0,
+                        "& .MuiSvgIcon-root": {
+                          fontSize: 18,
+                        },
+                      }}
+                    />
+                    <Stack spacing={0.5} width="100%">
+                      <Typography sx={{ fontWeight: 500 }}>
+                        {assessment.level} {assessment.title}
+                      </Typography>
+                      {assessment.type && (
+                        <Typography
+                          variant="caption"
+                          sx={{ color: "rgba(17, 17, 17, 0.68)" }}
+                        >
+                          {assessment.type
+                            .replace(/_/g, " ")
+                            .replace(/\b\w/g, (c) => c.toUpperCase())}
+                        </Typography>
+                      )}
+                      {assessment.skills && (
+                        <Stack
+                          direction="row"
+                          spacing={0.5}
+                          flexWrap="wrap"
+                          useFlexGap
+                        >
+                          {(Array.isArray(assessment.skills)
+                            ? assessment.skills
+                            : assessment.skills.split(",")
+                          )
+                            .slice(0, 3)
+                            .map((skill, index) => (
+                              <Chip
+                                key={index}
+                                label={
+                                  typeof skill === "string"
+                                    ? skill.trim()
+                                    : skill
+                                }
+                                size="small"
+                                sx={{
+                                  height: "20px",
+                                  fontSize: "0.75rem",
+                                  backgroundColor: "rgba(68, 68, 226, 0.08)",
+                                  color: "#4444E2",
+                                  "& .MuiChip-label": {
+                                    px: 1,
+                                  },
+                                }}
+                              />
+                            ))}
+                        </Stack>
+                      )}
+                      {assessment.description && (
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "rgba(17, 17, 17, 0.68)",
+                            whiteSpace: "normal",
+                          }}
+                        >
+                          {assessment.description}
+                        </Typography>
+                      )}
+                    </Stack>
                   </Stack>
-                  <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-                    {assessment.skills
-                      ? (Array.isArray(assessment.skills) ? assessment.skills : assessment.skills.split(","))
-                          .slice(0, 2)
-                          .map((skill, index) => (
-                            <Chip
-                              key={index}
-                              label={typeof skill === "string" ? skill.trim() : skill}
-                              size="small"
-                              sx={{
-                                height: "20px",
-                                fontSize: "0.75rem",
-                                backgroundColor: "rgba(68, 68, 226, 0.08)",
-                                color: "#4444E2",
-                                "& .MuiChip-label": {
-                                  px: 1,
-                                },
-                              }}
-                            />
-                          ))
-                      : null}
-                  </Stack>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: "rgba(17, 17, 17, 0.68)",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {assessment.description}
-                  </Typography>
-                </Stack>
-              </MenuItem>
-            ))}
+                </MenuItem>
+              );
+            })}
           </Select>
         </FormControl>
       </Stack>
+
+      {/* Assessment Details Dialog */}
+      <Dialog
+        open={detailsOpen}
+        onClose={closeDetails}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: "12px",
+            maxWidth: "520px",
+          },
+        }}
+      >
+        <Box sx={{ position: "relative" }}>
+          <IconButton
+            onClick={closeDetails}
+            sx={{
+              position: "absolute",
+              right: 8,
+              top: 8,
+              color: "rgba(17, 17, 17, 0.6)",
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+          <DialogTitle
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+              gap: 1,
+              color: "rgba(17, 17, 17, 0.92)",
+              fontSize: "20px",
+              fontWeight: 600,
+              py: 3,
+              px: 4,
+            }}
+          >
+            {activeAssessment
+              ? `${activeAssessment.level || ""} ${activeAssessment.title}`
+              : "Assessment details"}
+            {activeAssessment?.type && (
+              <Typography
+                variant="body2"
+                sx={{ color: "rgba(17, 17, 17, 0.68)" }}
+              >
+                {activeAssessment.type
+                  .replace(/_/g, " ")
+                  .replace(/\b\w/g, (c) => c.toUpperCase())}
+              </Typography>
+            )}
+          </DialogTitle>
+        </Box>
+        <DialogContent sx={{ pt: 1, pb: 3, px: 4 }}>
+          {activeAssessment && (
+            <Stack spacing={2}>
+              {activeAssessment.skills && (
+                <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
+                  {(Array.isArray(activeAssessment.skills)
+                    ? activeAssessment.skills
+                    : activeAssessment.skills.split(",")
+                  ).map((skill, index) => (
+                    <Chip
+                      key={index}
+                      label={typeof skill === "string" ? skill.trim() : skill}
+                      size="small"
+                      sx={{
+                        height: "22px",
+                        fontSize: "0.75rem",
+                        backgroundColor: "rgba(68, 68, 226, 0.08)",
+                        color: "#4444E2",
+                        "& .MuiChip-label": {
+                          px: 1,
+                        },
+                      }}
+                    />
+                  ))}
+                </Stack>
+              )}
+              {activeAssessment.description && (
+                <Typography
+                  variant="body2"
+                  sx={{ color: "rgba(17, 17, 17, 0.8)" }}
+                >
+                  {activeAssessment.description}
+                </Typography>
+              )}
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 4, pb: 3 }}>
+          <Button
+            onClick={closeDetails}
+            variant="contained"
+            sx={{
+              borderRadius: "8px",
+              textTransform: "none",
+            }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 };
@@ -976,10 +1204,13 @@ const AboutTheJob = () => {
     customFieldsRef.current = customFields;
   }, [customFields]);
   const [currentStep, setCurrentStep] = useState(1);
-  const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
   const [showDialog, setShowDialog] = useState(false);
   const [jobUrl, setJobUrl] = useState("");
-  const [notification, setNotification] = useState<{ open: boolean; message: string; severity: AlertColor }>({
+  const [notification, setNotification] = useState<{
+    open: boolean;
+    message: string;
+    severity: AlertColor;
+  }>({
     open: false,
     message: "",
     severity: "success",
@@ -1040,28 +1271,38 @@ const AboutTheJob = () => {
       setCustomSkills([]);
 
       // Load existing custom fields from application_form
-      const existingCustomFields = (jobData as any).application_form?.custom_fields || [];
+      const existingCustomFields =
+        (jobData as any).application_form?.custom_fields || [];
       setCustomFields(
         existingCustomFields.map((field: any, index: number) => ({
           key: field.key || `custom_${index + 1}`,
           type: field.type || "text",
           label: field.label || "",
           value: field.value || "",
-          options: Array.isArray(field.options) ? field.options : field.options ? Object.values(field.options) : [],
+          options: Array.isArray(field.options)
+            ? field.options
+            : field.options
+              ? Object.values(field.options)
+              : [],
           required: field.required || false,
           description: field.description || "",
         })),
       );
 
       // Load existing required fields from application_form
-      const existingRequiredFields = (jobData as any).application_form?.required_fields || [];
+      const existingRequiredFields =
+        (jobData as any).application_form?.required_fields || [];
       setFormFields(
         existingRequiredFields.map((field: any) => ({
           key: field.key || "",
           type: field.type || "text",
           label: field.label || "",
           value: field.value || "",
-          options: Array.isArray(field.options) ? field.options : field.options ? Object.values(field.options) : [],
+          options: Array.isArray(field.options)
+            ? field.options
+            : field.options
+              ? Object.values(field.options)
+              : [],
           required: field.required || false,
           description: field.description || "",
         })),
@@ -1099,59 +1340,23 @@ const AboutTheJob = () => {
   // Update assessments state when Convex data changes
   useEffect(() => {
     if (convexAssessments && Array.isArray(convexAssessments)) {
-      const mappedAssessments: Assessment[] = convexAssessments.map((assessment) => ({
-        id: assessment._id,
-        _id: assessment._id,
-        title: assessment.title,
-        type: assessment.type,
-        description: assessment.description || "",
-        level: assessment.level || "",
-        skills: assessment.skills || [],
-        questions: assessment.questions || [],
-      }));
+      const mappedAssessments: Assessment[] = convexAssessments.map(
+        (assessment) => ({
+          id: assessment._id,
+          _id: assessment._id,
+          title: assessment.title,
+          type: assessment.type,
+          description: assessment.description || "",
+          level: assessment.level || "",
+          skills: assessment.skills || [],
+          questions: assessment.questions || [],
+        }),
+      );
       setAssessments(mappedAssessments);
     }
   }, [convexAssessments]);
 
-  // Set selected assessment when either assessments or job data is loaded
-  useEffect(() => {
-    // Check if we have assessments, an assessment ID, and no currently selected assessment
-    if (assessments.length > 0 && formData.assessments && formData.assessments.length > 0 && !selectedAssessment) {
-      const assessmentId = formData.assessments[0];
-      const assessment = assessments.find((a) => a.id === assessmentId);
-      if (assessment) {
-        setSelectedAssessment(assessment);
-      }
-    }
-  }, [assessments, formData.assessments, selectedAssessment]);
-
-  // Ensure assessment is selected when user navigates to assessment step
-  useEffect(() => {
-    if (
-      currentStep === 3 &&
-      assessments.length > 0 &&
-      formData.assessments &&
-      formData.assessments.length > 0 &&
-      !selectedAssessment
-    ) {
-      const assessmentId = formData.assessments[0];
-      const assessment = assessments.find((a) => a.id === assessmentId);
-      if (assessment) {
-        setSelectedAssessment(assessment);
-      }
-    }
-  }, [currentStep, assessments, formData.assessments, selectedAssessment]);
-
-  // Initial check for assessment when component mounts
-  useEffect(() => {
-    if (assessments.length > 0 && formData.assessments && formData.assessments.length > 0 && !selectedAssessment) {
-      const assessmentId = formData.assessments[0];
-      const assessment = assessments.find((a) => a.id === assessmentId);
-      if (assessment) {
-        setSelectedAssessment(assessment);
-      }
-    }
-  }, []); // Empty dependency array - runs only once
+  // formData.assessments already tracks selected assessment IDs
 
   const handleChange = (field: string, value: string) => {
     setFormData((prevData) => ({
@@ -1160,14 +1365,18 @@ const AboutTheJob = () => {
     }));
   };
 
-  type RegenerateField = "aboutTheRole" | "jobResponsibilities" | "expectations";
+  type RegenerateField =
+    | "aboutTheRole"
+    | "jobResponsibilities"
+    | "expectations";
 
   const handleRegenerate = (field: RegenerateField) => async () => {
     // AI regeneration is handled on the backend during job creation
     // For editing, we don't support regeneration - user can manually edit
     setNotification({
       open: true,
-      message: "AI regeneration is only available during job creation. Please edit manually.",
+      message:
+        "AI regeneration is only available during job creation. Please edit manually.",
       severity: "info",
     });
   };
@@ -1194,7 +1403,12 @@ const AboutTheJob = () => {
     ]);
   };
 
-  const handleFieldChange = (index: number, key: string, value: string, optionIndex?: number | null) => {
+  const handleFieldChange = (
+    index: number,
+    key: string,
+    value: string,
+    optionIndex?: number | null,
+  ) => {
     if (optionIndex !== null && optionIndex !== undefined) {
       const updatedFields = [...customFields];
       if (!updatedFields[index].options) {
@@ -1223,13 +1437,18 @@ const AboutTheJob = () => {
     setCustomFields(updatedFields);
   };
 
-  const handleDeleteField = (index: number, optionIndex: number | null = null) => {
+  const handleDeleteField = (
+    index: number,
+    optionIndex: number | null = null,
+  ) => {
     setCustomFields((prevFields) => {
       // Delete an option if a valid option index was provided
       if (optionIndex !== null && optionIndex !== undefined) {
         const next = prevFields.map((field, idx) => {
           if (idx !== index) return field;
-          const nextOptions = (field.options || []).filter((_, optIdx) => optIdx !== optionIndex);
+          const nextOptions = (field.options || []).filter(
+            (_, optIdx) => optIdx !== optionIndex,
+          );
 
           return {
             ...field,
@@ -1242,10 +1461,18 @@ const AboutTheJob = () => {
           ...prev,
           application_form: {
             ...(prev as any).application_form,
-            custom_fields: ((prev as any).application_form?.custom_fields || []).map((f: any, idx: number) => {
+            custom_fields: (
+              (prev as any).application_form?.custom_fields || []
+            ).map((f: any, idx: number) => {
               if (idx !== index) return f;
-              const opts = Array.isArray(f?.options) ? f.options : f?.options ? Object.values(f.options) : [];
-              const updated = opts.filter((_: any, optIdx: number) => optIdx !== optionIndex);
+              const opts = Array.isArray(f?.options)
+                ? f.options
+                : f?.options
+                  ? Object.values(f.options)
+                  : [];
+              const updated = opts.filter(
+                (_: any, optIdx: number) => optIdx !== optionIndex,
+              );
               return { ...f, options: updated };
             }),
           },
@@ -1261,7 +1488,12 @@ const AboutTheJob = () => {
           )(prevFields as any).map((f: any, idx: number) =>
             idx !== index
               ? f
-              : { ...f, options: (f.options || []).filter((_: any, optIdx: number) => optIdx !== optionIndex) },
+              : {
+                  ...f,
+                  options: (f.options || []).filter(
+                    (_: any, optIdx: number) => optIdx !== optionIndex,
+                  ),
+                },
           );
           console.log("[handleDeleteField] Option deleted:", {
             index,
@@ -1285,14 +1517,17 @@ const AboutTheJob = () => {
         ...prev,
         application_form: {
           ...(prev as any).application_form,
-          custom_fields: ((prev as any).application_form?.custom_fields || []).filter(
-            (_: any, idx: number) => idx !== index,
-          ),
+          custom_fields: (
+            (prev as any).application_form?.custom_fields || []
+          ).filter((_: any, idx: number) => idx !== index),
         },
       }));
 
       try {
-        console.log("[handleDeleteField] Field deleted:", { index, nextCustomFields: filtered });
+        console.log("[handleDeleteField] Field deleted:", {
+          index,
+          nextCustomFields: filtered,
+        });
       } catch (e) {
         console.error("Error logging field deletion:", e);
         // Ignore errors in logging
@@ -1302,12 +1537,10 @@ const AboutTheJob = () => {
     });
   };
 
-  const handleAssessmentChange = (assessment: Assessment | null) => {
-    setSelectedAssessment(assessment);
-    // Also update the formData to keep it in sync
+  const handleAssessmentsChange = (assessmentIds: Id<"assessments">[]) => {
     setFormData((prev) => ({
       ...prev,
-      assessments: assessment ? [assessment.id as Id<"assessments">] : [],
+      assessments: assessmentIds,
     }));
   };
 
@@ -1407,13 +1640,20 @@ const AboutTheJob = () => {
             required: field.required || false,
           };
           // Add options as Record<string, string> for select type
-          if (field.type === "select" && field.options && field.options.length > 0) {
-            baseField.options = field.options.reduce((acc: Record<string, string>, opt: string, idx: number) => {
-              if (opt.trim()) {
-                acc[`option_${idx}`] = opt;
-              }
-              return acc;
-            }, {});
+          if (
+            field.type === "select" &&
+            field.options &&
+            field.options.length > 0
+          ) {
+            baseField.options = field.options.reduce(
+              (acc: Record<string, string>, opt: string, idx: number) => {
+                if (opt.trim()) {
+                  acc[`option_${idx}`] = opt;
+                }
+                return acc;
+              },
+              {},
+            );
           }
           return baseField;
         });
@@ -1434,7 +1674,11 @@ const AboutTheJob = () => {
           required: field.required || true,
         };
         // Add options as Record<string, string> for select type
-        if (field.type === "select" && field.options && field.options.length > 0) {
+        if (
+          field.type === "select" &&
+          field.options &&
+          field.options.length > 0
+        ) {
           baseField.options = (field.options as string[]).reduce(
             (acc: Record<string, string>, opt: string, idx: number) => {
               if (opt.trim()) {
@@ -1459,14 +1703,21 @@ const AboutTheJob = () => {
           title: formData.title,
           description: formData.about_role || formData.description,
           responsibilities: formData.responsibilities
-            ? formData.responsibilities.split("\n").filter((r: string) => r.trim())
+            ? formData.responsibilities
+                .split("\n")
+                .filter((r: string) => r.trim())
             : [],
           requirements: formData.expectations.filter((e: string) => e.trim()),
-          salary_min: parseInt(formData.salary_min.replace(/,/g, "")) || undefined,
-          salary_max: parseInt(formData.salary_max.replace(/,/g, "")) || undefined,
+          salary_min:
+            parseInt(formData.salary_min.replace(/,/g, "")) || undefined,
+          salary_max:
+            parseInt(formData.salary_max.replace(/,/g, "")) || undefined,
           skills: formData.skills,
           experience_level: formData.level,
-          assessments: selectedAssessment ? [selectedAssessment.id as Id<"assessments">] : undefined,
+          assessments:
+            formData.assessments && formData.assessments.length > 0
+              ? (formData.assessments as Id<"assessments">[])
+              : undefined,
           application_form: {
             required_fields: transformedRequiredFields,
             custom_fields: transformedCustomFields,
@@ -1483,14 +1734,21 @@ const AboutTheJob = () => {
       }
 
       // Construct the job URL
-      const host = process.env.NEXT_PUBLIC_HOST || (typeof window !== "undefined" ? window.location.origin : "");
+      const host =
+        process.env.NEXT_PUBLIC_HOST ||
+        (typeof window !== "undefined" ? window.location.origin : "");
       const newJobUrl = `${host}/job-openings/${jobId}`;
       setJobUrl(newJobUrl);
       setShowDialog(true);
     } catch (error) {
       const apiError = error as ApiError;
-      console.error("Error updating job post:", apiError.message || "Unknown error");
-      alert(`Failed to update job post: ${apiError.message || "Unknown error"}`);
+      console.error(
+        "Error updating job post:",
+        apiError.message || "Unknown error",
+      );
+      alert(
+        `Failed to update job post: ${apiError.message || "Unknown error"}`,
+      );
     }
   };
 
@@ -1512,7 +1770,9 @@ const AboutTheJob = () => {
 
   const handleCloseDialog = () => {
     setShowDialog(false);
-    const host = process.env.NEXT_PUBLIC_HOST || (typeof window !== "undefined" ? window.location.origin : "");
+    const host =
+      process.env.NEXT_PUBLIC_HOST ||
+      (typeof window !== "undefined" ? window.location.origin : "");
     window.location.href = `${host}/dashboard`;
   };
 
@@ -1526,7 +1786,12 @@ const AboutTheJob = () => {
           <Skeleton variant="rectangular" height={100} />
           <Skeleton variant="text" width="60%" />
           <Skeleton variant="rectangular" height={150} />
-          <Stack direction="row" spacing={2} alignItems="center" justifyContent="center">
+          <Stack
+            direction="row"
+            spacing={2}
+            alignItems="center"
+            justifyContent="center"
+          >
             <Skeleton variant="circular" width={40} height={40} />
             <Skeleton variant="circular" width={40} height={40} />
             <Skeleton variant="circular" width={40} height={40} />
@@ -1584,7 +1849,12 @@ const AboutTheJob = () => {
               onChange={(value) => handleChange("responsibilities", value)}
               onRegenerate={handleRegenerate("jobResponsibilities")}
             />
-            <Stack spacing={1} marginBottom="10px" direction={{ xs: "column", md: "row" }} padding="28px 24px">
+            <Stack
+              spacing={1}
+              marginBottom="10px"
+              direction={{ xs: "column", md: "row" }}
+              padding="28px 24px"
+            >
               <Stack spacing={1} minWidth={{ xs: "100%", sm: "280px" }}>
                 <Typography
                   variant="subtitle1"
@@ -1613,7 +1883,10 @@ const AboutTheJob = () => {
                 >
                   What you&rsquo;re bringing to this role.
                 </Typography>
-                <IconButton size="small" onClick={handleRegenerate("expectations")}>
+                <IconButton
+                  size="small"
+                  onClick={handleRegenerate("expectations")}
+                >
                   <RefreshIcon />
                 </IconButton>
               </Stack>
@@ -1636,13 +1909,18 @@ const AboutTheJob = () => {
                       "& .MuiInputBase-root": {
                         "& fieldset": {
                           borderRadius: "8px",
-                          border: "0.8px solid rgba(17, 17, 17, 0.14) !important",
+                          border:
+                            "0.8px solid rgba(17, 17, 17, 0.14) !important",
                         },
                       },
                     }}
                   />
                 ))}
-                <Button startIcon={<AddIcon />} onClick={addExpectation} style={{ marginTop: "10px" }}>
+                <Button
+                  startIcon={<AddIcon />}
+                  onClick={addExpectation}
+                  style={{ marginTop: "10px" }}
+                >
                   Add Expectation
                 </Button>
               </Stack>
@@ -1683,7 +1961,11 @@ const AboutTheJob = () => {
                   Specify the salary range for this position
                 </Typography>
               </Stack>
-              <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{ width: "100%", flex: 1 }}>
+              <Stack
+                direction={{ xs: "column", md: "row" }}
+                spacing={2}
+                sx={{ width: "100%", flex: 1 }}
+              >
                 <Box sx={{ flex: 1 }}>
                   <Typography
                     sx={{
@@ -1762,7 +2044,9 @@ const AboutTheJob = () => {
                     error={!!formData.salary_error}
                     helperText={formData.salary_error}
                     InputProps={{
-                      startAdornment: <InputAdornment position="start">₦</InputAdornment>,
+                      startAdornment: (
+                        <InputAdornment position="start">₦</InputAdornment>
+                      ),
                     }}
                     sx={{
                       "& .MuiOutlinedInput-root": {
@@ -1826,9 +2110,14 @@ const AboutTheJob = () => {
               <Box sx={{ width: "100%" }}>
                 <StyledSelect
                   isMulti
-                  value={formData.skills.map((skill) => ({ value: skill, label: skill }))}
+                  value={formData.skills.map((skill) => ({
+                    value: skill,
+                    label: skill,
+                  }))}
                   onChange={(newValue: MultiValue<SkillOption>) => {
-                    const selectedSkills = newValue ? newValue.map((option: SkillOption) => option.value) : [];
+                    const selectedSkills = newValue
+                      ? newValue.map((option: SkillOption) => option.value)
+                      : [];
                     handleSkillsChange(selectedSkills);
                   }}
                   options={[
@@ -1842,9 +2131,13 @@ const AboutTheJob = () => {
                   ]}
                   placeholder="Select or type to add new skills"
                   noOptionsMessage={({ inputValue }: { inputValue: string }) =>
-                    inputValue ? "Press enter to add this skill" : "No skills available"
+                    inputValue
+                      ? "Press enter to add this skill"
+                      : "No skills available"
                   }
-                  formatCreateLabel={(inputValue: string) => `Add "${inputValue}" as a new skill`}
+                  formatCreateLabel={(inputValue: string) =>
+                    `Add "${inputValue}" as a new skill`
+                  }
                   onCreateOption={(inputValue: string) => {
                     const newSkill = inputValue.trim();
                     if (newSkill) {
@@ -1868,7 +2161,11 @@ const AboutTheJob = () => {
             {formFields.map((field: FormField, index) => (
               <FormBuilderField
                 key={`required-${index}`}
-                field={field.type === "email" || field.type === "url" ? { ...field, type: "text" } : field}
+                field={
+                  field.type === "email" || field.type === "url"
+                    ? { ...field, type: "text" }
+                    : field
+                }
                 index={index}
                 handleChange={handleFieldChange}
                 handleDelete={handleDeleteField}
@@ -1880,7 +2177,11 @@ const AboutTheJob = () => {
             {customFields.map((field, index) => (
               <FormBuilderField
                 key={`${field.key || "custom"}-${index}`}
-                field={field.type === "email" || field.type === "url" ? { ...field, type: "text" } : field}
+                field={
+                  field.type === "email" || field.type === "url"
+                    ? { ...field, type: "text" }
+                    : field
+                }
                 index={index}
                 handleChange={handleFieldChange}
                 handleDelete={handleDeleteField}
@@ -1893,7 +2194,11 @@ const AboutTheJob = () => {
               variant="outlined"
               color="primary"
               onClick={() => addField()}
-              style={{ alignSelf: "flex-start", marginTop: "20px", marginRight: "10px" }}
+              style={{
+                alignSelf: "flex-start",
+                marginTop: "20px",
+                marginRight: "10px",
+              }}
             >
               Add Question
             </StyledOutlineButton>
@@ -1903,8 +2208,10 @@ const AboutTheJob = () => {
         return (
           <AssessmentStep
             assessments={assessments}
-            selectedAssessment={selectedAssessment}
-            handleAssessmentChange={handleAssessmentChange}
+            selectedAssessments={
+              (formData.assessments as Id<"assessments">[]) || []
+            }
+            handleAssessmentsChange={handleAssessmentsChange}
           />
         );
       default:
@@ -1993,7 +2300,13 @@ const AboutTheJob = () => {
             >
               {formData.level} {formData.title}
             </Typography>
-            <Stack mt={2} direction={"row"} alignItems={"center"} justifyContent={"center"} gap={"8px"}>
+            <Stack
+              mt={2}
+              direction={"row"}
+              alignItems={"center"}
+              justifyContent={"center"}
+              gap={"8px"}
+            >
               <Pill label={formData.location} />
               <Pill label={formData.work_model} />
               <Pill label={formData.job_type} />
@@ -2007,7 +2320,9 @@ const AboutTheJob = () => {
             <Step
               key={label}
               sx={{
-                "& .MuiStep-root": { paddingX: { xs: "4px !important", md: "8px" } },
+                "& .MuiStep-root": {
+                  paddingX: { xs: "4px !important", md: "8px" },
+                },
                 cursor: "pointer",
                 "&:hover": {
                   "& .MuiStepLabel-root": {
@@ -2049,7 +2364,11 @@ const AboutTheJob = () => {
                 variant="outlined"
                 color="primary"
                 onClick={() => handleStepChange(Math.max(currentStep - 1, 1))}
-                style={{ alignSelf: "flex-end", marginTop: "20px", marginRight: "10px" }}
+                style={{
+                  alignSelf: "flex-end",
+                  marginTop: "20px",
+                  marginRight: "10px",
+                }}
               >
                 Back
               </StyledOutlineButton>
@@ -2069,7 +2388,11 @@ const AboutTheJob = () => {
                   variant="outlined"
                   // color="primary"
                   onClick={() => handleStepChange(Math.max(currentStep - 1, 1))}
-                  style={{ alignSelf: "flex-end", marginTop: "20px", marginRight: "10px" }}
+                  style={{
+                    alignSelf: "flex-end",
+                    marginTop: "20px",
+                    marginRight: "10px",
+                  }}
                 >
                   Back
                 </StyledOutlineButton>
@@ -2082,7 +2405,10 @@ const AboutTheJob = () => {
                   marginTop: "20px",
                   backgroundColor: theme.palette.primary.main,
                   color: "secondary.light",
-                  "&:hover": { backgroundColor: theme.palette.primary.main, color: "secondary.light" },
+                  "&:hover": {
+                    backgroundColor: theme.palette.primary.main,
+                    color: "secondary.light",
+                  },
                 }}
               >
                 Next
@@ -2139,7 +2465,8 @@ const AboutTheJob = () => {
                 mb: 2,
               }}
             >
-              Your job post has been successfully updated. You can share the job link below:
+              Your job post has been successfully updated. You can share the job
+              link below:
             </Typography>
             <TextField
               fullWidth
