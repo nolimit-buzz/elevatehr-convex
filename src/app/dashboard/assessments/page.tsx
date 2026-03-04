@@ -18,6 +18,8 @@ import {
   IconButton,
   Snackbar,
   Alert,
+  Backdrop,
+  CircularProgress,
 } from "@mui/material";
 import Select from "@mui/material/Select";
 import { useRouter } from "next/navigation";
@@ -29,11 +31,7 @@ import AssignmentOutlinedIcon from "@mui/icons-material/AssignmentOutlined";
 import * as XLSX from "xlsx";
 import { pdfjs } from "react-pdf";
 import mammoth from "mammoth";
-import {
-  useAssessmentsList,
-  AssessmentQueries,
-  type Id,
-} from "@/queries/assessment.queries";
+import { useAssessmentsList, AssessmentQueries, type Id } from "@/queries/assessment.queries";
 import AssessmentTypeDialog from "@/app/dashboard/components/dashboard/assessments/AssessmentTypeDialog";
 import AssessmentUploadDialog from "@/app/dashboard/components/dashboard/assessments/AssessmentUploadDialog";
 import AssessmentConfigDialog from "@/app/dashboard/components/dashboard/assessments/AssessmentConfigDialog";
@@ -62,7 +60,15 @@ export default function AssessmentsPage() {
   const assessments = assessmentsData ?? [];
   const loading = assessmentsData === undefined;
 
-  const { RemoveAssessment, GenerateSkills, GenerateQuestions, GenerateTechnicalContent, CreateAssessment, CreateTechnicalAssessment, UpdateAssessment } = AssessmentQueries();
+  const {
+    RemoveAssessment,
+    GenerateSkills,
+    GenerateQuestions,
+    GenerateTechnicalContent,
+    CreateAssessment,
+    CreateTechnicalAssessment,
+    UpdateAssessment,
+  } = AssessmentQueries();
 
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
@@ -86,12 +92,12 @@ export default function AssessmentsPage() {
   const [creationType, setCreationType] = useState<string | null>(null);
 
   const importInputRef = useRef<HTMLInputElement | null>(null);
-  const generateFromFileInputRef = useRef<HTMLInputElement | null>(null);
   const stopImportRef = useRef(false);
 
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importRows, setImportRows] = useState<any[]>([]);
   const [importing, setImporting] = useState(false);
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
   const [importProgress, setImportProgress] = useState<{ total: number; done: number }>({ total: 0, done: 0 });
   const [sourceDocText, setSourceDocText] = useState<string>("");
 
@@ -121,7 +127,7 @@ export default function AssessmentsPage() {
   useEffect(() => {
     if (jobTitle && skills.length > 0) {
       setAssessmentDescription(
-        `${jobTitle} assessment covering the following skills: ${skills.join(", ")}. This assessment is designed to evaluate candidates' knowledge and expertise in these areas.`
+        `${jobTitle} assessment covering the following skills: ${skills.join(", ")}. This assessment is designed to evaluate candidates' knowledge and expertise in these areas.`,
       );
     }
   }, [jobTitle, skills]);
@@ -132,7 +138,10 @@ export default function AssessmentsPage() {
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
   const formatType = (type: string) =>
-    type.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    type
+      .split("_")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
 
   const resetCreationState = () => {
     setJobTitle("");
@@ -235,48 +244,6 @@ export default function AssessmentsPage() {
   };
 
   // ─── Creation: import ──────────────────────────────────────────────────────
-  const handleImportFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      setImportFile(file);
-      setImportRows([]);
-      const arrayBuffer = await file.arrayBuffer();
-      const workbook = XLSX.read(arrayBuffer, { type: "array" });
-      const firstSheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[firstSheetName];
-      const json = XLSX.utils.sheet_to_json<Record<string, any>>(worksheet, { defval: "" });
-      if (!json || json.length === 0) {
-        setSnackbarMessage("No rows found in the uploaded file.");
-        setSnackbarSeverity("error");
-        setSnackbarOpen(true);
-        return;
-      }
-      const normalized = json.map((row) => {
-        const next: Record<string, any> = {};
-        Object.entries(row).forEach(([k, v]) => { next[String(k).trim().toLowerCase()] = v; });
-        return next;
-      });
-      if (normalized.length > 50) {
-        setSnackbarMessage("Please import 50 rows or fewer at a time.");
-        setSnackbarSeverity("error");
-        setSnackbarOpen(true);
-        return;
-      }
-      setImportRows(normalized);
-      setSnackbarMessage(`Loaded ${normalized.length} rows from ${file.name}`);
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
-      setEntryStep("upload");
-    } catch (err) {
-      setSnackbarMessage("Failed to read CSV/Excel file. Please check the format and try again.");
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
-    } finally {
-      e.target.value = "";
-    }
-  };
-
   const extractTextFromDocument = async (file: File): Promise<string> => {
     const name = file.name.toLowerCase();
     if (name.endsWith(".txt")) return await file.text();
@@ -286,7 +253,8 @@ export default function AssessmentsPage() {
       return result.value || "";
     }
     if (name.endsWith(".pdf")) {
-      pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+      // Use unpkg as it updates faster than cdnjs for newer versions
+      pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjs.getDocument({ data: arrayBuffer }).promise;
       let fullText = "";
@@ -300,6 +268,87 @@ export default function AssessmentsPage() {
     return "";
   };
 
+  const handleImportFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsProcessingFile(true);
+    // setImportFile(file); // Optional, depending on if you want to show it in UI immediately or after success
+
+    const name = file.name.toLowerCase();
+
+    try {
+      // 1. If spreadsheet -> Bulk Import Flow
+      if (name.endsWith(".csv") || name.endsWith(".xlsx") || name.endsWith(".xls")) {
+        setImportFile(file);
+        setImportRows([]);
+        const arrayBuffer = await file.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: "array" });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        const json = XLSX.utils.sheet_to_json<Record<string, any>>(worksheet, { defval: "" });
+        if (!json || json.length === 0) {
+          setSnackbarMessage("No rows found in the uploaded file.");
+          setSnackbarSeverity("error");
+          setSnackbarOpen(true);
+          return;
+        }
+        const normalized = json.map((row) => {
+          const next: Record<string, any> = {};
+          Object.entries(row).forEach(([k, v]) => {
+            next[String(k).trim().toLowerCase()] = v;
+          });
+          return next;
+        });
+        if (normalized.length > 50) {
+          setSnackbarMessage("Please import 50 rows or fewer at a time.");
+          setSnackbarSeverity("error");
+          setSnackbarOpen(true);
+          return;
+        }
+        setImportRows(normalized);
+        setSnackbarMessage(`Loaded ${normalized.length} rows from ${file.name}`);
+        setSnackbarSeverity("success");
+        setSnackbarOpen(true);
+        setEntryStep("upload");
+        return;
+      }
+
+      // 2. If document -> Generate Assessment Flow
+      if (name.endsWith(".pdf") || name.endsWith(".docx") || name.endsWith(".txt")) {
+        setImportFile(file);
+        const text = await extractTextFromDocument(file);
+        if (!text) throw new Error("Could not extract text from file");
+
+        setSourceDocText(text);
+
+        // Auto-fill title from filename
+        // Remove extension and replace hyphens/underscores with spaces
+        const title = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+        setJobTitle(title);
+
+        setSnackbarMessage(`Content loaded from ${file.name}`);
+        setSnackbarSeverity("success");
+        setSnackbarOpen(true);
+        setEntryStep("form");
+        return;
+      }
+
+      setSnackbarMessage("Unsupported file type. Please upload CSV, Excel, PDF, or Word.");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      e.target.value = "";
+    } catch (err) {
+      console.error(err);
+      setSnackbarMessage("Failed to process file. Please check the format and try again.");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    } finally {
+      setIsProcessingFile(false);
+      e.target.value = "";
+    }
+  };
+
   const handleImportAssessments = async () => {
     if (importRows.length === 0) return;
     setImporting(true);
@@ -310,38 +359,82 @@ export default function AssessmentsPage() {
         if (stopImportRef.current) break;
         const row = importRows[i];
         const rowTitle = String(row.title || row.job_title || row.name || "").trim();
-        if (!rowTitle) { setImportProgress({ total: importRows.length, done: i + 1 }); continue; }
+        if (!rowTitle) {
+          setImportProgress({ total: importRows.length, done: i + 1 });
+          continue;
+        }
         const rowType = String(row.type || "online_assessment_1").trim();
         const rowLevel = String(row.level || "").trim() || undefined;
         const rowSkillsRaw = row.skills ?? row.skill ?? "";
-        const rowSkills = typeof rowSkillsRaw === "string"
-          ? rowSkillsRaw.split(",").map((s: string) => s.trim()).filter(Boolean)
-          : Array.isArray(rowSkillsRaw) ? rowSkillsRaw.map((s: any) => String(s).trim()).filter(Boolean) : [];
+        const rowSkills =
+          typeof rowSkillsRaw === "string"
+            ? rowSkillsRaw
+                .split(",")
+                .map((s: string) => s.trim())
+                .filter(Boolean)
+            : Array.isArray(rowSkillsRaw)
+              ? rowSkillsRaw.map((s: any) => String(s).trim()).filter(Boolean)
+              : [];
         const skillsForGeneration = rowSkills.length ? rowSkills : ["Problem solving"];
         const questionsJson = String(row.questions_json || "").trim();
         const technicalContent = String(row.technical_content || row.technicalcontent || "").trim();
 
         if (rowType === "technical_assessment") {
           if (technicalContent) {
-            await CreateTechnicalAssessment({ title: rowTitle, level: rowLevel, skills: skillsForGeneration, technicalContent, assessmentOptions: row.assessment_options ? Number(row.assessment_options) : undefined });
+            await CreateTechnicalAssessment({
+              title: rowTitle,
+              level: rowLevel,
+              skills: skillsForGeneration,
+              technicalContent,
+              assessmentOptions: row.assessment_options ? Number(row.assessment_options) : undefined,
+            });
           } else {
             const optionsCount = row.assessment_options ? Number(row.assessment_options) : 2;
-            const { result } = await GenerateTechnicalContent({ jobTitle: rowTitle, level: rowLevel, skills: skillsForGeneration, assessmentOptions: optionsCount });
-            await CreateTechnicalAssessment({ title: rowTitle, level: rowLevel, skills: skillsForGeneration, technicalContent: (result as any)?.content || "", assessmentOptions: optionsCount });
+            const { result } = await GenerateTechnicalContent({
+              jobTitle: rowTitle,
+              level: rowLevel,
+              skills: skillsForGeneration,
+              assessmentOptions: optionsCount,
+            });
+            await CreateTechnicalAssessment({
+              title: rowTitle,
+              level: rowLevel,
+              skills: skillsForGeneration,
+              technicalContent: (result as any)?.content || "",
+              assessmentOptions: optionsCount,
+            });
           }
         } else {
           let qs: any[] = [];
           if (questionsJson) {
-            try { const parsed = JSON.parse(questionsJson); qs = Array.isArray(parsed) ? parsed : parsed?.questions || []; } catch {}
+            try {
+              const parsed = JSON.parse(questionsJson);
+              qs = Array.isArray(parsed) ? parsed : parsed?.questions || [];
+            } catch {}
           }
           if (!qs || qs.length === 0) {
             const openCount = row.open_text_questions ? Number(row.open_text_questions) : 3;
             const multiCount = row.multi_choice_questions ? Number(row.multi_choice_questions) : 3;
-            const { result } = await GenerateQuestions({ jobTitle: rowTitle, level: rowLevel, skills: skillsForGeneration, numberOfOpenTextQuestions: openCount, numberOfMultiChoiceQuestions: multiCount });
+            const { result } = await GenerateQuestions({
+              jobTitle: rowTitle,
+              level: rowLevel,
+              skills: skillsForGeneration,
+              numberOfOpenTextQuestions: openCount,
+              numberOfMultiChoiceQuestions: multiCount,
+            });
             qs = (result as any)?.response?.questions || [];
           }
-          const description = String(row.description || "").trim() || `${rowTitle} assessment covering the following skills: ${skillsForGeneration.join(", ")}.`;
-          await CreateAssessment({ title: rowTitle, description, type: rowType as any, level: rowLevel, skills: skillsForGeneration, questions: qs });
+          const description =
+            String(row.description || "").trim() ||
+            `${rowTitle} assessment covering the following skills: ${skillsForGeneration.join(", ")}.`;
+          await CreateAssessment({
+            title: rowTitle,
+            description,
+            type: rowType as any,
+            level: rowLevel,
+            skills: skillsForGeneration,
+            questions: qs,
+          });
         }
         setImportProgress({ total: importRows.length, done: i + 1 });
       }
@@ -364,7 +457,9 @@ export default function AssessmentsPage() {
     }
   };
 
-  const handleCancelImport = () => { stopImportRef.current = true; };
+  const handleCancelImport = () => {
+    stopImportRef.current = true;
+  };
 
   // ─── Creation: generate assessment ────────────────────────────────────────
   const handleDeleteSkill = (skillToDelete: string) => setSkills((s) => s.filter((sk) => sk !== skillToDelete));
@@ -386,7 +481,9 @@ export default function AssessmentsPage() {
         setQuestions(result.response.questions);
         setShowFormBuilder(true);
         setCreationOpen(false);
-        setAssessmentDescription(`${jobTitle} assessment covering the following skills: ${skills.join(", ")}. This assessment includes ${numberOfOpenTextQuestions} open-text questions and ${numberOfMultiChoiceQuestions} multiple-choice questions to evaluate the candidate's knowledge and expertise.`);
+        setAssessmentDescription(
+          `${jobTitle} assessment covering the following skills: ${skills.join(", ")}. This assessment includes ${numberOfOpenTextQuestions} open-text questions and ${numberOfMultiChoiceQuestions} multiple-choice questions to evaluate the candidate's knowledge and expertise.`,
+        );
       } else {
         throw new Error("Invalid response from server");
       }
@@ -409,7 +506,11 @@ export default function AssessmentsPage() {
         type: "online_assessment_1",
         level: level || undefined,
         skills,
-        questions: questions.map((q) => ({ question: q.question, type: q.type, options: q.type === "multi-choice" ? q.options : [] })),
+        questions: questions.map((q) => ({
+          question: q.question,
+          type: q.type,
+          options: q.type === "multi-choice" ? q.options : [],
+        })),
       });
       if (createError || !result) throw new Error(createError || "Failed to save assessment");
       setSavedAssessmentId(result.assessment_id);
@@ -450,11 +551,18 @@ export default function AssessmentsPage() {
     }
     setIsGeneratingContent(true);
     try {
-      const { result, error } = await GenerateTechnicalContent({ jobTitle, level: level || undefined, skills, assessmentOptions: parseInt(assessmentOptions) || 2 });
+      const { result, error } = await GenerateTechnicalContent({
+        jobTitle,
+        level: level || undefined,
+        skills,
+        assessmentOptions: parseInt(assessmentOptions) || 2,
+      });
       if (error || !result) throw new Error(error || "Failed to generate content");
       if (result.status === "success" && result.content) {
         setEditorValue(result.content);
-        setAssessmentDescription(`${jobTitle} technical assessment covering the following skills: ${skills.join(", ")}. This assessment includes ${assessmentOptions} practical tasks to evaluate candidates' hands-on expertise.`);
+        setAssessmentDescription(
+          `${jobTitle} technical assessment covering the following skills: ${skills.join(", ")}. This assessment includes ${assessmentOptions} practical tasks to evaluate candidates' hands-on expertise.`,
+        );
         setSnackbarMessage("Assessment content generated successfully!");
         setSnackbarSeverity("success");
         setSnackbarOpen(true);
@@ -473,8 +581,14 @@ export default function AssessmentsPage() {
   const generateSkills = async () => {
     setIsGeneratingSkills(true);
     try {
-      const { result, error } = await GenerateSkills({ jobTitle, jobDescription: sourceDocText || assessmentDescription || "" });
-      if (error) { console.error("Error generating skills:", error); return; }
+      const { result, error } = await GenerateSkills({
+        jobTitle,
+        jobDescription: sourceDocText || assessmentDescription || "",
+      });
+      if (error) {
+        console.error("Error generating skills:", error);
+        return;
+      }
       if (result) setGeneratedSkills([...result.technical, ...result.soft]);
     } catch (error) {
       console.error("Error generating skills:", error);
@@ -488,16 +602,30 @@ export default function AssessmentsPage() {
     setQuestions((prev) => prev.map((q, i) => (i === idx ? { ...q, [field]: value } : q)));
 
   const handleTypeChange = (idx: number, newType: string) =>
-    setQuestions((prev) => prev.map((q, i) => i === idx ? { ...q, type: newType, options: newType === "multi-choice" ? (q.options?.length ? q.options : [""]) : [] } : q));
+    setQuestions((prev) =>
+      prev.map((q, i) =>
+        i === idx
+          ? { ...q, type: newType, options: newType === "multi-choice" ? (q.options?.length ? q.options : [""]) : [] }
+          : q,
+      ),
+    );
 
   const handleOptionChange = (qIdx: number, optIdx: number, value: string) =>
-    setQuestions((prev) => prev.map((q, i) => i === qIdx ? { ...q, options: q.options.map((opt: string, j: number) => j === optIdx ? value : opt) } : q));
+    setQuestions((prev) =>
+      prev.map((q, i) =>
+        i === qIdx ? { ...q, options: q.options.map((opt: string, j: number) => (j === optIdx ? value : opt)) } : q,
+      ),
+    );
 
   const handleAddOption = (qIdx: number) =>
-    setQuestions((prev) => prev.map((q, i) => i === qIdx ? { ...q, options: [...q.options, ""] } : q));
+    setQuestions((prev) => prev.map((q, i) => (i === qIdx ? { ...q, options: [...q.options, ""] } : q)));
 
   const handleRemoveOption = (qIdx: number, optIdx: number) =>
-    setQuestions((prev) => prev.map((q, i) => i === qIdx ? { ...q, options: q.options.filter((_: string, j: number) => j !== optIdx) } : q));
+    setQuestions((prev) =>
+      prev.map((q, i) =>
+        i === qIdx ? { ...q, options: q.options.filter((_: string, j: number) => j !== optIdx) } : q,
+      ),
+    );
 
   const handleDeleteQuestion = (idx: number) => setQuestions((prev) => prev.filter((_, i) => i !== idx));
   const handleAddQuestion = () => setQuestions((prev) => [...prev, { question: "", type: "open-text", options: [] }]);
@@ -506,8 +634,13 @@ export default function AssessmentsPage() {
   return (
     <Box sx={{ bgcolor: "#F6F7FB", minHeight: "100vh" }}>
       {/* Hidden file inputs */}
-      <input ref={importInputRef} type="file" hidden accept=".csv,.xlsx,.xls" onChange={handleImportFileChange} />
-      <input ref={generateFromFileInputRef} type="file" hidden accept=".pdf,.docx,.txt" />
+      <input
+        ref={importInputRef}
+        type="file"
+        hidden
+        accept=".csv,.xlsx,.xls,.pdf,.docx,.txt"
+        onChange={handleImportFileChange}
+      />
 
       <Container maxWidth={false} sx={{ maxWidth: "1440px", py: 4 }}>
         {/* Banner */}
@@ -584,7 +717,16 @@ export default function AssessmentsPage() {
             ))}
           </Grid>
         ) : assessments.length === 0 ? (
-          <Box sx={{ textAlign: "center", mt: 10, color: "rgba(17, 17, 17, 0.48)", display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <Box
+            sx={{
+              textAlign: "center",
+              mt: 10,
+              color: "rgba(17, 17, 17, 0.48)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
             <AssignmentOutlinedIcon sx={{ fontSize: 64, color: "#D6D6F6", mb: 3 }} />
             <Typography sx={{ fontSize: 24, fontWeight: 500, color: "rgba(17, 17, 17, 0.48)" }}>
               Your assessments will appear here
@@ -680,8 +822,7 @@ export default function AssessmentsPage() {
           //   ))}
           // </Grid>
 
-
-           <Grid container spacing={3}>
+          <Grid container spacing={3}>
             {assessments.map((a, idx) => (
               <Grid item xs={12} sm={6} md={3} key={a._id || idx}>
                 <Card
@@ -947,7 +1088,14 @@ export default function AssessmentsPage() {
         slotProps={{ backdrop: { sx: { backgroundColor: "rgba(17, 17, 17, 0.32)", backdropFilter: "blur(4px)" } } }}
         PaperProps={{ sx: { borderRadius: "8px", p: 0, bgcolor: "rgba(241, 244, 249, 1)" } }}
       >
-        <DialogContent sx={{ p: { xs: 3, md: 4 }, position: "relative", bgcolor: "rgba(241, 244, 249, 1)", minWidth: { xs: 320, md: 400 } }}>
+        <DialogContent
+          sx={{
+            p: { xs: 3, md: 4 },
+            position: "relative",
+            bgcolor: "rgba(241, 244, 249, 1)",
+            minWidth: { xs: 320, md: 400 },
+          }}
+        >
           <Typography sx={{ fontWeight: 700, fontSize: 20, color: "rgba(17, 17, 17, 0.92)", mb: 3, textAlign: "left" }}>
             Select Assessment Type
           </Typography>
@@ -956,19 +1104,43 @@ export default function AssessmentsPage() {
             onChange={(e) => setSelectedType(e.target.value)}
             fullWidth
             displayEmpty
-            sx={{ mb: 3, bgcolor: "#F6F7FB", borderRadius: "10px", fontWeight: 500, fontSize: 16, "& .MuiSelect-select": { color: "rgba(17, 17, 17, 0.92)", fontWeight: 500, fontSize: 16, py: 2 } }}
+            sx={{
+              mb: 3,
+              bgcolor: "#F6F7FB",
+              borderRadius: "10px",
+              fontWeight: 500,
+              fontSize: 16,
+              "& .MuiSelect-select": { color: "rgba(17, 17, 17, 0.92)", fontWeight: 500, fontSize: 16, py: 2 },
+            }}
           >
-            <MenuItem value="technical_assessment" sx={{ fontWeight: 400, fontSize: 15 }}>Technical assessment</MenuItem>
-            <MenuItem value="online_assessment_1" sx={{ fontWeight: 400, fontSize: 15 }}>Online assessment</MenuItem>
+            <MenuItem value="technical_assessment" sx={{ fontWeight: 400, fontSize: 15 }}>
+              Technical assessment
+            </MenuItem>
+            <MenuItem value="online_assessment_1" sx={{ fontWeight: 400, fontSize: 15 }}>
+              Online assessment
+            </MenuItem>
           </Select>
           <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
-            <Button variant="outlined" onClick={() => setSelectTypeOpen(false)} color="inherit" sx={{ fontWeight: 500, fontSize: 16, borderRadius: "8px", px: 3, py: 1 }}>
+            <Button
+              variant="outlined"
+              onClick={() => setSelectTypeOpen(false)}
+              color="inherit"
+              sx={{ fontWeight: 500, fontSize: 16, borderRadius: "8px", px: 3, py: 1 }}
+            >
               Cancel
             </Button>
             <Button
               variant="contained"
               onClick={handleContinueFromTypeSelect}
-              sx={{ fontWeight: 600, fontSize: 16, borderRadius: "8px", px: 3, py: 1, bgcolor: "#4444E2", "&:hover": { bgcolor: "#5656E6" } }}
+              sx={{
+                fontWeight: 600,
+                fontSize: 16,
+                borderRadius: "8px",
+                px: 3,
+                py: 1,
+                bgcolor: "#4444E2",
+                "&:hover": { bgcolor: "#5656E6" },
+              }}
             >
               Continue
             </Button>
@@ -1024,19 +1196,23 @@ export default function AssessmentsPage() {
       />
 
       {/* ─── Technical Assessment Editor (full-page overlay) ─────────────────── */}
-      {creationType === "technical_assessment" && !creationOpen && showSuccessModal === false && editorValue !== undefined && jobTitle && (
-        <TechnicalAssessmentEditor
-          jobTitle={jobTitle}
-          skills={skills}
-          assessmentDescription={assessmentDescription}
-          setAssessmentDescription={setAssessmentDescription}
-          value={editorValue}
-          setValue={setEditorValue}
-          isGeneratingContent={isGeneratingContent}
-          handleGenerateTechnicalContent={handleGenerateTechnicalContent}
-          handleSaveTechnicalAssessment={handleSaveTechnicalAssessment}
-        />
-      )}
+      {creationType === "technical_assessment" &&
+        !creationOpen &&
+        showSuccessModal === false &&
+        editorValue !== undefined &&
+        jobTitle && (
+          <TechnicalAssessmentEditor
+            jobTitle={jobTitle}
+            skills={skills}
+            assessmentDescription={assessmentDescription}
+            setAssessmentDescription={setAssessmentDescription}
+            value={editorValue}
+            setValue={setEditorValue}
+            isGeneratingContent={isGeneratingContent}
+            handleGenerateTechnicalContent={handleGenerateTechnicalContent}
+            handleSaveTechnicalAssessment={handleSaveTechnicalAssessment}
+          />
+        )}
 
       {/* ─── Form Builder ─────────────────────────────────────────────────────── */}
       {showFormBuilder && (
@@ -1064,7 +1240,10 @@ export default function AssessmentsPage() {
       {/* ─── Success Modal ────────────────────────────────────────────────────── */}
       <AssessmentSuccessModal
         open={showSuccessModal}
-        onClose={() => { setShowSuccessModal(false); resetCreationState(); }}
+        onClose={() => {
+          setShowSuccessModal(false);
+          resetCreationState();
+        }}
         savedAssessmentId={savedAssessmentId}
         router={router}
       />
@@ -1080,7 +1259,14 @@ export default function AssessmentsPage() {
       >
         <MenuItem
           onClick={handleDeleteFromMenu}
-          sx={{ color: "#DC3545", fontSize: "14px", fontWeight: 500, py: 1.5, px: 2, "&:hover": { backgroundColor: "rgba(220, 53, 69, 0.08)" } }}
+          sx={{
+            color: "#DC3545",
+            fontSize: "14px",
+            fontWeight: 500,
+            py: 1.5,
+            px: 2,
+            "&:hover": { backgroundColor: "rgba(220, 53, 69, 0.08)" },
+          }}
         >
           Delete
         </MenuItem>
@@ -1094,7 +1280,14 @@ export default function AssessmentsPage() {
         slotProps={{ backdrop: { sx: { backgroundColor: "rgba(17, 17, 17, 0.32)", backdropFilter: "blur(4px)" } } }}
         PaperProps={{ sx: { borderRadius: "8px", p: 0, bgcolor: "rgba(241, 244, 249, 1)" } }}
       >
-        <DialogContent sx={{ p: { xs: 3, md: 4 }, position: "relative", bgcolor: "rgba(241, 244, 249, 1)", minWidth: { xs: 320, md: 400 } }}>
+        <DialogContent
+          sx={{
+            p: { xs: 3, md: 4 },
+            position: "relative",
+            bgcolor: "rgba(241, 244, 249, 1)",
+            minWidth: { xs: 320, md: 400 },
+          }}
+        >
           <Typography sx={{ fontWeight: 700, fontSize: 20, color: "rgba(17, 17, 17, 0.92)", mb: 2, textAlign: "left" }}>
             Delete Assessment
           </Typography>
@@ -1102,14 +1295,36 @@ export default function AssessmentsPage() {
             Are you sure you want to delete &quot;{assessmentToDelete?.title}&quot;? This action cannot be undone.
           </Typography>
           <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
-            <Button variant="contained" onClick={handleDeleteCancel} sx={{ bgcolor: "primary.main", fontWeight: 500, fontSize: 16, borderRadius: "8px", px: 3, py: 1, "&:hover": { bgcolor: "primary.main", opacity: 0.95 } }}>
+            <Button
+              variant="contained"
+              onClick={handleDeleteCancel}
+              sx={{
+                bgcolor: "primary.main",
+                fontWeight: 500,
+                fontSize: 16,
+                borderRadius: "8px",
+                px: 3,
+                py: 1,
+                "&:hover": { bgcolor: "primary.main", opacity: 0.95 },
+              }}
+            >
               Cancel
             </Button>
             <Button
               variant="outlined"
               onClick={handleDeleteConfirm}
               disabled={deleting}
-              sx={{ fontWeight: 600, fontSize: 16, borderRadius: "8px", px: 3, py: 1, borderColor: "#DC3545", color: "#DC3545", "&:hover": { borderColor: "#C82333", color: "#C82333", backgroundColor: "rgba(220, 53, 69, 0.04)" }, "&:disabled": { borderColor: "#DC3545", color: "#DC3545", opacity: 0.6 } }}
+              sx={{
+                fontWeight: 600,
+                fontSize: 16,
+                borderRadius: "8px",
+                px: 3,
+                py: 1,
+                borderColor: "#DC3545",
+                color: "#DC3545",
+                "&:hover": { borderColor: "#C82333", color: "#C82333", backgroundColor: "rgba(220, 53, 69, 0.04)" },
+                "&:disabled": { borderColor: "#DC3545", color: "#DC3545", opacity: 0.6 },
+              }}
             >
               {deleting ? "Deleting..." : "Delete"}
             </Button>
@@ -1118,11 +1333,21 @@ export default function AssessmentsPage() {
       </Dialog>
 
       {/* ─── Snackbar ─────────────────────────────────────────────────────────── */}
-      <Snackbar open={snackbarOpen} autoHideDuration={4000} onClose={handleSnackbarClose} anchorOrigin={{ vertical: "top", horizontal: "right" }}>
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
         <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: "100%", borderRadius: "8px" }}>
           {snackbarMessage}
         </Alert>
       </Snackbar>
+
+      {/* ─── Loading Backdrop ─────────────────────────────────────────────────── */}
+      <Backdrop sx={{ color: "#fff", zIndex: (theme) => theme.zIndex.drawer + 1 }} open={isProcessingFile}>
+        <CircularProgress color="inherit" />
+      </Backdrop>
     </Box>
   );
 }
