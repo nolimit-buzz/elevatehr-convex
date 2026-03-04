@@ -234,18 +234,16 @@ export const sendStageEmailInternal = internalAction({
       // Construct assessment link if origin is provided and applicable.
       // Resolution order: application.assessment_id → job.assessments[0] → first company assessment
       let resolvedAssessmentId =
-        application.assessment_id ??
-        (job.assessments && job.assessments.length > 0 ? job.assessments[0] : undefined);
+        application.assessment_id ?? (job.assessments && job.assessments.length > 0 ? job.assessments[0] : undefined);
 
       if (
         !resolvedAssessmentId &&
         args.origin &&
         (args.templateType === "skill_assessment" || args.templateType === "technical_assessment")
       ) {
-        const fallbackAssessment = await ctx.runQuery(
-          internal.modules.assessment.getFirstCompanyAssessmentInternal,
-          { companyId: application.company_id },
-        );
+        const fallbackAssessment = await ctx.runQuery(internal.modules.assessment.getFirstCompanyAssessmentInternal, {
+          companyId: application.company_id,
+        });
         if (fallbackAssessment) resolvedAssessmentId = fallbackAssessment._id;
       }
 
