@@ -98,6 +98,7 @@ export default function AssessmentsPage() {
   const [importRows, setImportRows] = useState<any[]>([]);
   const [importing, setImporting] = useState(false);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
   const [importProgress, setImportProgress] = useState<{ total: number; done: number }>({ total: 0, done: 0 });
   const [sourceDocText, setSourceDocText] = useState<string>("");
 
@@ -170,6 +171,7 @@ export default function AssessmentsPage() {
     setImporting(false);
     setImportProgress({ total: 0, done: 0 });
     setSourceDocText("");
+    setUploadSuccess(false);
     setEntryStep("choose");
     setCreationType(null);
   };
@@ -240,7 +242,7 @@ export default function AssessmentsPage() {
   };
 
   const handleSelectUpload = () => {
-    importInputRef.current?.click();
+    setEntryStep("upload");
   };
 
   // ─── Creation: import ──────────────────────────────────────────────────────
@@ -268,192 +270,61 @@ export default function AssessmentsPage() {
     return "";
   };
 
-  const handleImportFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processFile = async (file: File) => {
     setIsProcessingFile(true);
-    // setImportFile(file); // Optional, depending on if you want to show it in UI immediately or after success
-
     const name = file.name.toLowerCase();
 
     try {
-      // 1. If spreadsheet -> Bulk Import Flow
-      if (name.endsWith(".csv") || name.endsWith(".xlsx") || name.endsWith(".xls")) {
+      if (
+        name.endsWith(".csv") ||
+        name.endsWith(".xlsx") ||
+        name.endsWith(".xls") ||
+        name.endsWith(".pdf") ||
+        name.endsWith(".docx") ||
+        name.endsWith(".txt")
+      ) {
         setImportFile(file);
-        setImportRows([]);
-        const arrayBuffer = await file.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer, { type: "array" });
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
-        const json = XLSX.utils.sheet_to_json<Record<string, any>>(worksheet, { defval: "" });
-        if (!json || json.length === 0) {
-          setSnackbarMessage("No rows found in the uploaded file.");
-          setSnackbarSeverity("error");
-          setSnackbarOpen(true);
-          return;
-        }
-        const normalized = json.map((row) => {
-          const next: Record<string, any> = {};
-          Object.entries(row).forEach(([k, v]) => {
-            next[String(k).trim().toLowerCase()] = v;
-          });
-          return next;
-        });
-        if (normalized.length > 50) {
-          setSnackbarMessage("Please import 50 rows or fewer at a time.");
-          setSnackbarSeverity("error");
-          setSnackbarOpen(true);
-          return;
-        }
-        setImportRows(normalized);
-        setSnackbarMessage(`Loaded ${normalized.length} rows from ${file.name}`);
+        setSnackbarMessage(`File "${file.name}" selected successfully.`);
         setSnackbarSeverity("success");
         setSnackbarOpen(true);
-        setEntryStep("upload");
-        return;
-      }
-
-      // 2. If document -> Generate Assessment Flow
-      if (name.endsWith(".pdf") || name.endsWith(".docx") || name.endsWith(".txt")) {
-        setImportFile(file);
-        const text = await extractTextFromDocument(file);
-        if (!text) throw new Error("Could not extract text from file");
-
-        setSourceDocText(text);
-
-        // Auto-fill title from filename
-        // Remove extension and replace hyphens/underscores with spaces
-        const title = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
-        setJobTitle(title);
-
-        setSnackbarMessage(`Content loaded from ${file.name}`);
-        setSnackbarSeverity("success");
-        setSnackbarOpen(true);
-        setEntryStep("form");
         return;
       }
 
       setSnackbarMessage("Unsupported file type. Please upload CSV, Excel, PDF, or Word.");
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
-      e.target.value = "";
     } catch (err) {
       console.error(err);
-      setSnackbarMessage("Failed to process file. Please check the format and try again.");
+      setSnackbarMessage("Failed to process file.");
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
     } finally {
       setIsProcessingFile(false);
-      e.target.value = "";
     }
   };
 
-  const handleImportAssessments = async () => {
-    if (importRows.length === 0) return;
-    setImporting(true);
-    setImportProgress({ total: importRows.length, done: 0 });
-    stopImportRef.current = false;
-    try {
-      for (let i = 0; i < importRows.length; i++) {
-        if (stopImportRef.current) break;
-        const row = importRows[i];
-        const rowTitle = String(row.title || row.job_title || row.name || "").trim();
-        if (!rowTitle) {
-          setImportProgress({ total: importRows.length, done: i + 1 });
-          continue;
-        }
-        const rowType = String(row.type || "online_assessment_1").trim();
-        const rowLevel = String(row.level || "").trim() || undefined;
-        const rowSkillsRaw = row.skills ?? row.skill ?? "";
-        const rowSkills =
-          typeof rowSkillsRaw === "string"
-            ? rowSkillsRaw
-                .split(",")
-                .map((s: string) => s.trim())
-                .filter(Boolean)
-            : Array.isArray(rowSkillsRaw)
-              ? rowSkillsRaw.map((s: any) => String(s).trim()).filter(Boolean)
-              : [];
-        const skillsForGeneration = rowSkills.length ? rowSkills : ["Problem solving"];
-        const questionsJson = String(row.questions_json || "").trim();
-        const technicalContent = String(row.technical_content || row.technicalcontent || "").trim();
+  const handleImportFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await processFile(file);
+    e.target.value = "";
+  };
 
-        if (rowType === "technical_assessment") {
-          if (technicalContent) {
-            await CreateTechnicalAssessment({
-              title: rowTitle,
-              level: rowLevel,
-              skills: skillsForGeneration,
-              technicalContent,
-              assessmentOptions: row.assessment_options ? Number(row.assessment_options) : undefined,
-            });
-          } else {
-            const optionsCount = row.assessment_options ? Number(row.assessment_options) : 2;
-            const { result } = await GenerateTechnicalContent({
-              jobTitle: rowTitle,
-              level: rowLevel,
-              skills: skillsForGeneration,
-              assessmentOptions: optionsCount,
-            });
-            await CreateTechnicalAssessment({
-              title: rowTitle,
-              level: rowLevel,
-              skills: skillsForGeneration,
-              technicalContent: (result as any)?.content || "",
-              assessmentOptions: optionsCount,
-            });
-          }
-        } else {
-          let qs: any[] = [];
-          if (questionsJson) {
-            try {
-              const parsed = JSON.parse(questionsJson);
-              qs = Array.isArray(parsed) ? parsed : parsed?.questions || [];
-            } catch {}
-          }
-          if (!qs || qs.length === 0) {
-            const openCount = row.open_text_questions ? Number(row.open_text_questions) : 3;
-            const multiCount = row.multi_choice_questions ? Number(row.multi_choice_questions) : 3;
-            const { result } = await GenerateQuestions({
-              jobTitle: rowTitle,
-              level: rowLevel,
-              skills: skillsForGeneration,
-              numberOfOpenTextQuestions: openCount,
-              numberOfMultiChoiceQuestions: multiCount,
-            });
-            qs = (result as any)?.response?.questions || [];
-          }
-          const description =
-            String(row.description || "").trim() ||
-            `${rowTitle} assessment covering the following skills: ${skillsForGeneration.join(", ")}.`;
-          await CreateAssessment({
-            title: rowTitle,
-            description,
-            type: rowType as any,
-            level: rowLevel,
-            skills: skillsForGeneration,
-            questions: qs,
-          });
-        }
-        setImportProgress({ total: importRows.length, done: i + 1 });
-      }
-      if (stopImportRef.current) {
-        setSnackbarMessage("Import stopped.");
-        setSnackbarSeverity("error" as any);
-      } else {
-        setSnackbarMessage("Import completed.");
-        setSnackbarSeverity("success");
-        handleCloseCreation();
-      }
+  const handleImportAssessments = async () => {
+    if (!importFile) return;
+    setImporting(true);
+    try {
+      // For now, just alert success as per user requirement
+      setSnackbarMessage("Assessment uploaded successfully!");
+      setSnackbarSeverity("success");
       setSnackbarOpen(true);
+      setUploadSuccess(true);
     } catch (err) {
-      setSnackbarMessage("Import failed. Please check your file and try again.");
+      setSnackbarMessage("Failed to upload assessment.");
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
     } finally {
       setImporting(false);
-      stopImportRef.current = false;
     }
   };
 
@@ -733,95 +604,6 @@ export default function AssessmentsPage() {
             </Typography>
           </Box>
         ) : (
-          // <Grid container spacing={3}>
-          //   {assessments.map((a, idx) => (
-          //     <Grid item xs={12} sm={6} md={3} key={a._id || idx}>
-          //       <Card
-          //         sx={{
-          //           height: "100%",
-          //           borderRadius: "12px",
-          //           boxShadow: "none",
-          //           bgcolor: "#fff",
-          //           border: "1px solid #E4E7EC",
-          //           minHeight: 220,
-          //           display: "flex",
-          //           flexDirection: "column",
-          //           transition: "box-shadow 0.2s",
-          //           position: "relative",
-          //         }}
-          //       >
-          //         {/* Three-dot menu */}
-          //         <Box sx={{ position: "absolute", top: 12, right: 12, zIndex: 1 }}>
-          //           <IconButton
-          //             size="small"
-          //             onClick={(e) => { e.stopPropagation(); handleMenuOpen(e, a); }}
-          //             sx={{ color: "rgba(17, 17, 17, 0.48)", "&:hover": { backgroundColor: "rgba(17, 17, 17, 0.08)", color: "rgba(17, 17, 17, 0.68)" } }}
-          //           >
-          //             <MoreVertIcon />
-          //           </IconButton>
-          //         </Box>
-
-          //         {/* Card body */}
-          //         <Box sx={{ p: 3, flex: 1, display: "flex", flexDirection: "column" }}>
-          //           {/* Type badge with icon */}
-          //           <Box sx={{ display: "inline-flex", alignItems: "center", gap: "6px", bgcolor: a.color, borderRadius: "20px", py: "4px", px: "10px", mb: 2, width: "fit-content" }}>
-          //             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          //               <rect x="2" y="10" width="4" height="10" rx="1" fill={a.text_color || "#4444E2"} />
-          //               <rect x="10" y="6" width="4" height="14" rx="1" fill={a.text_color || "#4444E2"} />
-          //               <rect x="18" y="2" width="4" height="18" rx="1" fill={a.text_color || "#4444E2"} />
-          //             </svg>
-          //             <Typography sx={{ fontSize: 12, fontWeight: 500, color: a.text_color, whiteSpace: "nowrap" }}>
-          //               {formatType(a.type)}
-          //             </Typography>
-          //           </Box>
-
-          //           {/* Title */}
-          //           <Typography sx={{ fontWeight: 700, fontSize: 18, color: "rgba(17, 17, 17, 0.92)", mb: 1, lineHeight: 1.3 }}>
-          //             {a.title}
-          //           </Typography>
-
-          //           {/* Description */}
-          //           {a.description && (
-          //             <Typography sx={{ fontSize: 13, color: "rgba(17, 17, 17, 0.56)", lineHeight: 1.6, display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical", overflow: "hidden", flex: 1 }}>
-          //               {a.description}
-          //             </Typography>
-          //           )}
-          //         </Box>
-
-          //         {/* Footer actions */}
-          //         <Divider sx={{ borderColor: "#E4E7EC" }} />
-          //         <Stack direction="row" sx={{ px: 1 }}>
-          //           <Button
-          //             startIcon={
-          //               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          //                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          //                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          //               </svg>
-          //             }
-          //             onClick={() => router.push(`/dashboard/assessments/new?type=${a.type}&id=${a._id}`)}
-          //             sx={{ flex: 1, color: "rgba(17, 17, 17, 0.68)", fontWeight: 600, fontSize: 14, textTransform: "none", py: 1.5, borderRadius: 0, "&:hover": { bgcolor: "rgba(17,17,17,0.04)" } }}
-          //           >
-          //             Edit
-          //           </Button>
-          //           <Divider orientation="vertical" flexItem sx={{ borderColor: "#E4E7EC" }} />
-          //           <Button
-          //             startIcon={
-          //               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          //                 <circle cx="12" cy="12" r="2" stroke="currentColor" strokeWidth="2"/>
-          //                 <path d="M22 12c-2.667 4.667-6 7-10 7s-7.333-2.333-10-7c2.667-4.667 6-7 10-7s7.333 2.333 10 7z" stroke="currentColor" strokeWidth="2"/>
-          //               </svg>
-          //             }
-          //             onClick={() => router.push(`/assessment?assessment_id=${a._id}`)}
-          //             sx={{ flex: 1, color: "rgba(17, 17, 17, 0.68)", fontWeight: 600, fontSize: 14, textTransform: "none", py: 1.5, borderRadius: 0, "&:hover": { bgcolor: "rgba(17,17,17,0.04)" } }}
-          //           >
-          //             View Assessment
-          //           </Button>
-          //         </Stack>
-          //       </Card>
-          //     </Grid>
-          //   ))}
-          // </Grid>
-
           <Grid container spacing={3}>
             {assessments.map((a, idx) => (
               <Grid item xs={12} sm={6} md={3} key={a._id || idx}>
@@ -1161,11 +943,22 @@ export default function AssessmentsPage() {
         open={creationOpen && entryStep === "upload"}
         onClose={handleCloseCreation}
         importFile={importFile}
+        setImportFile={setImportFile}
         importRows={importRows}
         importing={importing}
         importProgress={importProgress}
         onImport={handleImportAssessments}
         onCancelImport={handleCancelImport}
+        jobTitle={jobTitle}
+        setJobTitle={setJobTitle}
+        skills={skills}
+        setSkills={setSkills}
+        generatedSkills={generatedSkills}
+        isGeneratingSkills={isGeneratingSkills}
+        generateSkills={generateSkills}
+        handleDeleteSkill={handleDeleteSkill}
+        handleFileChange={processFile}
+        success={uploadSuccess}
       />
 
       {/* ─── Step 3b: Configure & Generate ───────────────────────────────────── */}
