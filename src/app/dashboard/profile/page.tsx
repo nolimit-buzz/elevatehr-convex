@@ -411,28 +411,7 @@ const ProfilePage = () => {
       }
 
       toast.success("Logo updated successfully");
-
-      // Update localStorage and local state with the new logo
-      const userProfile = localStorage.getItem("userProfile");
-      if (userProfile && result) {
-        const profile = JSON.parse(userProfile);
-        const updatedProfile = {
-          ...profile,
-          personalInfo: {
-            ...profile.personalInfo,
-            ...result.personalInfo,
-          },
-          companyInfo: {
-            ...profile.companyInfo,
-            ...result.companyInfo,
-          },
-        };
-        localStorage.setItem("userProfile", JSON.stringify(updatedProfile));
-        setProfileData({
-          personal: updatedProfile.personalInfo,
-          company: updatedProfile.companyInfo,
-        });
-      }
+      await loadFromAPI();
     } catch (error) {
       setNotification({ open: true, message: "Failed to upload logo", severity: "error" });
     } finally {
