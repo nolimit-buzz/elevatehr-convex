@@ -970,31 +970,32 @@ export default function ApplicantDetails() {
                         p: 2,
                         borderRadius: 2,
                       }}>
-                        {customFieldsConfig.map((field: any) => {
-                          const response = customFieldResponses[field.key];
-                          if (response === undefined || response === null) return null;
+                        {customFieldsConfig
+                          .filter((field: any) => {
+                            const response = customFieldResponses[field.key];
+                            return response !== undefined && response !== null;
+                          })
+                          .map((field: any, index: number) => {
+                            const response = customFieldResponses[field.key];
 
-                          // Handle potential object structure { value: "..." } or direct value
-                          const displayValue = typeof response === 'object' && response !== null && 'value' in response
-                            ? String(response.value)
-                            : String(response);
+                            // Handle potential object structure { value: "..." } or direct value
+                            const displayValue = typeof response === 'object' && response !== null && 'value' in response
+                              ? String(response.value)
+                              : String(response);
 
-                          return (
-                            <Box key={field.key} sx={{
-                              // color: "rgba(17, 17, 17, 0.92)",
-
-                              whiteSpace: "pre-wrap"
-                            }}>
-
-                              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-                                {field.label}
-                              </Typography>
-                              <Typography color="text.grey[100]" sx={{ whiteSpace: "pre-wrap" }}>
-                                {displayValue}
-                              </Typography>
-                            </Box>
-                          );
-                        })}
+                            return (
+                              <Box key={field.key} sx={{
+                                whiteSpace: "pre-wrap"
+                              }}>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                                  {index + 1}. {field.label}
+                                </Typography>
+                                <Typography color="text.grey[100]" sx={{ whiteSpace: "pre-wrap", pl: 2 }}>
+                                  {displayValue}
+                                </Typography>
+                              </Box>
+                            );
+                          })}
                       </Stack>
                       <Divider sx={{ my: 4 }} />
                     </Box>
