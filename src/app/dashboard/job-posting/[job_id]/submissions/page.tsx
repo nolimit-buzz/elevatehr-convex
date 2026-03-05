@@ -187,12 +187,12 @@ export default function Home() {
   const convexApplications = useApplications(
     jobId && !isApplyingFilters
       ? {
-          jobId,
-          stage: currentStage as ConvexStageType | undefined,
-          assessmentType: currentAssessmentType,
-          page,
-          perPage,
-        }
+        jobId,
+        stage: currentStage as ConvexStageType | undefined,
+        assessmentType: currentAssessmentType,
+        page,
+        perPage,
+      }
       : null,
   );
 
@@ -210,18 +210,18 @@ export default function Home() {
   const convexFilteredApplications = useApplicationsWithFilters(
     jobId && isApplyingFilters
       ? {
-          jobId,
-          stage: (subTabValue === 0 ? "new" : getStageValue(subTabValue)) as ConvexStageType,
-          minExperience,
-          experienceRange,
-          minSalary: filters.salaryMin ? Number(filters.salaryMin) : undefined,
-          maxSalary: filters.salaryMax ? Number(filters.salaryMax) : undefined,
-          skills: filters.requiredSkills.length > 0 ? filters.requiredSkills : undefined,
-          availability: filters.availability || undefined,
-          trial: filters.trial || undefined,
-          page,
-          perPage,
-        }
+        jobId,
+        stage: (subTabValue === 0 ? "new" : getStageValue(subTabValue)) as ConvexStageType,
+        minExperience,
+        experienceRange,
+        minSalary: filters.salaryMin ? Number(filters.salaryMin) : undefined,
+        maxSalary: filters.salaryMax ? Number(filters.salaryMax) : undefined,
+        skills: filters.requiredSkills.length > 0 ? filters.requiredSkills : undefined,
+        availability: filters.availability || undefined,
+        trial: filters.trial || undefined,
+        page,
+        perPage,
+      }
       : null,
   );
 
@@ -236,11 +236,11 @@ export default function Home() {
       // Transform Convex job data to match JobDetails interface
       const transformedJob = convexJobDetails
         ? ({
-            ...convexJobDetails,
-            id: (convexJobDetails as any)._id || (convexJobDetails as any).id,
-            // Map description to about_role for compatibility
-            about_role: (convexJobDetails as any).description || "",
-          } as unknown as JobDetails)
+          ...convexJobDetails,
+          id: (convexJobDetails as any)._id || (convexJobDetails as any).id,
+          // Map description to about_role for compatibility
+          about_role: (convexJobDetails as any).description || "",
+        } as unknown as JobDetails)
         : null;
       setJobDetails(transformedJob);
       setLoading(false);
@@ -463,8 +463,7 @@ export default function Home() {
       setPendingAction(null);
       setSelectedEntries([]);
       handleNotification(
-        `Successfully sent ${application_ids.length} candidate${
-          application_ids.length > 1 ? "s" : ""
+        `Successfully sent ${application_ids.length} candidate${application_ids.length > 1 ? "s" : ""
         } to ${assessment_id.replace("_", " ")}`,
         "success",
       );
@@ -1037,7 +1036,7 @@ export default function Home() {
                       label={
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                           <span>All</span>
-                          <Chip
+                          {/* <Chip
                             label={
                               stageTotals.new +
                               stageTotals.skill_assessment +
@@ -1056,7 +1055,7 @@ export default function Home() {
                                 fontWeight: 500,
                               },
                             }}
-                          />
+                          /> */}
                         </Box>
                       }
                       sx={{
@@ -1069,7 +1068,7 @@ export default function Home() {
                       label={
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                           <span>Application Review</span>
-                          <Chip
+                          {/* <Chip
                             label={stageTotals.new}
                             size="small"
                             sx={{
@@ -1082,7 +1081,7 @@ export default function Home() {
                                 fontWeight: 500,
                               },
                             }}
-                          />
+                          /> */}
                         </Box>
                       }
                       sx={{
@@ -1095,7 +1094,7 @@ export default function Home() {
                       label={
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                           <span>Skill assessment</span>
-                          <Chip
+                          {/* <Chip
                             label={stageTotals.skill_assessment}
                             size="small"
                             sx={{
@@ -1108,7 +1107,7 @@ export default function Home() {
                                 fontWeight: 500,
                               },
                             }}
-                          />
+                          /> */}
                         </Box>
                       }
                       sx={{
@@ -1121,7 +1120,7 @@ export default function Home() {
                       label={
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                           <span>Interviews</span>
-                          <Chip
+                          {/* <Chip
                             label={stageTotals.interviews}
                             size="small"
                             sx={{
@@ -1134,7 +1133,7 @@ export default function Home() {
                                 fontWeight: 500,
                               },
                             }}
-                          />
+                          /> */}
                         </Box>
                       }
                       sx={{
@@ -1147,7 +1146,7 @@ export default function Home() {
                       label={
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                           <span>Acceptance</span>
-                          <Chip
+                          {/* <Chip
                             label={stageTotals.acceptance}
                             size="small"
                             sx={{
@@ -1160,7 +1159,7 @@ export default function Home() {
                                 fontWeight: 500,
                               },
                             }}
-                          />
+                          /> */}
                         </Box>
                       }
                       sx={{
@@ -1173,7 +1172,7 @@ export default function Home() {
                       label={
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                           <span>Archived</span>
-                          <Chip
+                          {/* <Chip
                             label={stageTotals.archived}
                             size="small"
                             sx={{
@@ -1186,7 +1185,7 @@ export default function Home() {
                                 fontWeight: 500,
                               },
                             }}
-                          />
+                          /> */}
                         </Box>
                       }
                       sx={{
@@ -1214,7 +1213,7 @@ export default function Home() {
                   bgcolor: "transparent",
                   borderRadius: 2,
                   position: "relative",
-                  height: `calc(100vh - 200px)`,
+                  height: `calc(170vh - 270px)`,
                 }}
               >
                 {/* Actions bar inside Paper, before candidates list */}
@@ -1398,6 +1397,7 @@ export default function Home() {
                         maxWidth: "100%",
                         width: "100%",
                         overflowX: "hidden",
+                        height: "100%",
                         pt: 0,
                         pb: 2,
                         display: { xs: "none", lg: "block" },
@@ -1448,11 +1448,11 @@ export default function Home() {
                         },
                         cv_analysis: app.cv_analysis
                           ? {
-                              experience_years: app.cv_analysis.experience_years || 0,
-                              skills: app.cv_analysis.skills || [],
-                              education: app.cv_analysis.education || [],
-                              ...app.cv_analysis,
-                            }
+                            experience_years: app.cv_analysis.experience_years || 0,
+                            skills: app.cv_analysis.skills || [],
+                            education: app.cv_analysis.education || [],
+                            ...app.cv_analysis,
+                          }
                           : undefined,
                         attachments: app.attachments,
                       }))}
@@ -1539,14 +1539,14 @@ export default function Home() {
                 <DialogTitle sx={{ fontWeight: 600, color: "rgba(17, 17, 17, 0.92)" }}>
                   {pendingAction
                     ? `Send email for ${(() => {
-                        const matched = assessments.find((a: any) => a.id === pendingAction);
-                        return matched
-                          ? (matched as any).type
-                              .split("_")
-                              .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
-                              .join(" ")
-                          : pendingAction.replace("_", " ");
-                      })()}`
+                      const matched = assessments.find((a: any) => a.id === pendingAction);
+                      return matched
+                        ? (matched as any).type
+                          .split("_")
+                          .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
+                          .join(" ")
+                        : pendingAction.replace("_", " ");
+                    })()}`
                     : "Send Email"}
                 </DialogTitle>
                 <DialogContent dividers sx={{ bgcolor: theme.palette.background.paper }}>
