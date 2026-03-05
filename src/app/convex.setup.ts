@@ -16,6 +16,8 @@ export function useAuthedQuery<Query extends FunctionReference<"query">>(
   return useBaseQuery(query, finalArgs);
 }
 
+
+
 export function useAuthedMutation<Mutation extends FunctionReference<"mutation">>(mutation: Mutation) {
   const baseMutation = useBaseMutation(mutation);
   type MutationFn = ReturnType<typeof useBaseMutation<Mutation>>;

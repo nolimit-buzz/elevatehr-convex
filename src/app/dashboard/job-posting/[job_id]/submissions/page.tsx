@@ -29,6 +29,7 @@ import "react-quill/dist/quill.snow.css";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CloseIcon from "@mui/icons-material/Close";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
+import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import CandidateListSection from "@/app/dashboard/components/dashboard/CandidatesListSection";
 import { useTheme } from "@mui/material/styles";
 import { PHASE_OPTIONS } from "@/app/constants/phaseOptions";
@@ -62,6 +63,7 @@ import {
   CompanyApplication,
 } from "@/queries/applications.queries";
 import { useEmailTemplates } from "@/queries/emailTemplates.queries";
+import { SpaceDashboard } from "@mui/icons-material";
 
 // Remove unused styled components
 const PrimaryButton = styled(Button)(({ theme }) => ({
@@ -160,6 +162,7 @@ export default function Home() {
   const [perPage, setPerPage] = useState(10);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isFilterExpanded, setIsFilterExpanded] = useState(false);
 
   // Helper to get stage value from tab index
   const getStageValue = useCallback((tabValue: number): StageType => {
@@ -976,19 +979,68 @@ export default function Home() {
           </Tabs>
         </Box>
 
+
+
         {primaryTabValue === 0 ? (
-          <Stack direction="row" maxWidth={"100%"} gap={3}>
-            <Box sx={{ display: { xs: "none", lg: "block" }, width: 308 }}>
-              <FilterSection
-                filters={filters}
-                availableSkills={availableSkills}
-                onFilterChange={handleFilterChange}
-                onClearFilters={clearFilters}
-                onApplyFilters={applyFilters}
-                hasActiveFilters={hasActiveFilters}
-                sx={{ bgcolor: "#FFFFFF", borderRadius: 2, p: 2 }}
-              />
+          <Stack direction="row" maxWidth={"100%"} gap={isFilterExpanded ? 3 : 0} sx={{ position: "relative" }}>
+
+            {!isFilterExpanded && (
+              <IconButton
+                onClick={() => setIsFilterExpanded(true)}
+                sx={{
+                  position: "relative",
+                  left: 0,
+                  top: "-72vh",
+                  color: "#000000",
+                  zIndex: 50,
+                  "&:hover": { bgcolor: "transparent" },
+                }}
+              >
+                <SpaceDashboard sx={{ height: "30px", width: "30px" }} />
+              </IconButton>
+            )}
+
+            <Box
+              sx={{
+                display: { xs: "none", lg: "block" },
+                width: isFilterExpanded ? 308 : 0,
+                transition: "width 0.3s ease-in-out",
+                overflow: "hidden",
+                position: "relative",
+              }}
+            >
+
+
+              <Box sx={{ width: 308, pt: 4, bgcolor: "#FFFFFF", borderRadius: 2, }}>
+                <FilterSection
+                  filters={filters}
+                  availableSkills={availableSkills}
+                  onFilterChange={handleFilterChange}
+                  onClearFilters={clearFilters}
+                  onApplyFilters={applyFilters}
+                  hasActiveFilters={hasActiveFilters}
+                  sx={{ p: 2 }}
+                />
+              </Box>
             </Box>
+
+
+
+            {isFilterExpanded && (
+              <IconButton
+                onClick={() => setIsFilterExpanded(false)}
+                sx={{
+                  position: "absolute",
+                  left: 260,
+                  top: 10,
+                  zIndex: 20,
+                  color: theme.palette.grey[200],
+                  "&:hover": { color: theme.palette.secondary.main },
+                }}
+              >
+                <MenuOpenIcon />
+              </IconButton>
+            )}
 
             {/* Mobile Filter Dialog */}
             <FilterSection
@@ -1016,7 +1068,7 @@ export default function Home() {
                 }}
               >
                 {/* Tabs for large screens */}
-                <Box sx={{ display: { xs: "none", lg: "block" } }}>
+                <Box sx={{ display: { xs: "none", lg: "block" }, px: { lg: 4 } }}>
                   <Tabs
                     value={subTabValue}
                     onChange={(_event: React.SyntheticEvent, newValue: number) => {
@@ -1029,8 +1081,14 @@ export default function Home() {
                     sx={{
                       // width: "100%",
                       alignItems: "center",
+                      "& .MuiTabs-flexContainer": {
+                        justifyContent: "space-between",
+                      },
                       "& .MuiTab-root": {
                         transition: "all 0.2s ease-in-out",
+                        minWidth: "auto",
+                        px: 1.5,
+                        whiteSpace: "nowrap",
                         "&:hover": {
                           color: theme.palette.secondary.main,
                         },
@@ -1066,7 +1124,9 @@ export default function Home() {
                       sx={{
                         textTransform: "none",
                         color: subTabValue === 0 ? theme.palette.grey[100] : theme.palette.grey[200],
-                        flex: 1,
+                        minWidth: "auto",
+                        px: 1,
+                        whiteSpace: "nowrap",
                       }}
                     />
                     <Tab
@@ -1092,7 +1152,9 @@ export default function Home() {
                       sx={{
                         textTransform: "none",
                         color: subTabValue === 1 ? theme.palette.grey[100] : theme.palette.grey[200],
-                        flex: 1,
+                        minWidth: "auto",
+                        px: 1,
+                        whiteSpace: "nowrap",
                       }}
                     />
                     <Tab
@@ -1118,7 +1180,9 @@ export default function Home() {
                       sx={{
                         textTransform: "none",
                         color: subTabValue === 2 ? theme.palette.grey[100] : theme.palette.grey[200],
-                        flex: 1,
+                        minWidth: "auto",
+                        px: 1,
+                        whiteSpace: "nowrap",
                       }}
                     />
                     <Tab
@@ -1144,7 +1208,9 @@ export default function Home() {
                       sx={{
                         textTransform: "none",
                         color: subTabValue === 3 ? theme.palette.grey[100] : theme.palette.grey[200],
-                        flex: 1,
+                        minWidth: "auto",
+                        px: 1,
+                        whiteSpace: "nowrap",
                       }}
                     />
                     <Tab
@@ -1170,7 +1236,9 @@ export default function Home() {
                       sx={{
                         textTransform: "none",
                         color: subTabValue === 4 ? theme.palette.grey[100] : theme.palette.grey[200],
-                        flex: 1,
+                        minWidth: "auto",
+                        px: 1,
+                        whiteSpace: "nowrap",
                       }}
                     />
                     <Tab
@@ -1196,7 +1264,9 @@ export default function Home() {
                       sx={{
                         textTransform: "none",
                         color: subTabValue === 5 ? theme.palette.grey[100] : theme.palette.grey[200],
-                        flex: 1,
+                        minWidth: "auto",
+                        px: 1,
+                        whiteSpace: "nowrap",
                       }}
                     />
                   </Tabs>
@@ -1351,9 +1421,16 @@ export default function Home() {
                         setSelectedAssessmentType(newValue);
                       }}
                       aria-label="skill assessment tabs"
+                      variant="scrollable"
+                      scrollButtons="auto"
                       sx={{
                         "& .MuiTabs-indicator": {
                           backgroundColor: theme.palette.secondary.main,
+                        },
+                        "& .MuiTab-root": {
+                          minWidth: "auto",
+                          px: 1.5,
+                          whiteSpace: "nowrap",
                         },
                       }}
                     >
@@ -1367,22 +1444,33 @@ export default function Home() {
                           },
                         }}
                       />
-                      {assessments?.map((assessment, index) => (
-                        <Tab
-                          key={index}
-                          label={assessment.title || assessment.type
-                            .split("_")
-                            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                            .join(" ")}
-                          sx={{
-                            textTransform: "none",
-                            color: theme.palette.grey[100],
-                            "&.Mui-selected": {
-                              color: theme.palette.secondary.main,
-                            },
-                          }}
-                        />
-                      ))}
+                      {assessments?.map((assessment, index) => {
+                        const title = assessment.title || assessment.type
+                          .split("_")
+                          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                          .join(" ");
+
+                        let label = title;
+                        if (assessment.type === "online_assessment" || assessment.type === "online_assessment_1" || assessment.type === "online_assessment_2") {
+                          label = `Quiz (${title})`;
+                        } else if (assessment.type === "technical_assessment") {
+                          label = `Technical (${title})`;
+                        }
+
+                        return (
+                          <Tab
+                            key={index}
+                            label={label}
+                            sx={{
+                              textTransform: "none",
+                              color: theme.palette.grey[100],
+                              "&.Mui-selected": {
+                                color: theme.palette.secondary.main,
+                              },
+                            }}
+                          />
+                        );
+                      })}
                     </Tabs>
                   </Box>
                 )}
