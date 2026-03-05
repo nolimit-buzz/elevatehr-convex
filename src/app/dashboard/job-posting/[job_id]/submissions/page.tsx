@@ -23,6 +23,10 @@ import {
   DialogContent,
   DialogActions,
   Alert,
+  Menu,
+  Divider,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
 import dynamic from "next/dynamic";
 import "react-quill/dist/quill.snow.css";
@@ -30,6 +34,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CloseIcon from "@mui/icons-material/Close";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
 import MenuOpenIcon from '@mui/icons-material/MenuOpen';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CandidateListSection from "@/app/dashboard/components/dashboard/CandidatesListSection";
 import { useTheme } from "@mui/material/styles";
 import { PHASE_OPTIONS } from "@/app/constants/phaseOptions";
@@ -163,6 +168,7 @@ export default function Home() {
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
+  const [bulkActionsAnchor, setBulkActionsAnchor] = useState<null | HTMLElement>(null);
 
   // Helper to get stage value from tab index
   const getStageValue = useCallback((tabValue: number): StageType => {
@@ -700,6 +706,14 @@ export default function Home() {
 
   const handleFilterMenuClose = () => {
     setFilterMenuAnchor(null);
+  };
+
+  const handleBulkActionsOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setBulkActionsAnchor(event.currentTarget);
+  };
+
+  const handleBulkActionsClose = () => {
+    setBulkActionsAnchor(null);
   };
 
   const JobDescriptionSkeleton = () => (
@@ -1280,6 +1294,74 @@ export default function Home() {
                   onFilterClick={handleFilterMenuOpen}
                 />
               </Box>
+
+              {/* Analytics Cards Section */}
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)", md: "repeat(5, 1fr)" },
+                  gap: 2,
+                  mt: 2,
+                  mb: 1,
+                  width: "100%",
+                }}
+              >
+                {[
+                  { label: "Application Review", value: stageTotals.new, color: "#4444E2" },
+                  { label: "Skill Assessment", value: stageTotals.skill_assessment, color: "#2B656E" },
+                  { label: "Interviews", value: stageTotals.interviews, color: "#76325F" },
+                  { label: "Acceptance", value: stageTotals.acceptance, color: "#1B5E20" },
+                  { label: "Archived", value: stageTotals.archived, color: "#724A3B" },
+                ].map((card, index) => (
+                  <Box
+                    key={index}
+                    sx={{
+                      p: 2,
+                      borderRadius: "12px",
+                      bgcolor: "white",
+                      border: "1px solid rgba(0,0,0,0.06)",
+                      boxShadow: "0px 2px 4px rgba(0,0,0,0.02)",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 0.5,
+                      transition: "transform 0.2s, box-shadow 0.2s",
+                      "&:hover": {
+                        transform: "translateY(-2px)",
+                        boxShadow: "0px 4px 12px rgba(0,0,0,0.05)",
+                        borderColor: card.color + "40",
+                      },
+                    }}
+                  >
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontWeight: 600,
+                        color: "text.secondary",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px",
+                        fontSize: "10px",
+                      }}
+                    >
+                      {card.label}
+                    </Typography>
+                    <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
+                      <Typography
+                        variant="h5"
+                        sx={{
+                          fontWeight: 700,
+                          color: card.color,
+                        }}
+                      >
+                        {card.value}
+                      </Typography>
+                      <Typography variant="caption" color="text.disabled">
+                        {card.value === 1 ? "candidate" : "candidates"}
+                      </Typography>
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+
               <Paper
                 elevation={0}
                 sx={{
@@ -1291,123 +1373,117 @@ export default function Home() {
                   height: `calc(170vh - 270px)`,
                 }}
               >
-                {/* Actions bar inside Paper, before candidates list */}
-                <Box
-                  sx={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: 1,
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    py: 2,
-                  }}
-                >
-                  {/* Select All control */}
-                  {filteredCandidates?.applications?.length > 1 && (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          justifyContent: "flex-start",
-                          alignItems: "center",
-                        }}
-                      >
-                        {(() => {
-                          const allVisibleIds = filteredCandidates?.applications?.map((c) => String(c.id)) || [];
-                          const allSelected =
-                            allVisibleIds.length > 0 && allVisibleIds.every((id) => selectedEntries?.includes(id));
-                          return (
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              onClick={() => {
-                                if (allSelected) {
-                                  setSelectedEntries([]);
-                                } else {
-                                  setSelectedEntries(allVisibleIds);
-                                }
-                              }}
-                              sx={{
-                                width: "max-content",
-                                flexWrap: "nowrap",
-                                py: 1,
-                                px: 1.5,
-                                color: "rgba(17, 17, 17, 0.84)",
-                                borderColor: "rgba(17, 17, 17, 0.12)",
-                                "&:hover": {
-                                  borderColor: "rgba(17, 17, 17, 0.24)",
-                                },
-                              }}
-                            >
-                              {allSelected ? "Clear selection" : "Select all candidates"}
-                            </Button>
-                          );
-                        })()}
-                      </Box>
-                      {selectedEntries?.length > 0 &&
-                        subTabValue !== 4 && ( // Hide for acceptance phase
-                          <>
-                            <Box
-                              sx={{
-                                width: "max-content",
-                                flexWrap: "nowrap",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                                backgroundColor: "#ffffff",
-                                borderRadius: "1000px",
-                                px: 1.5,
-                                py: 0.5,
-                                border: "1px solid rgba(0, 0, 0, 0.12)",
-                              }}
-                            >
-                              <Typography variant="body1" color={theme.palette.grey[100]}>
-                                {selectedEntries?.length} candidates selected
-                              </Typography>
-                              <IconButton size="small" onClick={() => setSelectedEntries([])} sx={{ ml: 1 }}>
-                                <CloseIcon fontSize="small" />
-                              </IconButton>
-                            </Box>
-                          </>
-                        )}
-                    </Box>
-                  )}
-                  {selectedEntries?.length > 0 && subTabValue !== 4 && (
-                    <Box sx={{ display: "flex", gap: 2 }}>
+                {/* Select All control and Bulk Actions Menu */}
+                {filteredCandidates?.applications?.length > 0 && (
+                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", gap: 1, my: 2 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        justifyContent: "flex-start",
+                        alignItems: "center",
+                      }}
+                    >
                       {(() => {
-                        return null;
-                      })()}
-                      {dynamicPhaseOptions[getStageValue(subTabValue)]?.map((option) => {
+                        const allVisibleIds = filteredCandidates?.applications?.map((c) => String(c.id)) || [];
+                        const allSelected =
+                          allVisibleIds.length > 0 && allVisibleIds.every((id) => selectedEntries?.includes(id));
                         return (
                           <Button
-                            key={option.action}
                             variant="outlined"
-                            startIcon={
-                              isMovingStage === option.action ? <CircularProgress size={20} /> : <option.icon />
-                            }
+                            size="small"
                             onClick={() => {
-                              openEmailModalForAction(option.action);
+                              if (allSelected) {
+                                setSelectedEntries([]);
+                              } else {
+                                setSelectedEntries(allVisibleIds);
+                              }
                             }}
-                            disabled={isMovingStage.length > 0}
                             sx={{
+                              width: "max-content",
+                              flexWrap: "nowrap",
+                              py: 1,
+                              px: 1.5,
                               color: "rgba(17, 17, 17, 0.84)",
                               borderColor: "rgba(17, 17, 17, 0.12)",
                               "&:hover": {
                                 borderColor: "rgba(17, 17, 17, 0.24)",
                               },
-                              "&.Mui-disabled": {
-                                backgroundColor: "rgba(0, 0, 0, 0.12)",
-                                color: "rgba(0, 0, 0, 0.26)",
-                              },
                             }}
                           >
-                            {isMovingStage === option.action ? "Moving..." : option.label}
+                            {allSelected ? "Clear selection" : "Select all candidates"}
                           </Button>
                         );
-                      })}
+                      })()}
                     </Box>
-                  )}
-                </Box>
+
+
+
+                    {selectedEntries?.length > 0 && subTabValue !== 4 && (
+                      <>
+                        <IconButton
+                          onClick={handleBulkActionsOpen}
+                          sx={{
+                            color: "rgba(17, 17, 17, 0.84)",
+                            bgcolor: "rgba(0, 0, 0, 0.04)",
+                            "&:hover": { bgcolor: "rgba(0, 0, 0, 0.08)" },
+                          }}
+                        >
+                          <MoreVertIcon />
+                        </IconButton>
+                        <Menu
+                          anchorEl={bulkActionsAnchor}
+                          open={Boolean(bulkActionsAnchor)}
+                          onClose={handleBulkActionsClose}
+                          PaperProps={{
+                            sx: {
+                              mt: 1,
+                              minWidth: 220,
+                              borderRadius: "12px",
+                              boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.1)",
+                            },
+                          }}
+                        >
+                          <MenuItem disabled sx={{ opacity: "1 !important" }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, color: "text.primary" }}>
+                              {selectedEntries.length} candidates selected
+                            </Typography>
+                          </MenuItem>
+                          <MenuItem
+                            onClick={() => {
+                              setSelectedEntries([]);
+                              handleBulkActionsClose();
+                            }}
+                          >
+                            <ListItemIcon>
+                              <CloseIcon fontSize="small" />
+                            </ListItemIcon>
+                            <ListItemText primary="Clear selection" />
+                          </MenuItem>
+                          <Divider />
+                          {dynamicPhaseOptions[getStageValue(subTabValue)]?.map((option) => (
+                            <MenuItem
+                              key={option.action}
+                              onClick={() => {
+                                openEmailModalForAction(option.action);
+                                handleBulkActionsClose();
+                              }}
+                              disabled={isMovingStage.length > 0}
+                            >
+                              <ListItemIcon>
+                                {isMovingStage === option.action ? (
+                                  <CircularProgress size={20} />
+                                ) : (
+                                  <option.icon fontSize="small" />
+                                )}
+                              </ListItemIcon>
+                              <ListItemText primary={option.label} />
+                            </MenuItem>
+                          ))}
+                        </Menu>
+                      </>
+                    )}
+                  </Box>
+                )}
 
                 {/* Assessment Tabs */}
                 {subTabValue === 2 && (

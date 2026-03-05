@@ -72,7 +72,7 @@ export type StageType = "new" | "skill_assessment" | "interviews" | "acceptance"
 
 export interface PhaseOption {
   label: string;
-  icon: React.ComponentType;
+  icon: any; // Using any to allow MUI icon props like fontSize
   action: string;
   id?: string;
 }
