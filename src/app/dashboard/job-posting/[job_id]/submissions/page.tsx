@@ -279,7 +279,7 @@ export default function Home() {
 
       // Update dynamic phase options with assessment options
       const assessmentOptions = fetchedAssessments.map((assessment: any) => ({
-        label: `Send ${assessment.type
+        label: `Send ${assessment.title || assessment.type
           .split("_")
           .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
           .join(" ")}`,
@@ -388,6 +388,7 @@ export default function Home() {
   const handleSubTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setSelectedEntries([]);
     setSubTabValue(newValue);
+    setSelectedAssessmentType(0);
   };
 
   const handleQuickActionsOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -462,9 +463,13 @@ export default function Home() {
       setEmailModalOpen(false);
       setPendingAction(null);
       setSelectedEntries([]);
+
+      const matchedAssessment = assessments.find((a: any) => a.id === assessment_id);
+      const assessmentName = matchedAssessment ? matchedAssessment.title : assessment_id.replace("_", " ");
+
       handleNotification(
         `Successfully sent ${application_ids.length} candidate${application_ids.length > 1 ? "s" : ""
-        } to ${assessment_id.replace("_", " ")}`,
+        } to ${assessmentName}`,
         "success",
       );
       // Convex will auto-update the data
@@ -1365,7 +1370,7 @@ export default function Home() {
                       {assessments?.map((assessment, index) => (
                         <Tab
                           key={index}
-                          label={assessment.type
+                          label={assessment.title || assessment.type
                             .split("_")
                             .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
                             .join(" ")}
@@ -1541,7 +1546,7 @@ export default function Home() {
                     ? `Send email for ${(() => {
                       const matched = assessments.find((a: any) => a.id === pendingAction);
                       return matched
-                        ? (matched as any).type
+                        ? (matched as any).title || (matched as any).type
                           .split("_")
                           .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
                           .join(" ")
