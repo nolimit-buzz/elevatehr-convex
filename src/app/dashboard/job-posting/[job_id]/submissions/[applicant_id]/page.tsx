@@ -23,6 +23,7 @@ import mammoth from "mammoth";
 import axios from "axios";
 import LaunchIcon from "@mui/icons-material/Launch";
 import { useApplication, useApplications, useApplicationMutations } from "@/queries/applications.queries";
+import { useJob } from "@/queries/jobs.queries";
 import EmailStageTransitionDialog from "@/app/dashboard/components/EmailStageTransitionDialog";
 import Notification from "@/app/dashboard/components/Notification";
 
@@ -149,6 +150,9 @@ export default function ApplicantDetails() {
   // Fetch single applicant details using Convex
   const applicantData = useApplication(applicantId);
 
+  // Fetch job details to get custom field labels
+  const jobData = useJob(jobId);
+
   // Fetch all applications for this job (for sidebar)
   const applicationsData = useApplications(jobId ? { jobId: jobId } : null);
 
@@ -156,9 +160,9 @@ export default function ApplicantDetails() {
   const { updateStage } = useApplicationMutations();
 
   // Derive loading and error states
-  const detailsLoading = applicantData === undefined;
+  const detailsLoading = applicantData === undefined || jobData === undefined;
   const loading = applicationsData === undefined;
-  const error = applicantData === null ? "Failed to fetch applicant details" : null;
+  const error = applicantData === null ? "Failed to fetch applicant details" : jobData === null ? "Failed to fetch job details" : null;
 
   // Transform applicant data to match expected interface
   const applicant = useMemo(() => {
@@ -892,6 +896,7 @@ export default function ApplicantDetails() {
                   </Stack>
                 </Box>
 
+
                 {/* CV Analysis Section */}
                 {typeof cvAnalysis === "object" && cvAnalysis && (
                   <Box sx={{ mb: 2 }}>
@@ -949,6 +954,55 @@ export default function ApplicantDetails() {
                     </Stack>
                   </Box>
                 )}
+
+                {/* Custom Question Responses */}
+                {(() => {
+                  const customFieldsConfig = jobData?.application_form?.custom_fields || [];
+                  const customFieldResponses = applicant?.custom_fields || {};
+
+                  if (customFieldsConfig.length === 0 || Object.keys(customFieldResponses).length === 0) return null;
+
+                  return (
+                    <Box sx={{ mb: 4 }}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                        Application Responses
+                      </Typography>
+                      <Stack spacing={3} sx={{
+                        bgcolor: "rgba(17, 17, 17, 0.04)",
+                        p: 2,
+                        borderRadius: 2,
+                      }}>
+                        {customFieldsConfig
+                          .filter((field: any) => {
+                            const response = customFieldResponses[field.key];
+                            return response !== undefined && response !== null;
+                          })
+                          .map((field: any, index: number) => {
+                            const response = customFieldResponses[field.key];
+
+                            // Handle potential object structure { value: "..." } or direct value
+                            const displayValue = typeof response === 'object' && response !== null && 'value' in response
+                              ? String(response.value)
+                              : String(response);
+
+                            return (
+                              <Box key={field.key} sx={{
+                                whiteSpace: "pre-wrap"
+                              }}>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+                                  {index + 1}. {field.label}
+                                </Typography>
+                                <Typography color="text.grey[100]" sx={{ whiteSpace: "pre-wrap", pl: 2 }}>
+                                  {displayValue}
+                                </Typography>
+                              </Box>
+                            );
+                          })}
+                      </Stack>
+                      <Divider sx={{ my: 4 }} />
+                    </Box>
+                  );
+                })()}
 
                 {/* Resume section */}
                 <Box>
