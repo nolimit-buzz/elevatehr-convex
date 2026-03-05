@@ -35,6 +35,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
 import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import CandidateListSection from "@/app/dashboard/components/dashboard/CandidatesListSection";
 import { useTheme } from "@mui/material/styles";
 import { PHASE_OPTIONS } from "@/app/constants/phaseOptions";
@@ -636,6 +637,47 @@ export default function Home() {
       setEmailLoading(false);
     }
   };
+
+  const handleExportCVs = useCallback(async () => {
+    if (!selectedEntries.length) return;
+
+    const selectedApps = candidates.applications.filter((app: any) =>
+      selectedEntries.includes(String(app.id))
+    );
+
+    let count = 0;
+    for (const app of selectedApps) {
+      const cvUrl = (app as any).attachments?.cv;
+      if (cvUrl) {
+        try {
+          const response = await fetch(cvUrl);
+          if (!response.ok) throw new Error("Network response was not ok");
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          const fileName = `CV_${(app as any).personal_info?.firstname || "Candidate"}_${(app as any).personal_info?.lastname || ""}.pdf`;
+          link.setAttribute("download", fileName);
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(url);
+          count++;
+        } catch (error) {
+          console.error("Direct download failed, opening in new tab:", error);
+          // Fallback to opening in new tab
+          window.open(cvUrl, "_blank");
+          count++;
+        }
+      }
+    }
+
+    if (count > 0) {
+      handleNotification(`${count} CV(s) download initiated`, "success");
+    } else {
+      handleNotification("No CVs found for selected candidates", "error");
+    }
+  }, [selectedEntries, candidates.applications, handleNotification]);
 
   const handleCloseResponses = async () => {
     try {
@@ -1419,7 +1461,27 @@ export default function Home() {
 
 
                     {selectedEntries?.length > 0 && subTabValue !== 4 && (
-                      <>
+                      <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          startIcon={<FileDownloadIcon />}
+                          onClick={handleExportCVs}
+                          sx={{
+                            color: "rgba(17, 17, 17, 0.84)",
+                            borderColor: "rgba(17, 17, 17, 0.12)",
+                            textTransform: "none",
+                            fontWeight: 500,
+                            py: 0.5,
+                            px: 1.5,
+                            "&:hover": {
+                              borderColor: "rgba(17, 17, 17, 0.24)",
+                              bgcolor: "rgba(0, 0, 0, 0.04)",
+                            },
+                          }}
+                        >
+                          Export CV ({selectedEntries.length})
+                        </Button>
                         <IconButton
                           onClick={handleBulkActionsOpen}
                           sx={{
@@ -1480,7 +1542,7 @@ export default function Home() {
                             </MenuItem>
                           ))}
                         </Menu>
-                      </>
+                      </Box>
                     )}
                   </Box>
                 )}
