@@ -124,6 +124,7 @@ const AssessmentResultSchema = v.object({
   assessment_submission_status: v.optional(v.string()),
   assessment_submission_link: v.optional(v.string()),
   assessment_score: v.optional(v.number()),
+  assessment_feedback: v.optional(v.string()),
   answers: v.optional(
     v.array(
       v.object({
@@ -980,6 +981,36 @@ export const getPublicJobApplicationForm = query({
 
 // Note: submitPublicApplication is now in applications.node.ts (requires Node.js runtime)
 
+// Internal mutation to update assessment score after AI grading
+export const updateAssessmentScore = internalMutation({
+  args: {
+    applicationId: v.id("applications"),
+    assessmentType: v.string(),
+    score: v.number(),
+    feedback: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const application = await ctx.db.get(args.applicationId);
+    if (!application) return;
+
+    const currentResults = application.assessments_results || {};
+    const existingResult = currentResults[args.assessmentType] || {};
+
+    await ctx.db.patch(args.applicationId, {
+      assessments_results: {
+        ...currentResults,
+        [args.assessmentType]: {
+          ...existingResult,
+          assessment_score: args.score,
+          assessment_feedback: args.feedback,
+        },
+      },
+      // Also update legacy top-level field for compatibility
+      assessment_score: args.score,
+    });
+  },
+});
+
 // Public mutation to submit online/technical assessment
 export const submitAssessment = mutation({
   args: {
@@ -1061,6 +1092,17 @@ export const submitAssessment = mutation({
         title: "Assessment Submitted",
         content: `${application.name} has submitted their ${assessment.type.replace(/_/g, " ")} for the ${notifJob.title} position.`,
         type: "assessment",
+      });
+    }
+
+    // Schedule AI grading for online assessments that have questions and answers
+    const isOnlineAssessment = assessment.type === "online_assessment_1" || assessment.type === "online_assessment_2";
+    const hasAnswers = answers && answers.length > 0;
+    if (isOnlineAssessment && hasAnswers) {
+      await ctx.scheduler.runAfter(0, internal.modules.assessment.gradeAssessmentInternal, {
+        applicationId,
+        assessmentId,
+        assessmentType: assessment.type,
       });
     }
 

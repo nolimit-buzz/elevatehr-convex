@@ -511,17 +511,22 @@ export default function CandidateListSection({
             Object.entries(candidate.assessments_results).map(([type, result]: [string, any]) => {
               if (result) {
                 const status = result.assessment_submission_status || result.assessment_status;
+                console.log("[Assessment Chip Debug]", {
+                  type,
+                  result,
+                  candidateTopLevelScore: (candidate as any).assessment_score,
+                  candidateAssessmentsResults: candidate.assessments_results,
+                });
                 if (status) {
                   let label = `${type
                     .split("_")
                     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
                     .join(" ")}`;
 
+                  const score = result.assessment_score ?? (candidate as any).assessment_score;
                   // Add score if available
-                  if (result.assessment_score) {
-                    label += ` (${result.assessment_score}%)`;
-                  } else if (status === "submitted") {
-                    label += " (Submitted)";
+                  if (score) {
+                    label += ` (${score}%)`;
                   } else if (status === "sent") {
                     label += " (Sent)";
                   }
@@ -541,7 +546,7 @@ export default function CandidateListSection({
                     }
                   } else {
                     // For other assessment types (like online assessment)
-                    if (result.assessment_score) {
+                    if (score) {
                       bgColor = "#E8F5E9"; // Light green for scored
                       textColor = "#2E7D32"; // Dark green text
                     } else if (status === "submitted") {

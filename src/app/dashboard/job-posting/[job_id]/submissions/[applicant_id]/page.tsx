@@ -764,13 +764,12 @@ export default function ApplicantDetails() {
                                 .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
                                 .join(" ")}`;
 
-                              // Add status to label
-                              if (status === "submitted") {
-                                label += " (Submitted)";
+                              const score = result.assessment_score ?? (applicant as any).assessment_score;
+                              // Add score if available
+                              if (score) {
+                                label += ` (${score}%)`;
                               } else if (status === "sent") {
                                 label += " (Sent)";
-                              } else if (status === "Passed") {
-                                label += ` (${result.assessment_score}%)`;
                               }
 
                               // Determine colors based on assessment type and status
@@ -788,12 +787,15 @@ export default function ApplicantDetails() {
                                 }
                               } else {
                                 // For online assessment
-                                if (status === "Passed") {
-                                  bgColor = "#E8F5E9"; // Light green for passed
+                                if (score) {
+                                  bgColor = "#E8F5E9"; // Light green for scored
                                   textColor = "#2E7D32"; // Dark green text
+                                } else if (status === "submitted") {
+                                  bgColor = "#E8F5E9";
+                                  textColor = "#2E7D32";
                                 } else if (status === "sent") {
-                                  bgColor = "#FFF3E0"; // Light orange for sent
-                                  textColor = "#E65100"; // Dark orange text
+                                  bgColor = "#E3F2FD"; // Light blue for sent
+                                  textColor = "#1976D2"; // Dark blue text
                                 } else {
                                   bgColor = "#FFF3E0"; // Light orange for other states
                                   textColor = "#E65100"; // Dark orange text
