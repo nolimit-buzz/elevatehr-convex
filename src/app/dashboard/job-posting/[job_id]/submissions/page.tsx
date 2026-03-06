@@ -1187,6 +1187,17 @@ export default function Home() {
                     : theme.palette.grey[100],
               }}
             />
+            <Tab
+              label="CV repositories"
+              sx={{
+                textTransform: "none",
+                fontWeight: primaryTabValue === 2 ? "bold" : "normal",
+                color:
+                  primaryTabValue === 2
+                    ? theme.palette.secondary.main
+                    : theme.palette.grey[100],
+              }}
+            />
           </Tabs>
         </Box>
 
@@ -2061,6 +2072,297 @@ export default function Home() {
               </Dialog>
             </Box>
           </Stack>
+        ) : primaryTabValue === 2 ? (
+          /* ── CV Repositories ── */
+          <Box
+            sx={{
+              bgcolor: "#ffffff",
+              borderRadius: "16px",
+              p: { xs: 3, md: 4 },
+              minHeight: 480,
+              boxShadow: "0px 2px 8px rgba(0,0,0,0.04)",
+            }}
+          >
+            {/* Header row */}
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                mb: 3,
+                flexWrap: "wrap",
+                gap: 2,
+              }}
+            >
+              <Box>
+                <Typography
+                  variant="h6"
+                  sx={{ fontWeight: 700, color: "rgba(17,17,17,0.84)" }}
+                >
+                  CV Repository
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ color: "rgba(17,17,17,0.54)", mt: 0.5 }}
+                >
+                  All CVs submitted for this role in one place.
+                </Typography>
+              </Box>
+              <Button
+                variant="contained"
+                startIcon={<FileDownloadIcon />}
+                sx={{
+                  textTransform: "none",
+                  borderRadius: "8px",
+                  fontWeight: 600,
+                  bgcolor: "#4444E2",
+                  "&:hover": { bgcolor: "#6666E6" },
+                }}
+                onClick={handleExportCVs}
+                disabled={selectedEntries.length === 0}
+              >
+                Export selected CVs
+              </Button>
+            </Box>
+
+            {/* Stats strip */}
+            <Box
+              sx={{
+                display: "flex",
+                gap: 2,
+                mb: 4,
+                flexWrap: "wrap",
+              }}
+            >
+              {[
+                {
+                  label: "Total CVs",
+                  value: totalItems,
+                  color: "#4444E2",
+                },
+                {
+                  label: "With CV attached",
+                  value: candidates.applications.filter(
+                    (a: any) => !!a.attachments?.cv,
+                  ).length,
+                  color: "#2B656E",
+                },
+                {
+                  label: "Selected",
+                  value: selectedEntries.length,
+                  color: "#76325F",
+                },
+              ].map((stat) => (
+                <Box
+                  key={stat.label}
+                  sx={{
+                    px: 3,
+                    py: 1.5,
+                    borderRadius: "10px",
+                    border: "1px solid rgba(0,0,0,0.06)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 0.25,
+                    minWidth: 110,
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      fontSize: "10px",
+                      fontWeight: 600,
+                      color: "text.secondary",
+                    }}
+                  >
+                    {stat.label}
+                  </Typography>
+                  <Typography
+                    variant="h5"
+                    sx={{ fontWeight: 700, color: stat.color }}
+                  >
+                    {stat.value}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+
+            {/* CV list */}
+            {loading ? (
+              <CandidateSkeletonLoader />
+            ) : candidates.applications.length === 0 ? (
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  py: 10,
+                  gap: 2,
+                  color: "rgba(17,17,17,0.38)",
+                }}
+              >
+                <FileDownloadIcon sx={{ fontSize: 56, opacity: 0.3 }} />
+                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                  No CVs found for this job yet.
+                </Typography>
+              </Box>
+            ) : (
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                {candidates.applications.map((app: any) => {
+                  const name =
+                    `${app.personal_info?.firstname || ""} ${app.personal_info?.lastname || ""}`.trim() ||
+                    "Unknown";
+                  const cvUrl = app.attachments?.cv;
+                  const isSelected = selectedEntries.includes(String(app.id));
+                  return (
+                    <Box
+                      key={app.id}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        px: 3,
+                        py: 2,
+                        borderRadius: "12px",
+                        border: isSelected
+                          ? "1.5px solid #4444E2"
+                          : "1px solid rgba(0,0,0,0.08)",
+                        bgcolor: isSelected
+                          ? "rgba(68,68,226,0.04)"
+                          : "#fafafa",
+                        transition: "all 0.15s ease",
+                        cursor: "pointer",
+                        "&:hover": {
+                          border: "1.5px solid #4444E2",
+                          bgcolor: "rgba(68,68,226,0.04)",
+                        },
+                      }}
+                      onClick={() => handleSelectCandidate(app.id)}
+                    >
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 2 }}
+                      >
+                        {/* Avatar circle */}
+                        <Box
+                          sx={{
+                            width: 40,
+                            height: 40,
+                            borderRadius: "50%",
+                            bgcolor: isSelected ? "#4444E2" : "#E8E8F9",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontWeight: 700,
+                            fontSize: 15,
+                            color: isSelected ? "#fff" : "#4444E2",
+                            flexShrink: 0,
+                            transition: "all 0.15s ease",
+                          }}
+                        >
+                          {name.charAt(0).toUpperCase()}
+                        </Box>
+                        <Box>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontWeight: 600,
+                              color: "rgba(17,17,17,0.84)",
+                            }}
+                          >
+                            {name}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            sx={{ color: "rgba(17,17,17,0.48)" }}
+                          >
+                            {app.professional_info?.current_role ||
+                              app.stage ||
+                              "Applicant"}
+                          </Typography>
+                        </Box>
+                      </Box>
+
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {cvUrl ? (
+                          <>
+                            <Chip
+                              label="CV available"
+                              size="small"
+                              sx={{
+                                bgcolor: "rgba(43,101,110,0.1)",
+                                color: "#2B656E",
+                                fontWeight: 600,
+                                fontSize: 11,
+                              }}
+                            />
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              startIcon={<FileDownloadIcon />}
+                              href={cvUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              sx={{
+                                textTransform: "none",
+                                borderRadius: "8px",
+                                fontWeight: 500,
+                                borderColor: "rgba(17,17,17,0.16)",
+                                color: "rgba(17,17,17,0.72)",
+                                "&:hover": {
+                                  borderColor: "#4444E2",
+                                  color: "#4444E2",
+                                },
+                              }}
+                              component="a"
+                            >
+                              View CV
+                            </Button>
+                          </>
+                        ) : (
+                          <Chip
+                            label="No CV"
+                            size="small"
+                            sx={{
+                              bgcolor: "rgba(17,17,17,0.06)",
+                              color: "rgba(17,17,17,0.38)",
+                              fontWeight: 500,
+                              fontSize: 11,
+                            }}
+                          />
+                        )}
+                      </Box>
+                    </Box>
+                  );
+                })}
+              </Box>
+            )}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  mt: 4,
+                }}
+              >
+                <Pagination
+                  count={totalPages}
+                  page={page}
+                  onChange={handlePageChange}
+                  color="primary"
+                  size="large"
+                  showFirstButton
+                  showLastButton
+                />
+              </Box>
+            )}
+          </Box>
         ) : (
           <Paper sx={{ bgcolor: "transparent", boxShadow: "none" }}>
             {loading ? (
