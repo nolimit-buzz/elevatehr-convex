@@ -6,6 +6,7 @@ import { useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useConvexResponse } from "@/app/convex.setup";
 import { DefaultConstants } from "@/app/constants/defaults";
+import { setProfile, setWithExpiry } from "@/app/utils/authStorage";
 
 interface AdminAuthLoginProps {
   onSuccess?: (response: any) => void;
@@ -61,15 +62,12 @@ export default function AdminAuthLogin({ onSuccess }: AdminAuthLoginProps) {
     if (error) return setErrorMessage(error || "Login failed. Please try again.");
 
     if (result?.token) {
-      localStorage.setItem(DefaultConstants.tokenName, result.token);
+      setWithExpiry(DefaultConstants.tokenName, result.token);
       localStorage.setItem("jwt", result.token);
-      localStorage.setItem(
-        "userProfile",
-        JSON.stringify({
-          personalInfo: result?.personalInfo,
-          notifications: result?.notifications,
-        }),
-      );
+      setProfile({
+        personalInfo: result?.personalInfo,
+        notifications: result?.notifications,
+      });
       onSuccess && onSuccess(result);
     }
   };

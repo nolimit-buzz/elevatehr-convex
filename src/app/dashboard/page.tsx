@@ -35,6 +35,7 @@ import DashboardCard from "./components/shared/DashboardCard";
 import Notifications from "./components/dashboard/Notifications";
 import EmailTemplates from "./components/dashboard/EmailTemplates";
 import { useRouter, useSearchParams } from "next/navigation";
+import { getProfile } from "@/app/utils/authStorage";
 import Calendar from "@/app/components/Assessments";
 import { CalendlyEvent } from "@/app/types/calendly";
 import Assessment from "@/app/components/Assessment";
@@ -514,12 +515,10 @@ const Dashboard = () => {
   const company_id = searchParams.get("company_id");
 
   useEffect(() => {
-    // Get profile data from localStorage
-    const userProfile = localStorage.getItem("userProfile");
-    if (userProfile) {
-      const profile = JSON.parse(userProfile);
-
-      console.log("Loaded profile from localStorage:", profile);
+    // Get profile data from sessionStorage via getProfile helper
+    const profile = getProfile<any>();
+    if (profile) {
+      console.log("Loaded profile from sessionStorage:", profile);
 
       // Map localStorage data to our state structure
       setProfileData({

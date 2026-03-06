@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
+import { getProfile } from "@/app/utils/authStorage";
 import {
   Box,
   Container,
@@ -404,12 +405,10 @@ export default function Home() {
   }, [jobDetails]);
 
   useEffect(() => {
-    // Adjust the key if your localStorage user profile uses a different key
-    const userProfile = localStorage.getItem("userProfile");
-    if (userProfile) {
+    const profile = getProfile<any>();
+    if (profile) {
       try {
-        const parsed = JSON.parse(userProfile);
-        setCompanyId(parsed.companyInfo.company_id || parsed.user_id || null);
+        setCompanyId(profile.companyInfo.company_id || profile.user_id || null);
       } catch {
         setCompanyId(null);
       }

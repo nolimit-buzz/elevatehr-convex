@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { AuthQueries } from "@/queries/auth.queries";
 import { DefaultConstants } from "@/app/constants/defaults";
 import { setWithExpiry } from "@/app/utils/authStorage";
+import { setProfile } from "@/app/utils/authStorage";
 
 interface AuthLoginProps {
   subtext?: React.ReactNode;
@@ -74,14 +75,11 @@ export default function AuthLogin({ subtext, subtitle, onSuccess }: AuthLoginPro
     if (error) return setErrorMessage(error || "Login failed. Please try again.");
     if (result?.token) {
       setWithExpiry(DefaultConstants.tokenName, result.token);
-      setWithExpiry(
-        "userProfile",
-        JSON.stringify({
-          personalInfo: result?.personalInfo,
-          companyInfo: result?.companyInfo,
-          notifications: result?.notifications,
-        })
-      );
+      setProfile({
+        personalInfo: result?.personalInfo,
+        companyInfo: result?.companyInfo,
+        notifications: result?.notifications,
+      });
       onSuccess && onSuccess(result);
       router.push("/dashboard");
     }

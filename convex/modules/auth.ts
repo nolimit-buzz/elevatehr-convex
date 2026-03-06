@@ -31,7 +31,7 @@ export const Login = mutation({
 
     if (!user) throw new ConvexError({ message: Constants.ERROR.WRONG_USER, status: 401 });
 
-    const validPassword = verifyPassword({ password, hashedPassword: user?.password });
+    const validPassword = await verifyPassword({ password, hashedPassword: user?.password });
     if (!validPassword) throw new ConvexError({ message: Constants.ERROR.WRONG_USER, code: 401 });
 
     const userPayload = {
@@ -69,7 +69,7 @@ export const AdminLogin = mutation({
 
     if (!user) throw new ConvexError({ message: Constants.ERROR.WRONG_USER, code: 401 });
 
-    const validPassword = verifyPassword({ password, hashedPassword: user.password });
+    const validPassword = await verifyPassword({ password, hashedPassword: user.password });
     if (!validPassword) throw new ConvexError({ message: Constants.ERROR.WRONG_USER, code: 401 });
 
     const userPayload = {
@@ -104,13 +104,13 @@ export const ChangePassword = authedMutation({
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
 
     // Verify current password
-    const validPassword = verifyPassword({ password: currentPassword, hashedPassword: user.password });
+    const validPassword = await verifyPassword({ password: currentPassword, hashedPassword: user.password });
     if (!validPassword) {
       throw new ConvexError({ message: Constants.ERROR.WRONG_PASSWORD, code: 401 });
     }
 
     // Hash and update new password
-    const hashedNewPassword = hashPassword(newPassword);
+    const hashedNewPassword = await hashPassword(newPassword);
     await ctx.db.patch(userId, { password: hashedNewPassword });
 
     return { message: "Password changed successfully" };
@@ -148,7 +148,7 @@ export const CreateAdmin = mutation({
 
     if (existing) throw new ConvexError({ message: Constants.ERROR.ALREADY_EXIST, code: 409 });
 
-    args.password = hashPassword(args.password);
+    args.password = await hashPassword(args.password);
     const newAdmin = await ctx.db.insert("admins", {
       ...args,
       is_active: true,

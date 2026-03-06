@@ -5,6 +5,7 @@ import { Box, Button, Stack, Typography, Alert, Link } from "@mui/material";
 import Image from "next/image";
 import axios from 'axios';
 import metadata from "@/utils/metadata";
+import { setProfile } from "@/app/utils/authStorage";
 
 // Import steps
 import OnboardingStep1 from "./components/OnboardingStep1";
@@ -88,11 +89,11 @@ const OnboardingPage = () => {
             );
 
             console.log(response.data);
-            localStorage.setItem('userProfile', JSON.stringify({
+            setProfile({
                 personalInfo: response.data.personal_info,
                 companyInfo: response.data.company_info,
-                notifications: response.data.notifications
-              }));
+                notifications: response.data.notifications,
+            });
         
 
             router.push("/dashboard");
