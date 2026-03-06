@@ -2,13 +2,25 @@ import { Id } from "../_generated/dataModel";
 import { internal } from "../_generated/api";
 import { Constants } from "../utils/constants";
 import { ConvexError, v } from "convex/values";
-import { action, internalMutation, internalQuery, query } from "../_generated/server";
+import { action, internalMutation, internalQuery, internalAction, query } from "../_generated/server";
 import { authedMutation, authedQuery, authedAction } from "../utils/permission";
 import {
   generateQuizQuestions,
   generateSkillsForRole,
   generateTechnicalContent,
+  gradeAssessmentAnswers,
 } from "../templates/ai/assessmentDescription";
+
+// Internal query to get the first assessment for a company (used as fallback for email links)
+export const getFirstCompanyAssessmentInternal = internalQuery({
+  args: { companyId: v.id("companies") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("assessments")
+      .withIndex("by_company", (q) => q.eq("company_id", args.companyId))
+      .first();
+  },
+});
 
 // Internal query to get company by ID (used by actions)
 export const getCompanyInternal = internalQuery({
@@ -475,5 +487,86 @@ export const getStatistics = authedQuery({
       online_assessments_1: onlineAssessments1,
       online_assessments_2: onlineAssessments2,
     };
+  },
+});
+
+// Internal query to get application with answers (for grading action)
+export const getApplicationForGradingInternal = internalQuery({
+  args: { applicationId: v.id("applications") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.applicationId);
+  },
+});
+
+// Internal query to get job title (for grading context)
+export const getJobInternal = internalQuery({
+  args: { jobId: v.id("jobs") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.jobId);
+  },
+});
+
+// Internal action: grade an assessment submission with AI and save the score
+export const gradeAssessmentInternal = internalAction({
+  args: {
+    applicationId: v.id("applications"),
+    assessmentId: v.id("assessments"),
+    assessmentType: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Fetch the application (to get answers and company_id)
+    const application = await ctx.runQuery(internal.modules.assessment.getApplicationForGradingInternal, {
+      applicationId: args.applicationId,
+    });
+    if (!application) return;
+
+    // Fetch the assessment (to get questions)
+    const assessment = await ctx.runQuery(internal.modules.assessment.getAssessmentForGradingInternal, {
+      assessmentId: args.assessmentId,
+    });
+    if (!assessment || !assessment.questions || assessment.questions.length === 0) return;
+
+    // Extract the candidate's answers for this assessment type
+    const assessmentResult = application.assessments_results?.[args.assessmentType];
+    const answers = assessmentResult?.answers;
+    if (!answers || answers.length === 0) return;
+
+    // Fetch the company's AI API key
+    const company = await ctx.runQuery(internal.modules.assessment.getCompanyInternal, {
+      companyId: application.company_id,
+    });
+    if (!company?.ai_api_key) return;
+
+    // Fetch the job title for context
+    const job = await ctx.runQuery(internal.modules.assessment.getJobInternal, {
+      jobId: application.job_id,
+    });
+    const jobTitle = job?.title ?? "Software Engineer";
+
+    // Grade using AI
+    const result = await gradeAssessmentAnswers({
+      jobTitle,
+      questions: assessment.questions as { question: string; type: "open-text" | "multi-choice"; options: string[] }[],
+      answers,
+      aiApiKey: company.ai_api_key,
+    });
+
+    if (!result.success || result.score === undefined) return;
+
+    // Persist the score
+    await ctx.runMutation(internal.modules.applications.updateAssessmentScore, {
+      applicationId: args.applicationId,
+      assessmentType: args.assessmentType,
+      score: result.score,
+      feedback: result.feedback,
+    });
+  },
+});
+
+// Internal query to get an assessment (for grading action)
+export const getAssessmentForGradingInternal = internalQuery({
+  args: { assessmentId: v.id("assessments") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.assessmentId);
   },
 });

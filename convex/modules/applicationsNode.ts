@@ -231,13 +231,28 @@ export const sendStageEmailInternal = internalAction({
       });
 
       let assessmentLink: string | undefined;
-      // Construct assessment link if origin is provided and applicable
+      // Construct assessment link if origin is provided and applicable.
+      // Resolution order: application.assessment_id → job.assessments[0] → first company assessment
+      let resolvedAssessmentId =
+        application.assessment_id ?? (job.assessments && job.assessments.length > 0 ? job.assessments[0] : undefined);
+
+      if (
+        !resolvedAssessmentId &&
+        args.origin &&
+        (args.templateType === "skill_assessment" || args.templateType === "technical_assessment")
+      ) {
+        const fallbackAssessment = await ctx.runQuery(internal.modules.assessment.getFirstCompanyAssessmentInternal, {
+          companyId: application.company_id,
+        });
+        if (fallbackAssessment) resolvedAssessmentId = fallbackAssessment._id;
+      }
+
       if (
         args.origin &&
         (args.templateType === "skill_assessment" || args.templateType === "technical_assessment") &&
-        application.assessment_id
+        resolvedAssessmentId
       ) {
-        assessmentLink = `${args.origin}/assessment?job_id=${application.job_id}&assessment_id=${application.assessment_id}&application_id=${application._id}`;
+        assessmentLink = `${args.origin}/assessment?job_id=${application.job_id}&assessment_id=${resolvedAssessmentId}&application_id=${application._id}`;
       }
 
       const templatePayload = {

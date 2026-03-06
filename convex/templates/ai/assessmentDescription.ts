@@ -27,6 +27,13 @@ export interface GenerateTechnicalContentResult {
   error?: string;
 }
 
+export interface GradeAssessmentResult {
+  success: boolean;
+  score?: number; // 0-100
+  feedback?: string;
+  error?: string;
+}
+
 // ============================================
 // PROMPTS
 // ============================================
@@ -80,6 +87,23 @@ Example format:
   "soft": ["Communication", "Problem Solving", "Team Collaboration"]
 }`;
 
+const gradeAssessmentPrompt = `You are an expert technical interviewer grading a candidate's assessment for a \${jobTitle} position.
+
+Assessment Questions and Candidate Answers:
+\${questionsAndAnswers}
+
+Grade the candidate's overall performance on a scale of 0 to 100. Consider:
+- Technical accuracy and depth of answers
+- Quality of reasoning and problem-solving approach
+- Relevance to the skills required for the role
+- For multiple-choice questions: whether the selected answer is correct
+- For open-text questions: clarity, completeness, and technical correctness
+
+Return a JSON object with this exact structure:
+{
+  "score": <integer between 0 and 100>,
+  "feedback": "<brief 1-2 sentence summary of overall performance>"
+}`;
 // ============================================
 // AI FUNCTIONS
 // ============================================
@@ -230,6 +254,68 @@ export async function generateTechnicalContent(args: {
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to generate technical content",
+    };
+  }
+}
+
+/**
+ * Grade assessment answers using Groq AI
+ */
+export async function gradeAssessmentAnswers(args: {
+  jobTitle: string;
+  questions: QuizQuestion[];
+  answers: { question_index: number; answer: string }[];
+  aiApiKey: string;
+}): Promise<GradeAssessmentResult> {
+  try {
+    const groq = new Groq({ apiKey: args.aiApiKey });
+    const { jobTitle, questions, answers } = args;
+
+    // Build a readable Q&A string for the prompt
+    const questionsAndAnswers = questions
+      .map((q, idx) => {
+        const answerEntry = answers.find((a) => a.question_index === idx);
+        const candidateAnswer = answerEntry?.answer ?? "(no answer provided)";
+        const optionsText =
+          q.type === "multi-choice" && q.options.length > 0 ? `\nOptions: ${q.options.join(" | ")}` : "";
+        return `Q${idx + 1} [${q.type}]: ${q.question}${optionsText}\nCandidate Answer: ${candidateAnswer}`;
+      })
+      .join("\n\n");
+
+    const prompt = gradeAssessmentPrompt
+      .replace(/\${jobTitle}/g, jobTitle)
+      .replace(/\${questionsAndAnswers}/g, questionsAndAnswers);
+
+    const response = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are an expert technical interviewer grading candidate assessments. You must respond with ONLY valid JSON.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      temperature: 0.3,
+      response_format: { type: "json_object" },
+    });
+
+    const generatedText = response.choices[0].message.content;
+    if (!generatedText) {
+      return { success: false, error: "No grading response from AI" };
+    }
+
+    const result = JSON.parse(generatedText);
+    const score = Math.min(100, Math.max(0, Math.round(Number(result.score))));
+    return { success: true, score, feedback: result.feedback };
+  } catch (error) {
+    console.error("Error grading assessment:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to grade assessment",
     };
   }
 }
