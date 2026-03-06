@@ -2,12 +2,13 @@ import { FunctionReference } from "convex/server";
 import { useQuery as useBaseQuery, useMutation as useBaseMutation, useAction as useBaseAction } from "convex/react";
 import { DefaultConstants } from "./constants/defaults";
 import { ConvexError } from "convex/values";
+import { getWithExpiry } from "./utils/authStorage";
 
 export function useAuthedQuery<Query extends FunctionReference<"query">>(
   query: Query,
   args?: Parameters<typeof useBaseQuery<Query>>[1],
 ) {
-  const token = typeof window !== "undefined" ? localStorage.getItem(DefaultConstants.tokenName) : null;
+  const token = getWithExpiry(DefaultConstants.tokenName);
 
   // Build the final args - skip if no token, otherwise inject token
   const finalArgs = !token ? "skip" : args === "skip" ? "skip" : { ...(args || {}), token };
@@ -24,7 +25,7 @@ export function useAuthedMutation<Mutation extends FunctionReference<"mutation">
 
   // Return a function that checks for token at call time
   return (args?: Parameters<MutationFn>[0]) => {
-    const currentToken = typeof window !== "undefined" ? localStorage.getItem(DefaultConstants.tokenName) : null;
+    const currentToken = getWithExpiry(DefaultConstants.tokenName);
 
     if (!currentToken) {
       return Promise.reject(new Error("Not authenticated"));
@@ -41,7 +42,7 @@ export function useAuthedAction<Action extends FunctionReference<"action">>(acti
 
   // Return a function that checks for token at call time
   return (args?: Parameters<ActionFn>[0]) => {
-    const currentToken = typeof window !== "undefined" ? localStorage.getItem(DefaultConstants.tokenName) : null;
+    const currentToken = getWithExpiry(DefaultConstants.tokenName);
 
     if (!currentToken) {
       return Promise.reject(new Error("Not authenticated"));
@@ -56,7 +57,7 @@ export function useAdminQuery<Query extends FunctionReference<"query">>(
   query: Query,
   args?: Parameters<typeof useBaseQuery<Query>>[1],
 ) {
-  const token = typeof window !== "undefined" ? localStorage.getItem(DefaultConstants.tokenName) : null;
+  const token = getWithExpiry(DefaultConstants.tokenName);
 
   const finalArgs = !token ? "skip" : args === "skip" ? "skip" : { ...(args || {}), token };
 
@@ -69,7 +70,7 @@ export function useAdminMutation<Mutation extends FunctionReference<"mutation">>
   type MutationFn = ReturnType<typeof useBaseMutation<Mutation>>;
 
   return (args?: Parameters<MutationFn>[0]) => {
-    const currentToken = typeof window !== "undefined" ? localStorage.getItem(DefaultConstants.tokenName) : null;
+    const currentToken = getWithExpiry(DefaultConstants.tokenName);
     if (!currentToken) return Promise.reject(new Error("Not authenticated"));
 
     const argsWithToken = { ...(args || {}), token: currentToken };
