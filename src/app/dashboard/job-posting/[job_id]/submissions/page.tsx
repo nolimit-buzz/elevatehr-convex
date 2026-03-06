@@ -33,9 +33,9 @@ import "react-quill/dist/quill.snow.css";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CloseIcon from "@mui/icons-material/Close";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
-import MenuOpenIcon from '@mui/icons-material/MenuOpen';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import MenuOpenIcon from "@mui/icons-material/MenuOpen";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import CandidateListSection from "@/app/dashboard/components/dashboard/CandidatesListSection";
 import { useTheme } from "@mui/material/styles";
 import { PHASE_OPTIONS } from "@/app/constants/phaseOptions";
@@ -60,7 +60,11 @@ import MobileStageDropdown from "@/app/dashboard/components/MobileStageDropdown"
 import CandidateSkeletonLoader from "@/app/dashboard/components/CandidateSkeletonLoader";
 import AssessmentIcon from "@/app/dashboard/components/AssessmentIcon";
 import Link from "next/link";
-import { useJob, useJobMutations, useJobAssessments } from "@/queries/jobs.queries";
+import {
+  useJob,
+  useJobMutations,
+  useJobAssessments,
+} from "@/queries/jobs.queries";
 import {
   useApplications,
   useApplicationsWithFilters,
@@ -105,7 +109,8 @@ export default function Home() {
   const { removeJob, updateJobStatus } = useJobMutations();
 
   // Convex hooks for applications
-  const { sendAssessment: sendAssessmentMutation, moveToStageWithEmail } = useApplicationMutations();
+  const { sendAssessment: sendAssessmentMutation, moveToStageWithEmail } =
+    useApplicationMutations();
 
   // Convex hook for email templates
   const convexEmailTemplates = useEmailTemplates();
@@ -122,7 +127,8 @@ export default function Home() {
   });
   const [subTabValue, setSubTabValue] = useState(0);
   const [selectedAssessmentType, setSelectedAssessmentType] = useState(0);
-  const [quickActionsAnchor, setQuickActionsAnchor] = useState<HTMLElement | null>(null);
+  const [quickActionsAnchor, setQuickActionsAnchor] =
+    useState<HTMLElement | null>(null);
   const [availableSkills, setAvailableSkills] = useState<Skill[]>([]);
   const [stageTotals, setStageTotals] = useState({
     new: 0,
@@ -140,7 +146,8 @@ export default function Home() {
     trial: "",
   });
   const [isApplyingFilters, setIsApplyingFilters] = useState(false);
-  const [filteredCandidates, setFilteredCandidates] = useState<CandidateResponse>({ applications: [] });
+  const [filteredCandidates, setFilteredCandidates] =
+    useState<CandidateResponse>({ applications: [] });
   const [jobDetails, setJobDetails] = useState<JobDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -160,8 +167,11 @@ export default function Home() {
   });
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [loadingAssessments, setLoadingAssessments] = useState(false);
-  const [filterMenuAnchor, setFilterMenuAnchor] = useState<HTMLElement | null>(null);
-  const [dynamicPhaseOptions, setDynamicPhaseOptions] = useState<Record<StageType, PhaseOption[]>>(PHASE_OPTIONS);
+  const [filterMenuAnchor, setFilterMenuAnchor] = useState<HTMLElement | null>(
+    null,
+  );
+  const [dynamicPhaseOptions, setDynamicPhaseOptions] =
+    useState<Record<StageType, PhaseOption[]>>(PHASE_OPTIONS);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -169,7 +179,8 @@ export default function Home() {
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
-  const [bulkActionsAnchor, setBulkActionsAnchor] = useState<null | HTMLElement>(null);
+  const [bulkActionsAnchor, setBulkActionsAnchor] =
+    useState<null | HTMLElement>(null);
 
   // Helper to get stage value from tab index
   const getStageValue = useCallback((tabValue: number): StageType => {
@@ -190,28 +201,33 @@ export default function Home() {
   }, []);
 
   // Convex applications query based on filters
-  const currentStage = subTabValue === 0 ? undefined : getStageValue(subTabValue);
+  const currentStage =
+    subTabValue === 0 ? undefined : getStageValue(subTabValue);
   const currentAssessmentType =
-    subTabValue === 2 && selectedAssessmentType > 0 ? assessments[selectedAssessmentType - 1]?.type : undefined;
+    subTabValue === 2 && selectedAssessmentType > 0
+      ? assessments[selectedAssessmentType - 1]?.type
+      : undefined;
 
   const convexApplications = useApplications(
     jobId && !isApplyingFilters
       ? {
-        jobId,
-        stage: currentStage as ConvexStageType | undefined,
-        assessmentType: currentAssessmentType,
-        page,
-        perPage,
-      }
+          jobId,
+          stage: currentStage as ConvexStageType | undefined,
+          assessmentType: currentAssessmentType,
+          page,
+          perPage,
+        }
       : null,
   );
 
   // Parse filter values for filtered query
   const parseExperienceFilter = useCallback(() => {
-    if (!filters.yearsOfExperience) return { minExperience: undefined, experienceRange: undefined };
+    if (!filters.yearsOfExperience)
+      return { minExperience: undefined, experienceRange: undefined };
     const [min, max] = filters.yearsOfExperience.split("-").map(Number);
     if (min && !max) return { minExperience: min, experienceRange: undefined };
-    if (min && max) return { minExperience: undefined, experienceRange: `${min}-${max}` };
+    if (min && max)
+      return { minExperience: undefined, experienceRange: `${min}-${max}` };
     return { minExperience: undefined, experienceRange: undefined };
   }, [filters.yearsOfExperience]);
 
@@ -220,18 +236,23 @@ export default function Home() {
   const convexFilteredApplications = useApplicationsWithFilters(
     jobId && isApplyingFilters
       ? {
-        jobId,
-        stage: (subTabValue === 0 ? "new" : getStageValue(subTabValue)) as ConvexStageType,
-        minExperience,
-        experienceRange,
-        minSalary: filters.salaryMin ? Number(filters.salaryMin) : undefined,
-        maxSalary: filters.salaryMax ? Number(filters.salaryMax) : undefined,
-        skills: filters.requiredSkills.length > 0 ? filters.requiredSkills : undefined,
-        availability: filters.availability || undefined,
-        trial: filters.trial || undefined,
-        page,
-        perPage,
-      }
+          jobId,
+          stage: (subTabValue === 0
+            ? "new"
+            : getStageValue(subTabValue)) as ConvexStageType,
+          minExperience,
+          experienceRange,
+          minSalary: filters.salaryMin ? Number(filters.salaryMin) : undefined,
+          maxSalary: filters.salaryMax ? Number(filters.salaryMax) : undefined,
+          skills:
+            filters.requiredSkills.length > 0
+              ? filters.requiredSkills
+              : undefined,
+          availability: filters.availability || undefined,
+          trial: filters.trial || undefined,
+          page,
+          perPage,
+        }
       : null,
   );
 
@@ -246,11 +267,11 @@ export default function Home() {
       // Transform Convex job data to match JobDetails interface
       const transformedJob = convexJobDetails
         ? ({
-          ...convexJobDetails,
-          id: (convexJobDetails as any)._id || (convexJobDetails as any).id,
-          // Map description to about_role for compatibility
-          about_role: (convexJobDetails as any).description || "",
-        } as unknown as JobDetails)
+            ...convexJobDetails,
+            id: (convexJobDetails as any)._id || (convexJobDetails as any).id,
+            // Map description to about_role for compatibility
+            about_role: (convexJobDetails as any).description || "",
+          } as unknown as JobDetails)
         : null;
       setJobDetails(transformedJob);
       setLoading(false);
@@ -263,7 +284,9 @@ export default function Home() {
 
   // Update candidates state when Convex applications data changes
   useEffect(() => {
-    const data = isApplyingFilters ? convexFilteredApplications : convexApplications;
+    const data = isApplyingFilters
+      ? convexFilteredApplications
+      : convexApplications;
     if (data !== undefined) {
       // Transform to match CandidateResponse interface
       const transformedData: CandidateResponse = {
@@ -289,10 +312,13 @@ export default function Home() {
 
       // Update dynamic phase options with assessment options
       const assessmentOptions = fetchedAssessments.map((assessment: any) => ({
-        label: `Send ${assessment.title || assessment.type
-          .split("_")
-          .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(" ")}`,
+        label: `Send ${
+          assessment.title ||
+          assessment.type
+            .split("_")
+            .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" ")
+        }`,
         icon: AssessmentIcon,
         action: assessment.id,
         id: assessment.id,
@@ -300,7 +326,10 @@ export default function Home() {
 
       setDynamicPhaseOptions((prev) => ({
         ...prev,
-        skill_assessment: [...PHASE_OPTIONS.skill_assessment, ...assessmentOptions],
+        skill_assessment: [
+          ...PHASE_OPTIONS.skill_assessment,
+          ...assessmentOptions,
+        ],
       }));
       setLoadingAssessments(false);
     } else if (convexJobAssessments === undefined) {
@@ -318,7 +347,11 @@ export default function Home() {
         throw new Error(error);
       }
 
-      setNotification({ open: true, message: "Job deleted", severity: "success" });
+      setNotification({
+        open: true,
+        message: "Job deleted",
+        severity: "success",
+      });
       router.push("/dashboard/job-listings");
     } catch (err) {
       setNotification({
@@ -331,7 +364,10 @@ export default function Home() {
     }
   };
 
-  const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
+  const handlePageChange = (
+    _event: React.ChangeEvent<unknown>,
+    value: number,
+  ) => {
     setPage(value);
   };
 
@@ -341,7 +377,10 @@ export default function Home() {
     // console.log("Job details received:", jobDetails);
     const loadSkills = async () => {
       if (jobDetails) {
-        const skills = await getSkillsForRole(jobDetails.title, jobDetails.about_role);
+        const skills = await getSkillsForRole(
+          jobDetails.title,
+          jobDetails.about_role,
+        );
         setAvailableSkills(skills);
       }
     };
@@ -364,7 +403,10 @@ export default function Home() {
     }
   }, []);
 
-  const handleFilterChange = (filterName: keyof FilterState, value: string | string[]) => {
+  const handleFilterChange = (
+    filterName: keyof FilterState,
+    value: string | string[],
+  ) => {
     setFilters((prev) => ({
       ...prev,
       [filterName]: value,
@@ -391,11 +433,17 @@ export default function Home() {
     // Convex will auto-refetch with the new parameters
   };
 
-  const handlePrimaryTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+  const handlePrimaryTabChange = (
+    _event: React.SyntheticEvent,
+    newValue: number,
+  ) => {
     setPrimaryTabValue(newValue);
   };
 
-  const handleSubTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+  const handleSubTabChange = (
+    _event: React.SyntheticEvent,
+    newValue: number,
+  ) => {
     setSelectedEntries([]);
     setSubTabValue(newValue);
     setSelectedAssessmentType(0);
@@ -419,7 +467,9 @@ export default function Home() {
 
     // Use modulo to cycle through colors if there are more skills than colors
     const colorIndex =
-      Math.abs(skill.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0)) % skillColors.length;
+      Math.abs(
+        skill.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0),
+      ) % skillColors.length;
     return skillColors[colorIndex];
   };
 
@@ -434,7 +484,10 @@ export default function Home() {
     });
   };
 
-  const handleCardClick = (candidateId: string | number, event: React.MouseEvent<HTMLElement>) => {
+  const handleCardClick = (
+    candidateId: string | number,
+    event: React.MouseEvent<HTMLElement>,
+  ) => {
     // Prevent redirection if clicking on checkbox or quick actions button
     if (
       (event.target as HTMLElement).closest(".checkbox-container") ||
@@ -448,7 +501,9 @@ export default function Home() {
     const jobIdFromPath = pathParts[pathParts.length - 2];
 
     // Navigate to the applicant details page
-    router.push(`/dashboard/job-posting/${jobIdFromPath}/submissions/${candidateId}`);
+    router.push(
+      `/dashboard/job-posting/${jobIdFromPath}/submissions/${candidateId}`,
+    );
   };
 
   const handleSendAssessment = async ({
@@ -464,7 +519,11 @@ export default function Home() {
 
     setIsMovingStage(assessment_id);
     try {
-      const { error } = await sendAssessmentMutation(application_ids, assessment_id, emailContent);
+      const { error } = await sendAssessmentMutation(
+        application_ids,
+        assessment_id,
+        emailContent,
+      );
 
       if (error) {
         throw new Error(error);
@@ -474,32 +533,46 @@ export default function Home() {
       setPendingAction(null);
       setSelectedEntries([]);
 
-      const matchedAssessment = assessments.find((a: any) => a.id === assessment_id);
-      const assessmentName = matchedAssessment ? matchedAssessment.title : assessment_id.replace("_", " ");
+      const matchedAssessment = assessments.find(
+        (a: any) => a.id === assessment_id,
+      );
+      const assessmentName = matchedAssessment
+        ? matchedAssessment.title
+        : assessment_id.replace("_", " ");
 
       handleNotification(
-        `Successfully sent ${application_ids.length} candidate${application_ids.length > 1 ? "s" : ""
+        `Successfully sent ${application_ids.length} candidate${
+          application_ids.length > 1 ? "s" : ""
         } to ${assessmentName}`,
         "success",
       );
       // Convex will auto-update the data
     } catch (error) {
       console.error("Error updating stage:", error);
-      handleNotification(error instanceof Error ? error.message : "Failed to update stage", "error");
+      handleNotification(
+        error instanceof Error ? error.message : "Failed to update stage",
+        "error",
+      );
     } finally {
       setIsMovingStage("");
       setSelectedEntries([]);
     }
   };
 
-  const handleCloseNotification = (_event?: React.SyntheticEvent | Event, reason?: string) => {
+  const handleCloseNotification = (
+    _event?: React.SyntheticEvent | Event,
+    reason?: string,
+  ) => {
     if (reason === "clickaway") {
       return;
     }
     setNotification((prev) => ({ ...prev, open: false }));
   };
 
-  const handleNotification = (message: string, severity: "success" | "error") => {
+  const handleNotification = (
+    message: string,
+    severity: "success" | "error",
+  ) => {
     setNotification({
       open: true,
       message,
@@ -527,7 +600,10 @@ export default function Home() {
   };
 
   // Bulk email editor (client-only) with stable reference
-  const ReactQuill = React.useMemo(() => dynamic(() => import("react-quill"), { ssr: false }), []);
+  const ReactQuill = React.useMemo(
+    () => dynamic(() => import("react-quill"), { ssr: false }),
+    [],
+  );
   const quillModules = React.useMemo(
     () => ({
       toolbar: [
@@ -541,7 +617,16 @@ export default function Home() {
     [],
   );
   const quillFormats = React.useMemo(
-    () => ["header", "bold", "italic", "underline", "strike", "list", "bullet", "link"],
+    () => [
+      "header",
+      "bold",
+      "italic",
+      "underline",
+      "strike",
+      "list",
+      "bullet",
+      "link",
+    ],
     [],
   );
 
@@ -554,7 +639,9 @@ export default function Home() {
   const mapActionToTemplateKey = (action: string): string | null => {
     const matchedAssessment = assessments.find((a: any) => a.id === action);
     if (matchedAssessment) {
-      return (matchedAssessment as any).type === "technical_assessment" ? "technical_assessment" : "skill_assessment";
+      return (matchedAssessment as any).type === "technical_assessment"
+        ? "technical_assessment"
+        : "skill_assessment";
     }
     switch (action) {
       case "skill_assessment":
@@ -586,15 +673,20 @@ export default function Home() {
     // Use Convex email templates data (reactive)
     const key = mapActionToTemplateKey(action);
     const content =
-      key && convexEmailTemplates?.templates?.[key]?.content ? convexEmailTemplates.templates[key].content : "";
+      key && convexEmailTemplates?.templates?.[key]?.content
+        ? convexEmailTemplates.templates[key].content
+        : "";
     setEmailContent(content);
     setEmailModalOpen(true);
     setEmailLoading(false);
   };
 
   const handleSendBulkEmailAndMoveStage = async () => {
-    if (!pendingAction || !selectedEntries || selectedEntries.length === 0) return;
-    const selectedAssessment = assessments.find((a: any) => a.id === pendingAction);
+    if (!pendingAction || !selectedEntries || selectedEntries.length === 0)
+      return;
+    const selectedAssessment = assessments.find(
+      (a: any) => a.id === pendingAction,
+    );
     if (
       selectedAssessment ||
       pendingAction === "technical_assessment" ||
@@ -604,7 +696,9 @@ export default function Home() {
     ) {
       handleSendAssessment({
         application_ids: selectedEntries,
-        assessment_id: selectedAssessment ? pendingAction : jobDetails?.assessment_id,
+        assessment_id: selectedAssessment
+          ? pendingAction
+          : jobDetails?.assessment_id,
         emailContent,
       });
       return;
@@ -612,7 +706,11 @@ export default function Home() {
     try {
       setEmailLoading(true);
 
-      const { error } = await moveToStageWithEmail(selectedEntries, pendingAction as ConvexStageType, emailContent);
+      const { error } = await moveToStageWithEmail(
+        selectedEntries,
+        pendingAction as ConvexStageType,
+        emailContent,
+      );
 
       if (error) {
         throw new Error(error);
@@ -642,7 +740,7 @@ export default function Home() {
     if (!selectedEntries.length) return;
 
     const selectedApps = candidates.applications.filter((app: any) =>
-      selectedEntries.includes(String(app.id))
+      selectedEntries.includes(String(app.id)),
     );
 
     let count = 0;
@@ -759,7 +857,9 @@ export default function Home() {
   };
 
   const JobDescriptionSkeleton = () => (
-    <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start", width: "100%" }}>
+    <Box
+      sx={{ display: "flex", gap: 3, alignItems: "flex-start", width: "100%" }}
+    >
       <Box
         sx={{
           width: { xs: "100%", md: 280 },
@@ -779,7 +879,12 @@ export default function Home() {
         <Skeleton variant="rounded" width={80} height={28} sx={{ mb: 1 }} />
         <Skeleton variant="rounded" width={60} height={28} sx={{ mb: 1 }} />
         <Skeleton variant="rounded" width={120} height={28} sx={{ mb: 2 }} />
-        <Skeleton variant="rectangular" width="60%" height={24} sx={{ mt: 2 }} />
+        <Skeleton
+          variant="rectangular"
+          width="60%"
+          height={24}
+          sx={{ mt: 2 }}
+        />
       </Box>
 
       {/* Main Job Details Skeleton */}
@@ -798,13 +903,33 @@ export default function Home() {
       >
         <Skeleton variant="circular" width={48} height={48} sx={{ mb: 2 }} />
         <Skeleton variant="text" width="40%" height={32} />
-        <Skeleton variant="rectangular" width="100%" height={40} sx={{ mb: 2, borderRadius: 1 }} />
+        <Skeleton
+          variant="rectangular"
+          width="100%"
+          height={40}
+          sx={{ mb: 2, borderRadius: 1 }}
+        />
         <Skeleton variant="text" width="30%" height={28} sx={{ mb: 1 }} />
-        <Skeleton variant="rectangular" width="100%" height={60} sx={{ mb: 2, borderRadius: 1 }} />
+        <Skeleton
+          variant="rectangular"
+          width="100%"
+          height={60}
+          sx={{ mb: 2, borderRadius: 1 }}
+        />
         <Skeleton variant="text" width="35%" height={28} sx={{ mb: 1 }} />
-        <Skeleton variant="rectangular" width="100%" height={80} sx={{ mb: 2, borderRadius: 1 }} />
+        <Skeleton
+          variant="rectangular"
+          width="100%"
+          height={80}
+          sx={{ mb: 2, borderRadius: 1 }}
+        />
         <Skeleton variant="text" width="25%" height={28} sx={{ mb: 1 }} />
-        <Skeleton variant="rectangular" width="100%" height={60} sx={{ borderRadius: 1 }} />
+        <Skeleton
+          variant="rectangular"
+          width="100%"
+          height={60}
+          sx={{ borderRadius: 1 }}
+        />
       </Box>
     </Box>
   );
@@ -880,13 +1005,20 @@ export default function Home() {
               }}
             >
               {getJobId() ? (
-                <span className="public-link" style={{ display: "inline-flex", alignItems: "center" }}>
+                <span
+                  className="public-link"
+                  style={{ display: "inline-flex", alignItems: "center" }}
+                >
                   <span className="job-title">{jobDetails?.title}</span>
                   <Link
                     href={`/job-openings/${getJobId()}${companyId ? `?company_id=${companyId}` : ""}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ display: "inline-flex", alignItems: "center", marginLeft: 8 }}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      marginLeft: 8,
+                    }}
                     title="View public job posting"
                   >
                     <svg
@@ -913,7 +1045,14 @@ export default function Home() {
               )}
             </Typography>
           </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              flexWrap: "wrap",
+            }}
+          >
             <PrimaryButton
               variant="contained"
               onClick={handleCloseResponses}
@@ -961,11 +1100,19 @@ export default function Home() {
             </Button>
           </Box>
         </Box>
-        <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="xs" fullWidth>
-          <DialogTitle sx={{ fontWeight: 600, pb: 2, px: 4, pt: 4 }}>Delete Job</DialogTitle>
+        <Dialog
+          open={deleteDialogOpen}
+          onClose={() => setDeleteDialogOpen(false)}
+          maxWidth="xs"
+          fullWidth
+        >
+          <DialogTitle sx={{ fontWeight: 600, pb: 2, px: 4, pt: 4 }}>
+            Delete Job
+          </DialogTitle>
           <DialogContent sx={{ px: 4, pb: 2 }}>
             <Typography sx={{ color: "rgba(17, 17, 17, 0.72)" }}>
-              Are you sure you want to delete this job? This action cannot be undone.
+              Are you sure you want to delete this job? This action cannot be
+              undone.
             </Typography>
           </DialogContent>
           <DialogActions sx={{ px: 4, pb: 3 }}>
@@ -1001,7 +1148,9 @@ export default function Home() {
         <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
           <Tabs
             value={primaryTabValue}
-            onChange={(_event: React.SyntheticEvent, newValue: number) => setPrimaryTabValue(newValue)}
+            onChange={(_event: React.SyntheticEvent, newValue: number) =>
+              setPrimaryTabValue(newValue)
+            }
             aria-label="primary tabs"
             sx={{
               minHeight: "auto",
@@ -1021,7 +1170,10 @@ export default function Home() {
               sx={{
                 textTransform: "none",
                 fontWeight: primaryTabValue === 0 ? "bold" : "normal",
-                color: primaryTabValue === 0 ? theme.palette.secondary.main : theme.palette.grey[100],
+                color:
+                  primaryTabValue === 0
+                    ? theme.palette.secondary.main
+                    : theme.palette.grey[100],
               }}
             />
             <Tab
@@ -1029,17 +1181,113 @@ export default function Home() {
               sx={{
                 textTransform: "none",
                 fontWeight: primaryTabValue === 1 ? "bold" : "normal",
-                color: primaryTabValue === 1 ? theme.palette.secondary.main : theme.palette.grey[100],
+                color:
+                  primaryTabValue === 1
+                    ? theme.palette.secondary.main
+                    : theme.palette.grey[100],
               }}
             />
           </Tabs>
         </Box>
 
-
+        {/* Analytics Cards Section */}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: {
+              xs: "repeat(2, 1fr)",
+              sm: "repeat(3, 1fr)",
+              md: "repeat(5, 1fr)",
+            },
+            gap: 2,
+            mt: 2,
+            mb: 1,
+            width: "100%",
+          }}
+        >
+          {[
+            {
+              label: "Application Review",
+              value: stageTotals.new,
+              color: "#4444E2",
+            },
+            {
+              label: "Skill Assessment",
+              value: stageTotals.skill_assessment,
+              color: "#2B656E",
+            },
+            {
+              label: "Interviews",
+              value: stageTotals.interviews,
+              color: "#76325F",
+            },
+            {
+              label: "Acceptance",
+              value: stageTotals.acceptance,
+              color: "#1B5E20",
+            },
+            {
+              label: "Archived",
+              value: stageTotals.archived,
+              color: "#724A3B",
+            },
+          ].map((card, index) => (
+            <Box
+              key={index}
+              sx={{
+                p: 2,
+                borderRadius: "12px",
+                bgcolor: "white",
+                border: "1px solid rgba(0,0,0,0.06)",
+                boxShadow: "0px 2px 4px rgba(0,0,0,0.02)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 0.5,
+                transition: "transform 0.2s, box-shadow 0.2s",
+                "&:hover": {
+                  transform: "translateY(-2px)",
+                  boxShadow: "0px 4px 12px rgba(0,0,0,0.05)",
+                  borderColor: card.color + "40",
+                },
+              }}
+            >
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 600,
+                  color: "text.secondary",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                  fontSize: "10px",
+                }}
+              >
+                {card.label}
+              </Typography>
+              <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: 700,
+                    color: card.color,
+                  }}
+                >
+                  {card.value}
+                </Typography>
+                <Typography variant="caption" color="text.disabled">
+                  {card.value === 1 ? "candidate" : "candidates"}
+                </Typography>
+              </Box>
+            </Box>
+          ))}
+        </Box>
 
         {primaryTabValue === 0 ? (
-          <Stack direction="row" maxWidth={"100%"} gap={isFilterExpanded ? 3 : 0} sx={{ position: "relative" }}>
-
+          <Stack
+            direction="row"
+            maxWidth={"100%"}
+            gap={isFilterExpanded ? 3 : 0}
+            sx={{ position: "relative" }}
+          >
             {!isFilterExpanded && (
               <IconButton
                 onClick={() => setIsFilterExpanded(true)}
@@ -1065,9 +1313,9 @@ export default function Home() {
                 position: "relative",
               }}
             >
-
-
-              <Box sx={{ width: 308, pt: 4, bgcolor: "#FFFFFF", borderRadius: 2, }}>
+              <Box
+                sx={{ width: 308, pt: 4, bgcolor: "#FFFFFF", borderRadius: 2 }}
+              >
                 <FilterSection
                   filters={filters}
                   availableSkills={availableSkills}
@@ -1079,8 +1327,6 @@ export default function Home() {
                 />
               </Box>
             </Box>
-
-
 
             {isFilterExpanded && (
               <IconButton
@@ -1111,6 +1357,7 @@ export default function Home() {
               onClose={handleFilterMenuClose}
               sx={{ bgcolor: "#FFFFFF", p: 2 }}
             />
+
             <Box sx={{ flex: 1, width: "80%", py: 0, bg: "#ffffff" }}>
               {/* Your existing tabs */}
               <Box
@@ -1124,10 +1371,15 @@ export default function Home() {
                 }}
               >
                 {/* Tabs for large screens */}
-                <Box sx={{ display: { xs: "none", lg: "block" }, px: { lg: 4 } }}>
+                <Box
+                  sx={{ display: { xs: "none", lg: "block" }, px: { lg: 4 } }}
+                >
                   <Tabs
                     value={subTabValue}
-                    onChange={(_event: React.SyntheticEvent, newValue: number) => {
+                    onChange={(
+                      _event: React.SyntheticEvent,
+                      newValue: number,
+                    ) => {
                       handleSubTabChange(_event, newValue);
                     }}
                     indicatorColor="secondary"
@@ -1153,33 +1405,18 @@ export default function Home() {
                   >
                     <Tab
                       label={
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
                           <span>All</span>
-                          {/* <Chip
-                            label={
-                              stageTotals.new +
-                              stageTotals.skill_assessment +
-                              stageTotals.interviews +
-                              stageTotals.acceptance +
-                              stageTotals.archived
-                            }
-                            size="small"
-                            sx={{
-                              bgcolor: theme.palette.secondary.main,
-                              color: "white",
-                              height: "20px",
-                              "& .MuiChip-label": {
-                                px: 1,
-                                fontSize: "12px",
-                                fontWeight: 500,
-                              },
-                            }}
-                          /> */}
                         </Box>
                       }
                       sx={{
                         textTransform: "none",
-                        color: subTabValue === 0 ? theme.palette.grey[100] : theme.palette.grey[200],
+                        color:
+                          subTabValue === 0
+                            ? theme.palette.grey[100]
+                            : theme.palette.grey[200],
                         minWidth: "auto",
                         px: 1,
                         whiteSpace: "nowrap",
@@ -1187,27 +1424,18 @@ export default function Home() {
                     />
                     <Tab
                       label={
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
                           <span>Application Review</span>
-                          {/* <Chip
-                            label={stageTotals.new}
-                            size="small"
-                            sx={{
-                              bgcolor: theme.palette.secondary.main,
-                              color: "white",
-                              height: "20px",
-                              "& .MuiChip-label": {
-                                px: 1,
-                                fontSize: "12px",
-                                fontWeight: 500,
-                              },
-                            }}
-                          /> */}
                         </Box>
                       }
                       sx={{
                         textTransform: "none",
-                        color: subTabValue === 1 ? theme.palette.grey[100] : theme.palette.grey[200],
+                        color:
+                          subTabValue === 1
+                            ? theme.palette.grey[100]
+                            : theme.palette.grey[200],
                         minWidth: "auto",
                         px: 1,
                         whiteSpace: "nowrap",
@@ -1215,27 +1443,18 @@ export default function Home() {
                     />
                     <Tab
                       label={
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
                           <span>Skill assessment</span>
-                          {/* <Chip
-                            label={stageTotals.skill_assessment}
-                            size="small"
-                            sx={{
-                              bgcolor: theme.palette.secondary.main,
-                              color: "white",
-                              height: "20px",
-                              "& .MuiChip-label": {
-                                px: 1,
-                                fontSize: "12px",
-                                fontWeight: 500,
-                              },
-                            }}
-                          /> */}
                         </Box>
                       }
                       sx={{
                         textTransform: "none",
-                        color: subTabValue === 2 ? theme.palette.grey[100] : theme.palette.grey[200],
+                        color:
+                          subTabValue === 2
+                            ? theme.palette.grey[100]
+                            : theme.palette.grey[200],
                         minWidth: "auto",
                         px: 1,
                         whiteSpace: "nowrap",
@@ -1243,27 +1462,18 @@ export default function Home() {
                     />
                     <Tab
                       label={
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
                           <span>Interviews</span>
-                          {/* <Chip
-                            label={stageTotals.interviews}
-                            size="small"
-                            sx={{
-                              bgcolor: theme.palette.secondary.main,
-                              color: "white",
-                              height: "20px",
-                              "& .MuiChip-label": {
-                                px: 1,
-                                fontSize: "12px",
-                                fontWeight: 500,
-                              },
-                            }}
-                          /> */}
                         </Box>
                       }
                       sx={{
                         textTransform: "none",
-                        color: subTabValue === 3 ? theme.palette.grey[100] : theme.palette.grey[200],
+                        color:
+                          subTabValue === 3
+                            ? theme.palette.grey[100]
+                            : theme.palette.grey[200],
                         minWidth: "auto",
                         px: 1,
                         whiteSpace: "nowrap",
@@ -1271,27 +1481,18 @@ export default function Home() {
                     />
                     <Tab
                       label={
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
                           <span>Acceptance</span>
-                          {/* <Chip
-                            label={stageTotals.acceptance}
-                            size="small"
-                            sx={{
-                              bgcolor: theme.palette.secondary.main,
-                              color: "white",
-                              height: "20px",
-                              "& .MuiChip-label": {
-                                px: 1,
-                                fontSize: "12px",
-                                fontWeight: 500,
-                              },
-                            }}
-                          /> */}
                         </Box>
                       }
                       sx={{
                         textTransform: "none",
-                        color: subTabValue === 4 ? theme.palette.grey[100] : theme.palette.grey[200],
+                        color:
+                          subTabValue === 4
+                            ? theme.palette.grey[100]
+                            : theme.palette.grey[200],
                         minWidth: "auto",
                         px: 1,
                         whiteSpace: "nowrap",
@@ -1299,27 +1500,18 @@ export default function Home() {
                     />
                     <Tab
                       label={
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
                           <span>Archived</span>
-                          {/* <Chip
-                            label={stageTotals.archived}
-                            size="small"
-                            sx={{
-                              bgcolor: theme.palette.secondary.main,
-                              color: "white",
-                              height: "20px",
-                              "& .MuiChip-label": {
-                                px: 1,
-                                fontSize: "12px",
-                                fontWeight: 500,
-                              },
-                            }}
-                          /> */}
                         </Box>
                       }
                       sx={{
                         textTransform: "none",
-                        color: subTabValue === 5 ? theme.palette.grey[100] : theme.palette.grey[200],
+                        color:
+                          subTabValue === 5
+                            ? theme.palette.grey[100]
+                            : theme.palette.grey[200],
                         minWidth: "auto",
                         px: 1,
                         whiteSpace: "nowrap",
@@ -1336,74 +1528,6 @@ export default function Home() {
                   onFilterClick={handleFilterMenuOpen}
                 />
               </Box>
-
-              {/* Analytics Cards Section */}
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)", md: "repeat(5, 1fr)" },
-                  gap: 2,
-                  mt: 2,
-                  mb: 1,
-                  width: "100%",
-                }}
-              >
-                {[
-                  { label: "Application Review", value: stageTotals.new, color: "#4444E2" },
-                  { label: "Skill Assessment", value: stageTotals.skill_assessment, color: "#2B656E" },
-                  { label: "Interviews", value: stageTotals.interviews, color: "#76325F" },
-                  { label: "Acceptance", value: stageTotals.acceptance, color: "#1B5E20" },
-                  { label: "Archived", value: stageTotals.archived, color: "#724A3B" },
-                ].map((card, index) => (
-                  <Box
-                    key={index}
-                    sx={{
-                      p: 2,
-                      borderRadius: "12px",
-                      bgcolor: "white",
-                      border: "1px solid rgba(0,0,0,0.06)",
-                      boxShadow: "0px 2px 4px rgba(0,0,0,0.02)",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 0.5,
-                      transition: "transform 0.2s, box-shadow 0.2s",
-                      "&:hover": {
-                        transform: "translateY(-2px)",
-                        boxShadow: "0px 4px 12px rgba(0,0,0,0.05)",
-                        borderColor: card.color + "40",
-                      },
-                    }}
-                  >
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontWeight: 600,
-                        color: "text.secondary",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.5px",
-                        fontSize: "10px",
-                      }}
-                    >
-                      {card.label}
-                    </Typography>
-                    <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
-                      <Typography
-                        variant="h5"
-                        sx={{
-                          fontWeight: 700,
-                          color: card.color,
-                        }}
-                      >
-                        {card.value}
-                      </Typography>
-                      <Typography variant="caption" color="text.disabled">
-                        {card.value === 1 ? "candidate" : "candidates"}
-                      </Typography>
-                    </Box>
-                  </Box>
-                ))}
-              </Box>
-
               <Paper
                 elevation={0}
                 sx={{
@@ -1417,7 +1541,16 @@ export default function Home() {
               >
                 {/* Select All control and Bulk Actions Menu */}
                 {filteredCandidates?.applications?.length > 0 && (
-                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", gap: 1, my: 2 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      width: "100%",
+                      gap: 1,
+                      my: 2,
+                    }}
+                  >
                     <Box
                       sx={{
                         display: "flex",
@@ -1426,9 +1559,15 @@ export default function Home() {
                       }}
                     >
                       {(() => {
-                        const allVisibleIds = filteredCandidates?.applications?.map((c) => String(c.id)) || [];
+                        const allVisibleIds =
+                          filteredCandidates?.applications?.map((c) =>
+                            String(c.id),
+                          ) || [];
                         const allSelected =
-                          allVisibleIds.length > 0 && allVisibleIds.every((id) => selectedEntries?.includes(id));
+                          allVisibleIds.length > 0 &&
+                          allVisibleIds.every((id) =>
+                            selectedEntries?.includes(id),
+                          );
                         return (
                           <Button
                             variant="outlined"
@@ -1452,16 +1591,18 @@ export default function Home() {
                               },
                             }}
                           >
-                            {allSelected ? "Clear selection" : "Select all candidates"}
+                            {allSelected
+                              ? "Clear selection"
+                              : "Select all candidates"}
                           </Button>
                         );
                       })()}
                     </Box>
 
-
-
                     {selectedEntries?.length > 0 && subTabValue !== 4 && (
-                      <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                      <Box
+                        sx={{ display: "flex", gap: 1, alignItems: "center" }}
+                      >
                         <Button
                           variant="outlined"
                           size="small"
@@ -1506,7 +1647,10 @@ export default function Home() {
                           }}
                         >
                           <MenuItem disabled sx={{ opacity: "1 !important" }}>
-                            <Typography variant="body2" sx={{ fontWeight: 600, color: "text.primary" }}>
+                            <Typography
+                              variant="body2"
+                              sx={{ fontWeight: 600, color: "text.primary" }}
+                            >
                               {selectedEntries.length} candidates selected
                             </Typography>
                           </MenuItem>
@@ -1522,25 +1666,27 @@ export default function Home() {
                             <ListItemText primary="Clear selection" />
                           </MenuItem>
                           <Divider />
-                          {dynamicPhaseOptions[getStageValue(subTabValue)]?.map((option) => (
-                            <MenuItem
-                              key={option.action}
-                              onClick={() => {
-                                openEmailModalForAction(option.action);
-                                handleBulkActionsClose();
-                              }}
-                              disabled={isMovingStage.length > 0}
-                            >
-                              <ListItemIcon>
-                                {isMovingStage === option.action ? (
-                                  <CircularProgress size={20} />
-                                ) : (
-                                  <option.icon fontSize="small" />
-                                )}
-                              </ListItemIcon>
-                              <ListItemText primary={option.label} />
-                            </MenuItem>
-                          ))}
+                          {dynamicPhaseOptions[getStageValue(subTabValue)]?.map(
+                            (option) => (
+                              <MenuItem
+                                key={option.action}
+                                onClick={() => {
+                                  openEmailModalForAction(option.action);
+                                  handleBulkActionsClose();
+                                }}
+                                disabled={isMovingStage.length > 0}
+                              >
+                                <ListItemIcon>
+                                  {isMovingStage === option.action ? (
+                                    <CircularProgress size={20} />
+                                  ) : (
+                                    <option.icon fontSize="small" />
+                                  )}
+                                </ListItemIcon>
+                                <ListItemText primary={option.label} />
+                              </MenuItem>
+                            ),
+                          )}
                         </Menu>
                       </Box>
                     )}
@@ -1583,13 +1729,22 @@ export default function Home() {
                         }}
                       />
                       {assessments?.map((assessment, index) => {
-                        const title = assessment.title || assessment.type
-                          .split("_")
-                          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                          .join(" ");
+                        const title =
+                          assessment.title ||
+                          assessment.type
+                            .split("_")
+                            .map(
+                              (word) =>
+                                word.charAt(0).toUpperCase() + word.slice(1),
+                            )
+                            .join(" ");
 
                         let label = title;
-                        if (assessment.type === "online_assessment" || assessment.type === "online_assessment_1" || assessment.type === "online_assessment_2") {
+                        if (
+                          assessment.type === "online_assessment" ||
+                          assessment.type === "online_assessment_1" ||
+                          assessment.type === "online_assessment_2"
+                        ) {
                           label = `Quiz (${title})`;
                         } else if (assessment.type === "technical_assessment") {
                           label = `Technical (${title})`;
@@ -1618,7 +1773,11 @@ export default function Home() {
                 ) : filteredCandidates?.applications?.length === 0 ? (
                   <EmptyState
                     subTabValue={subTabValue}
-                    assessmentType={subTabValue === 1 ? assessments[selectedAssessmentType]?.type : undefined}
+                    assessmentType={
+                      subTabValue === 1
+                        ? assessments[selectedAssessmentType]?.type
+                        : undefined
+                    }
                   />
                 ) : (
                   <>
@@ -1650,9 +1809,13 @@ export default function Home() {
                             isQuickActionsVisible={true}
                             isCheckboxVisible={true}
                             candidate={candidate}
-                            isSelected={selectedEntries?.includes(String(candidate.id))}
+                            isSelected={selectedEntries?.includes(
+                              String(candidate.id),
+                            )}
                             onSelectCandidate={handleSelectCandidate}
-                            onUpdateStages={(action) => openEmailModalForAction(action)}
+                            onUpdateStages={(action) =>
+                              openEmailModalForAction(action)
+                            }
                             currentStage={getStageValue(subTabValue)}
                             selectedEntries={selectedEntries}
                             setSelectedEntries={setSelectedEntries}
@@ -1663,30 +1826,34 @@ export default function Home() {
                       ))}
                     </Box>
                     <MobileCandidateGrid
-                      candidates={(filteredCandidates?.applications || []).map((app) => ({
-                        id: app.id,
-                        name: `${app.personal_info?.firstname || ""} ${app.personal_info?.lastname || ""}`.trim(),
-                        email: "",
-                        phone: "",
-                        cv_url: app.attachments?.cv || "",
-                        status: "",
-                        created_at: "",
-                        professional_info: {
-                          experience_years: Number(app.professional_info?.experience) || 0,
-                          skills: app.professional_info?.skills || "",
-                          education: [],
-                          start_date: app.professional_info?.start_date || "",
-                        },
-                        cv_analysis: app.cv_analysis
-                          ? {
-                            experience_years: app.cv_analysis.experience_years || 0,
-                            skills: app.cv_analysis.skills || [],
-                            education: app.cv_analysis.education || [],
-                            ...app.cv_analysis,
-                          }
-                          : undefined,
-                        attachments: app.attachments,
-                      }))}
+                      candidates={(filteredCandidates?.applications || []).map(
+                        (app) => ({
+                          id: app.id,
+                          name: `${app.personal_info?.firstname || ""} ${app.personal_info?.lastname || ""}`.trim(),
+                          email: "",
+                          phone: "",
+                          cv_url: app.attachments?.cv || "",
+                          status: "",
+                          created_at: "",
+                          professional_info: {
+                            experience_years:
+                              Number(app.professional_info?.experience) || 0,
+                            skills: app.professional_info?.skills || "",
+                            education: [],
+                            start_date: app.professional_info?.start_date || "",
+                          },
+                          cv_analysis: app.cv_analysis
+                            ? {
+                                experience_years:
+                                  app.cv_analysis.experience_years || 0,
+                                skills: app.cv_analysis.skills || [],
+                                education: app.cv_analysis.education || [],
+                                ...app.cv_analysis,
+                              }
+                            : undefined,
+                          attachments: app.attachments,
+                        }),
+                      )}
                       selectedEntries={selectedEntries}
                       subTabValue={subTabValue}
                       isMovingStage={isMovingStage}
@@ -1712,7 +1879,14 @@ export default function Home() {
                       mb: 0,
                     }}
                   >
-                    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 1,
+                      }}
+                    >
                       <Pagination
                         count={totalPages}
                         page={page}
@@ -1735,17 +1909,32 @@ export default function Home() {
                           },
                         }}
                       />
-                      <Typography variant="body2" color="grey.200" align="center" sx={{ mb: 3 }}>
-                        Showing <span style={{ fontWeight: 600 }}>{(page - 1) * perPage + 1}</span> to{" "}
-                        <span style={{ fontWeight: 600 }}>{Math.min(page * perPage, totalItems)}</span> of{" "}
-                        <span style={{ fontWeight: 600 }}>{totalItems}</span> entries
+                      <Typography
+                        variant="body2"
+                        color="grey.200"
+                        align="center"
+                        sx={{ mb: 3 }}
+                      >
+                        Showing{" "}
+                        <span style={{ fontWeight: 600 }}>
+                          {(page - 1) * perPage + 1}
+                        </span>{" "}
+                        to{" "}
+                        <span style={{ fontWeight: 600 }}>
+                          {Math.min(page * perPage, totalItems)}
+                        </span>{" "}
+                        of <span style={{ fontWeight: 600 }}>{totalItems}</span>{" "}
+                        entries
                       </Typography>
                     </Box>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <Typography variant="body2" color="grey.200">
                         Show per Page:
                       </Typography>
-                      <FormControl size="small" sx={{ minWidth: 72, borderRadius: "1000px" }}>
+                      <FormControl
+                        size="small"
+                        sx={{ minWidth: 72, borderRadius: "1000px" }}
+                      >
                         <Select
                           value={perPage}
                           onChange={(e) => {
@@ -1766,23 +1955,41 @@ export default function Home() {
                 )}
               </Paper>
               {/* Custom Email Modal */}
-              <Dialog open={emailModalOpen} onClose={() => setEmailModalOpen(false)} fullWidth maxWidth="md">
-                <DialogTitle sx={{ fontWeight: 600, color: "rgba(17, 17, 17, 0.92)" }}>
+              <Dialog
+                open={emailModalOpen}
+                onClose={() => setEmailModalOpen(false)}
+                fullWidth
+                maxWidth="md"
+              >
+                <DialogTitle
+                  sx={{ fontWeight: 600, color: "rgba(17, 17, 17, 0.92)" }}
+                >
                   {pendingAction
                     ? `Send email for ${(() => {
-                      const matched = assessments.find((a: any) => a.id === pendingAction);
-                      return matched
-                        ? (matched as any).title || (matched as any).type
-                          .split("_")
-                          .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
-                          .join(" ")
-                        : pendingAction.replace("_", " ");
-                    })()}`
+                        const matched = assessments.find(
+                          (a: any) => a.id === pendingAction,
+                        );
+                        return matched
+                          ? (matched as any).title ||
+                              (matched as any).type
+                                .split("_")
+                                .map(
+                                  (w: string) =>
+                                    w.charAt(0).toUpperCase() + w.slice(1),
+                                )
+                                .join(" ")
+                          : pendingAction.replace("_", " ");
+                      })()}`
                     : "Send Email"}
                 </DialogTitle>
-                <DialogContent dividers sx={{ bgcolor: theme.palette.background.paper }}>
+                <DialogContent
+                  dividers
+                  sx={{ bgcolor: theme.palette.background.paper }}
+                >
                   {emailLoading ? (
-                    <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+                    <Box
+                      sx={{ display: "flex", justifyContent: "center", py: 6 }}
+                    >
                       <CircularProgress />
                     </Box>
                   ) : (
@@ -1829,16 +2036,26 @@ export default function Home() {
                   )}
                 </DialogContent>
                 <DialogActions sx={{ p: 2 }}>
-                  <Button onClick={() => setEmailModalOpen(false)} variant="outlined" color="primary">
+                  <Button
+                    onClick={() => setEmailModalOpen(false)}
+                    variant="outlined"
+                    color="primary"
+                  >
                     Cancel
                   </Button>
                   <Button
-                    onClick={async () => await handleSendBulkEmailAndMoveStage()}
+                    onClick={async () =>
+                      await handleSendBulkEmailAndMoveStage()
+                    }
                     variant="contained"
                     color="secondary"
                     disabled={emailLoading || !emailContent}
                   >
-                    {emailLoading ? <CircularProgress size={20} color="inherit" /> : "Send"}
+                    {emailLoading ? (
+                      <CircularProgress size={20} color="inherit" />
+                    ) : (
+                      "Send"
+                    )}
                   </Button>
                 </DialogActions>
               </Dialog>
@@ -1863,7 +2080,9 @@ export default function Home() {
               </Box>
             ) : (
               <Box sx={{ p: 3, textAlign: "center" }}>
-                <Typography color="textSecondary">No job details available</Typography>
+                <Typography color="textSecondary">
+                  No job details available
+                </Typography>
               </Box>
             )}
           </Paper>
@@ -1872,7 +2091,9 @@ export default function Home() {
       <DeleteSnackbar
         open={notification.open}
         message={notification.message}
-        onClose={() => setNotification({ open: false, message: "", severity: "success" })}
+        onClose={() =>
+          setNotification({ open: false, message: "", severity: "success" })
+        }
       />
     </Box>
   );
