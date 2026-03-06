@@ -36,6 +36,10 @@ import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
 import MenuOpenIcon from "@mui/icons-material/MenuOpen";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import ViewListIcon from "@mui/icons-material/ViewList";
+import GridViewIcon from "@mui/icons-material/GridView";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import CandidateListSection from "@/app/dashboard/components/dashboard/CandidatesListSection";
 import { useTheme } from "@mui/material/styles";
 import { PHASE_OPTIONS } from "@/app/constants/phaseOptions";
@@ -181,6 +185,15 @@ export default function Home() {
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
   const [bulkActionsAnchor, setBulkActionsAnchor] =
     useState<null | HTMLElement>(null);
+  // CV Repositories view mode: 'grid' (default) or 'list'
+  const [cvViewMode, setCvViewMode] = useState<"grid" | "list">("grid");
+  // Per-card 3-dot menu anchor for grid view
+  const [cvCardMenuAnchor, setCvCardMenuAnchor] = useState<{
+    el: HTMLElement;
+    appId: string;
+    cvUrl: string;
+    name: string;
+  } | null>(null);
 
   // Helper to get stage value from tab index
   const getStageValue = useCallback((tabValue: number): StageType => {
@@ -2108,38 +2121,92 @@ export default function Home() {
                   All CVs submitted for this role in one place.
                 </Typography>
               </Box>
-              <Button
-                variant="contained"
-                startIcon={<FileDownloadIcon />}
-                sx={{
-                  textTransform: "none",
-                  borderRadius: "8px",
-                  fontWeight: 600,
-                  bgcolor: "#4444E2",
-                  "&:hover": { bgcolor: "#6666E6" },
-                }}
-                onClick={handleExportCVs}
-                disabled={selectedEntries.length === 0}
-              >
-                Export selected CVs
-              </Button>
+
+              {/* Right controls: view toggle + export */}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                {/* List / Grid toggle */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    border: "1px solid rgba(0,0,0,0.12)",
+                    borderRadius: "10px",
+                    overflow: "hidden",
+                  }}
+                >
+                  <IconButton
+                    size="small"
+                    onClick={() => setCvViewMode("list")}
+                    sx={{
+                      borderRadius: 0,
+                      px: 1.5,
+                      py: 1,
+                      bgcolor:
+                        cvViewMode === "list"
+                          ? "rgba(68,68,226,0.1)"
+                          : "transparent",
+                      color:
+                        cvViewMode === "list"
+                          ? "#4444E2"
+                          : "rgba(17,17,17,0.54)",
+                      transition: "all 0.15s ease",
+                      "&:hover": { bgcolor: "rgba(68,68,226,0.06)" },
+                    }}
+                  >
+                    <ViewListIcon fontSize="small" />
+                  </IconButton>
+                  <Box
+                    sx={{
+                      width: "1px",
+                      height: 24,
+                      bgcolor: "rgba(0,0,0,0.12)",
+                    }}
+                  />
+                  <IconButton
+                    size="small"
+                    onClick={() => setCvViewMode("grid")}
+                    sx={{
+                      borderRadius: 0,
+                      px: 1.5,
+                      py: 1,
+                      bgcolor:
+                        cvViewMode === "grid"
+                          ? "rgba(68,68,226,0.1)"
+                          : "transparent",
+                      color:
+                        cvViewMode === "grid"
+                          ? "#4444E2"
+                          : "rgba(17,17,17,0.54)",
+                      transition: "all 0.15s ease",
+                      "&:hover": { bgcolor: "rgba(68,68,226,0.06)" },
+                    }}
+                  >
+                    <GridViewIcon fontSize="small" />
+                  </IconButton>
+                </Box>
+
+                <Button
+                  variant="contained"
+                  startIcon={<FileDownloadIcon />}
+                  sx={{
+                    textTransform: "none",
+                    borderRadius: "8px",
+                    fontWeight: 600,
+                    bgcolor: "#4444E2",
+                    "&:hover": { bgcolor: "#6666E6" },
+                  }}
+                  onClick={handleExportCVs}
+                  disabled={selectedEntries.length === 0}
+                >
+                  Export selected CVs
+                </Button>
+              </Box>
             </Box>
 
             {/* Stats strip */}
-            <Box
-              sx={{
-                display: "flex",
-                gap: 2,
-                mb: 4,
-                flexWrap: "wrap",
-              }}
-            >
+            {/* <Box sx={{ display: "flex", gap: 2, mb: 4, flexWrap: "nowrap" }}>
               {[
-                {
-                  label: "Total CVs",
-                  value: totalItems,
-                  color: "#4444E2",
-                },
+                { label: "Total CVs", value: totalItems, color: "#4444E2" },
                 {
                   label: "With CV attached",
                   value: candidates.applications.filter(
@@ -2156,6 +2223,7 @@ export default function Home() {
                 <Box
                   key={stat.label}
                   sx={{
+                    flex: 1,
                     px: 3,
                     py: 1.5,
                     borderRadius: "10px",
@@ -2163,7 +2231,6 @@ export default function Home() {
                     display: "flex",
                     flexDirection: "column",
                     gap: 0.25,
-                    minWidth: 110,
                   }}
                 >
                   <Typography
@@ -2186,9 +2253,97 @@ export default function Home() {
                   </Typography>
                 </Box>
               ))}
-            </Box>
+            </Box> */}
 
-            {/* CV list */}
+            {/* ── Selection toolbar ── */}
+            {!loading && candidates.applications.length > 0 && (
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  mb: 2,
+                  px: 0.5,
+                  flexWrap: "wrap",
+                  gap: 1,
+                }}
+              >
+                {/* Left: select controls */}
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => {
+                      const allIds = candidates.applications.map((a: any) =>
+                        String(a.id),
+                      );
+                      const allSelected = allIds.every((id) =>
+                        selectedEntries.includes(id),
+                      );
+                      if (allSelected) {
+                        setSelectedEntries([]);
+                      } else {
+                        setSelectedEntries(allIds);
+                      }
+                    }}
+                    sx={{
+                      textTransform: "none",
+                      borderRadius: "8px",
+                      fontWeight: 500,
+                      borderColor: "rgba(17,17,17,0.16)",
+                      color: "rgba(17,17,17,0.72)",
+                      "&:hover": {
+                        borderColor: "#4444E2",
+                        color: "#4444E2",
+                      },
+                    }}
+                  >
+                    {candidates.applications.every((a: any) =>
+                      selectedEntries.includes(String(a.id)),
+                    )
+                      ? "Clear selection"
+                      : "Select all"}
+                  </Button>
+
+                  {selectedEntries.length > 0 && (
+                    <Chip
+                      label={`${selectedEntries.length} selected`}
+                      size="small"
+                      sx={{
+                        bgcolor: "rgba(68,68,226,0.1)",
+                        color: "#4444E2",
+                        fontWeight: 600,
+                        fontSize: 12,
+                        borderRadius: "6px",
+                      }}
+                      onDelete={() => setSelectedEntries([])}
+                    />
+                  )}
+                </Box>
+
+                {/* Right: export */}
+                {selectedEntries.length > 0 && (
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<FileDownloadIcon />}
+                    onClick={handleExportCVs}
+                    sx={{
+                      textTransform: "none",
+                      borderRadius: "8px",
+                      fontWeight: 600,
+                      bgcolor: "#4444E2",
+                      "&:hover": { bgcolor: "#6666E6" },
+                    }}
+                  >
+                    Export {selectedEntries.length} CV
+                    {selectedEntries.length > 1 ? "s" : ""}
+                  </Button>
+                )}
+              </Box>
+            )}
+
+            {/* ── Content area ── */}
             {loading ? (
               <CandidateSkeletonLoader />
             ) : candidates.applications.length === 0 ? (
@@ -2203,12 +2358,247 @@ export default function Home() {
                   color: "rgba(17,17,17,0.38)",
                 }}
               >
-                <FileDownloadIcon sx={{ fontSize: 56, opacity: 0.3 }} />
+                <PictureAsPdfIcon sx={{ fontSize: 56, opacity: 0.3 }} />
                 <Typography variant="body1" sx={{ fontWeight: 500 }}>
                   No CVs found for this job yet.
                 </Typography>
               </Box>
+            ) : cvViewMode === "grid" ? (
+              /* ════ GRID VIEW ════ */
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: {
+                    xs: "repeat(1, 1fr)",
+                    sm: "repeat(2, 1fr)",
+                    md: "repeat(3, 1fr)",
+                    xl: "repeat(4, 1fr)",
+                  },
+                  gap: 2.5,
+                }}
+              >
+                {candidates.applications.map((app: any) => {
+                  const name =
+                    `${app.personal_info?.firstname || ""} ${app.personal_info?.lastname || ""}`.trim() ||
+                    "Unknown";
+                  const cvUrl = app.attachments?.cv;
+                  const isSelected = selectedEntries.includes(String(app.id));
+
+                  return (
+                    <Box
+                      key={app.id}
+                      onClick={() => handleSelectCandidate(app.id)}
+                      sx={{
+                        borderRadius: "5px",
+                        border: isSelected
+                          ? "2px solid #4444E2"
+                          : "1px solid rgba(0,0,0,0.10)",
+                        bgcolor: "#fff",
+                        overflow: "hidden",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                        display: "flex",
+                        flexDirection: "column",
+                        width: 300,
+                        boxShadow: isSelected
+                          ? "0 0 0 3px rgba(68,68,226,0.15)"
+                          : "0px 2px 6px rgba(0,0,0,0.04)",
+                        "&:hover": {
+                          // border: "2px solid #4444E2",
+                          // boxShadow: "0 0 0 3px rgba(68,68,226,0.12)",
+                          bgcolor: "rgba(68,68,226,0.04)",
+                        },
+                      }}
+                    >
+                      {/* ── Card header: filename + 3-dot ── */}
+                      <Box
+                        sx={{
+                          px: 2,
+                          py: 1.25,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          borderBottom: "1px solid rgba(0,0,0,0.06)",
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            minWidth: 0,
+                          }}
+                        >
+                          <PictureAsPdfIcon
+                            sx={{
+                              fontSize: 18,
+                              color: cvUrl ? "#E53935" : "rgba(17,17,17,0.3)",
+                              flexShrink: 0,
+                            }}
+                          />
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontWeight: 600,
+                              color: "rgba(17,17,17,0.84)",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              fontSize: 13,
+                            }}
+                          >
+                            {`${name} CV`}
+                          </Typography>
+                        </Box>
+                        {/* 3-dot button lives here now */}
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (cvUrl) {
+                              setCvCardMenuAnchor({
+                                el: e.currentTarget,
+                                appId: String(app.id),
+                                cvUrl,
+                                name,
+                              });
+                            }
+                          }}
+                          disabled={!cvUrl}
+                          sx={{
+                            ml: 0.5,
+                            flexShrink: 0,
+                            color: "rgba(17,17,17,0.48)",
+                            "&:hover": { color: "#4444E2" },
+                          }}
+                        >
+                          <MoreVertIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+
+                      {/* ── PDF preview pane ── */}
+                      <Box
+                        sx={{
+                          height: 200,
+                          position: "relative",
+                          bgcolor: cvUrl ? "#F7F7FF" : "#F5F5F5",
+                          overflow: "hidden",
+                        }}
+                      >
+                        {cvUrl ? (
+                          <Box
+                            sx={{
+                              height: "100%",
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: 1,
+                              borderRadius: "5px",
+                              p: 4,
+                            }}
+                          >
+                            <PictureAsPdfIcon
+                              sx={{
+                                fontSize: 64,
+                                color: "#E53935",
+                                filter:
+                                  "drop-shadow(0 2px 8px rgba(229,57,53,0.25))",
+                              }}
+                            />
+                            <Typography
+                              variant="caption"
+                              sx={{
+                                color: "rgba(17,17,17,0.48)",
+                                fontWeight: 600,
+                                fontSize: 11,
+                              }}
+                            >
+                              PDF FILE
+                            </Typography>
+                          </Box>
+                        ) : (
+                          <Box
+                            sx={{
+                              height: "100%",
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: 1,
+                              color: "rgba(17,17,17,0.28)",
+                            }}
+                          >
+                            <PictureAsPdfIcon sx={{ fontSize: 48 }} />
+                            <Typography
+                              variant="caption"
+                              sx={{ fontWeight: 500 }}
+                            >
+                              No CV uploaded
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    </Box>
+                  );
+                })}
+
+                {/* Shared 3-dot menu for grid cards */}
+                <Menu
+                  anchorEl={cvCardMenuAnchor?.el}
+                  open={Boolean(cvCardMenuAnchor)}
+                  onClose={() => setCvCardMenuAnchor(null)}
+                  PaperProps={{
+                    sx: {
+                      mt: 1,
+                      minWidth: 190,
+                      borderRadius: "10px",
+                      boxShadow: "0px 4px 20px rgba(0,0,0,0.1)",
+                    },
+                  }}
+                >
+                  <MenuItem
+                    onClick={() => {
+                      if (cvCardMenuAnchor?.cvUrl)
+                        window.open(cvCardMenuAnchor.cvUrl, "_blank");
+                      setCvCardMenuAnchor(null);
+                    }}
+                  >
+                    <ListItemIcon>
+                      <OpenInNewIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText primary="View CV" />
+                  </MenuItem>
+                  <MenuItem
+                    onClick={async () => {
+                      if (!cvCardMenuAnchor) return;
+                      const { cvUrl, name } = cvCardMenuAnchor;
+                      try {
+                        const res = await fetch(cvUrl);
+                        const blob = await res.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `CV_${name}.pdf`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                      } catch {
+                        window.open(cvUrl, "_blank");
+                      }
+                      setCvCardMenuAnchor(null);
+                    }}
+                  >
+                    <ListItemIcon>
+                      <FileDownloadIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText primary="Download CV" />
+                  </MenuItem>
+                </Menu>
+              </Box>
             ) : (
+              /* ════ LIST VIEW ════ */
               <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
                 {candidates.applications.map((app: any) => {
                   const name =
@@ -2235,16 +2625,16 @@ export default function Home() {
                         transition: "all 0.15s ease",
                         cursor: "pointer",
                         "&:hover": {
-                          border: "1.5px solid #4444E2",
+                          // border: "1.5px solid #4444E2",
                           bgcolor: "rgba(68,68,226,0.04)",
                         },
                       }}
                       onClick={() => handleSelectCandidate(app.id)}
                     >
+                      {/* Left: avatar + name */}
                       <Box
                         sx={{ display: "flex", alignItems: "center", gap: 2 }}
                       >
-                        {/* Avatar circle */}
                         <Box
                           sx={{
                             width: 40,
@@ -2284,6 +2674,7 @@ export default function Home() {
                         </Box>
                       </Box>
 
+                      {/* Right: actions */}
                       <Box
                         sx={{ display: "flex", alignItems: "center", gap: 1 }}
                         onClick={(e) => e.stopPropagation()}
@@ -2303,10 +2694,13 @@ export default function Home() {
                             <Button
                               variant="outlined"
                               size="small"
-                              startIcon={<FileDownloadIcon />}
+                              startIcon={
+                                <OpenInNewIcon sx={{ fontSize: 15 }} />
+                              }
                               href={cvUrl}
                               target="_blank"
                               rel="noopener noreferrer"
+                              component="a"
                               sx={{
                                 textTransform: "none",
                                 borderRadius: "8px",
@@ -2318,9 +2712,44 @@ export default function Home() {
                                   color: "#4444E2",
                                 },
                               }}
-                              component="a"
                             >
                               View CV
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              size="small"
+                              startIcon={
+                                <FileDownloadIcon sx={{ fontSize: 15 }} />
+                              }
+                              onClick={async () => {
+                                try {
+                                  const res = await fetch(cvUrl);
+                                  const blob = await res.blob();
+                                  const url = window.URL.createObjectURL(blob);
+                                  const a = document.createElement("a");
+                                  a.href = url;
+                                  a.download = `CV_${name}.pdf`;
+                                  document.body.appendChild(a);
+                                  a.click();
+                                  document.body.removeChild(a);
+                                  window.URL.revokeObjectURL(url);
+                                } catch {
+                                  window.open(cvUrl, "_blank");
+                                }
+                              }}
+                              sx={{
+                                textTransform: "none",
+                                borderRadius: "8px",
+                                fontWeight: 500,
+                                borderColor: "rgba(17,17,17,0.16)",
+                                color: "rgba(17,17,17,0.72)",
+                                "&:hover": {
+                                  borderColor: "#4444E2",
+                                  color: "#4444E2",
+                                },
+                              }}
+                            >
+                              Download CV
                             </Button>
                           </>
                         ) : (
@@ -2344,13 +2773,7 @@ export default function Home() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "center",
-                  mt: 4,
-                }}
-              >
+              <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
                 <Pagination
                   count={totalPages}
                   page={page}
