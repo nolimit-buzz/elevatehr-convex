@@ -542,7 +542,7 @@ export const createCompany = adminMutation({
     }
 
     // Hash password and create the admin user
-    const hashedPassword = hashPassword(args.user.password);
+    const hashedPassword = await hashPassword(args.user.password);
     const newUser = await ctx.db.insert("users", {
       ...args.user,
       password: hashedPassword,
@@ -634,7 +634,7 @@ export const updateRecruiter = adminMutation({
       if (args.user.email !== undefined) userPatch.email = args.user.email;
       if (args.user.job_title !== undefined) userPatch.job_title = args.user.job_title;
       if (args.user.phone_number !== undefined) userPatch.phone_number = args.user.phone_number;
-      if (args.user.password) userPatch.password = hashPassword(args.user.password);
+      if (args.user.password) userPatch.password = await hashPassword(args.user.password);
 
       if (Object.keys(userPatch).length > 0) {
         await ctx.db.patch(primaryAdmin._id, userPatch);
