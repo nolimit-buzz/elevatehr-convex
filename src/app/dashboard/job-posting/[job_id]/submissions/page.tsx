@@ -756,37 +756,6 @@ export default function Home() {
     );
 
     let count = 0;
-    for (const app of selectedApps) {
-      const cvUrl = (app as any).attachments?.cv;
-      if (cvUrl) {
-        try {
-          const response = await fetch(cvUrl);
-          if (!response.ok) throw new Error("Network response was not ok");
-          const blob = await response.blob();
-          const url = window.URL.createObjectURL(blob);
-          const link = document.createElement("a");
-          link.href = url;
-          const fileName = `CV_${(app as any).personal_info?.firstname || "Candidate"}_${(app as any).personal_info?.lastname || ""}.pdf`;
-          link.setAttribute("download", fileName);
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          window.URL.revokeObjectURL(url);
-          count++;
-        } catch (error) {
-          console.error("Direct download failed, opening in new tab:", error);
-          // Fallback to opening in new tab
-          window.open(cvUrl, "_blank");
-          count++;
-        }
-      }
-    }
-
-    if (count > 0) {
-      handleNotification(`${count} CV(s) download initiated`, "success");
-    } else {
-      handleNotification("No CVs found for selected candidates", "error");
-    }
   }, [selectedEntries, candidates.applications, handleNotification]);
 
   const handleCloseResponses = async () => {
@@ -1200,7 +1169,7 @@ export default function Home() {
               }}
             />
             <Tab
-              label="CV repositories"
+              label="CV Repository"
               sx={{
                 textTransform: "none",
                 fontWeight: primaryTabValue === 2 ? "bold" : "normal",
@@ -1214,95 +1183,97 @@ export default function Home() {
         </Box>
 
         {/* Analytics Cards Section */}
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: "repeat(2, 1fr)",
-              sm: "repeat(3, 1fr)",
-              md: "repeat(5, 1fr)",
-            },
-            gap: 2,
-            mt: 2,
-            mb: 1,
-            width: "100%",
-          }}
-        >
-          {[
-            {
-              label: "Application Review",
-              value: stageTotals.new,
-              color: "#4444E2",
-            },
-            {
-              label: "Skill Assessment",
-              value: stageTotals.skill_assessment,
-              color: "#2B656E",
-            },
-            {
-              label: "Interviews",
-              value: stageTotals.interviews,
-              color: "#76325F",
-            },
-            {
-              label: "Acceptance",
-              value: stageTotals.acceptance,
-              color: "#1B5E20",
-            },
-            {
-              label: "Archived",
-              value: stageTotals.archived,
-              color: "#724A3B",
-            },
-          ].map((card, index) => (
-            <Box
-              key={index}
-              sx={{
-                p: 2,
-                borderRadius: "12px",
-                bgcolor: "white",
-                border: "1px solid rgba(0,0,0,0.06)",
-                boxShadow: "0px 2px 4px rgba(0,0,0,0.02)",
-                display: "flex",
-                flexDirection: "column",
-                gap: 0.5,
-                transition: "transform 0.2s, box-shadow 0.2s",
-                "&:hover": {
-                  transform: "translateY(-2px)",
-                  boxShadow: "0px 4px 12px rgba(0,0,0,0.05)",
-                  borderColor: card.color + "40",
-                },
-              }}
-            >
-              <Typography
-                variant="caption"
+        {primaryTabValue === 0 && (
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "repeat(2, 1fr)",
+                sm: "repeat(3, 1fr)",
+                md: "repeat(5, 1fr)",
+              },
+              gap: 2,
+              mt: 2,
+              mb: 1,
+              width: "100%",
+            }}
+          >
+            {[
+              {
+                label: "Application Review",
+                value: stageTotals.new,
+                color: "#4444E2",
+              },
+              {
+                label: "Skill Assessment",
+                value: stageTotals.skill_assessment,
+                color: "#2B656E",
+              },
+              {
+                label: "Interviews",
+                value: stageTotals.interviews,
+                color: "#76325F",
+              },
+              {
+                label: "Acceptance",
+                value: stageTotals.acceptance,
+                color: "#1B5E20",
+              },
+              {
+                label: "Archived",
+                value: stageTotals.archived,
+                color: "#724A3B",
+              },
+            ].map((card, index) => (
+              <Box
+                key={index}
                 sx={{
-                  fontWeight: 600,
-                  color: "text.secondary",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                  fontSize: "10px",
+                  p: 2,
+                  borderRadius: "12px",
+                  bgcolor: "white",
+                  border: "1px solid rgba(0,0,0,0.06)",
+                  boxShadow: "0px 2px 4px rgba(0,0,0,0.02)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 0.5,
+                  transition: "transform 0.2s, box-shadow 0.2s",
+                  "&:hover": {
+                    transform: "translateY(-2px)",
+                    boxShadow: "0px 4px 12px rgba(0,0,0,0.05)",
+                    borderColor: card.color + "40",
+                  },
                 }}
               >
-                {card.label}
-              </Typography>
-              <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
                 <Typography
-                  variant="h5"
+                  variant="caption"
                   sx={{
-                    fontWeight: 700,
-                    color: card.color,
+                    fontWeight: 600,
+                    color: "text.secondary",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    fontSize: "10px",
                   }}
                 >
-                  {card.value}
+                  {card.label}
                 </Typography>
-                <Typography variant="caption" color="text.disabled">
-                  {card.value === 1 ? "candidate" : "candidates"}
-                </Typography>
+                <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 700,
+                      color: card.color,
+                    }}
+                  >
+                    {card.value}
+                  </Typography>
+                  <Typography variant="caption" color="text.disabled">
+                    {card.value === 1 ? "candidate" : "candidates"}
+                  </Typography>
+                </Box>
               </Box>
-            </Box>
-          ))}
-        </Box>
+            ))}
+          </Box>
+        )}
 
         {primaryTabValue === 0 ? (
           <Stack
@@ -1311,21 +1282,7 @@ export default function Home() {
             gap={isFilterExpanded ? 3 : 0}
             sx={{ position: "relative" }}
           >
-            {!isFilterExpanded && (
-              <IconButton
-                onClick={() => setIsFilterExpanded(true)}
-                sx={{
-                  position: "relative",
-                  left: 0,
-                  top: "-72vh",
-                  color: "#000000",
-                  zIndex: 50,
-                  "&:hover": { bgcolor: "transparent" },
-                }}
-              >
-                <SpaceDashboard sx={{ height: "30px", width: "30px" }} />
-              </IconButton>
-            )}
+           
 
             <Box
               sx={{
@@ -1350,6 +1307,8 @@ export default function Home() {
                 />
               </Box>
             </Box>
+
+            
 
             {isFilterExpanded && (
               <IconButton
@@ -1381,8 +1340,24 @@ export default function Home() {
               sx={{ bgcolor: "#FFFFFF", p: 2 }}
             />
 
-            <Box sx={{ flex: 1, width: "80%", py: 0, bg: "#ffffff" }}>
+            <Box sx={{ flex: 1, width: "80%", py: 0, bg: "#ffffff" ,marginTop:"10px"}}>
               {/* Your existing tabs */}
+
+ {!isFilterExpanded && (
+              <IconButton
+                onClick={() => setIsFilterExpanded(true)}
+                sx={{
+                  position: "absolute",
+                  left: 0,
+                  top: "2",
+                  color: "rgba(17, 17, 17, 0.68)",
+                  zIndex: 50,
+                  "&:hover": { bgcolor: "transparent" },
+                }}
+              >
+                <SpaceDashboard sx={{ height: "30px", width: "30px" }} />
+              </IconButton>
+            )}
               <Box
                 sx={{
                   borderBottom: 1,
@@ -1393,6 +1368,8 @@ export default function Home() {
                   paddingX: "20px",
                 }}
               >
+
+                
                 {/* Tabs for large screens */}
                 <Box
                   sx={{ display: { xs: "none", lg: "block" }, px: { lg: 4 } }}
@@ -1622,11 +1599,8 @@ export default function Home() {
                       })()}
                     </Box>
 
-                    {selectedEntries?.length > 0 && subTabValue !== 4 && (
-                      <Box
-                        sx={{ display: "flex", gap: 1, alignItems: "center" }}
-                      >
-                        <Button
+                   <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                       <Button
                           variant="outlined"
                           size="small"
                           startIcon={<FileDownloadIcon />}
@@ -1644,8 +1618,13 @@ export default function Home() {
                             },
                           }}
                         >
-                          Export CV ({selectedEntries.length})
+                           Export Candidates ({selectedEntries.length})
                         </Button>
+
+                    {selectedEntries?.length > 0 && subTabValue !== 4 && (
+                      <Box
+                        sx={{ display: "flex", gap: 1, alignItems: "center" }}
+                      >
                         <IconButton
                           onClick={handleBulkActionsOpen}
                           sx={{
@@ -1713,6 +1692,7 @@ export default function Home() {
                         </Menu>
                       </Box>
                     )}
+                     </Box>
                   </Box>
                 )}
 
@@ -2184,163 +2164,12 @@ export default function Home() {
                   </IconButton>
                 </Box>
 
-                <Button
-                  variant="contained"
-                  startIcon={<FileDownloadIcon />}
-                  sx={{
-                    textTransform: "none",
-                    borderRadius: "8px",
-                    fontWeight: 600,
-                    bgcolor: "#4444E2",
-                    "&:hover": { bgcolor: "#6666E6" },
-                  }}
-                  onClick={handleExportCVs}
-                  disabled={selectedEntries.length === 0}
-                >
-                  Export selected CVs
-                </Button>
+               
               </Box>
             </Box>
 
-            {/* Stats strip */}
-            {/* <Box sx={{ display: "flex", gap: 2, mb: 4, flexWrap: "nowrap" }}>
-              {[
-                { label: "Total CVs", value: totalItems, color: "#4444E2" },
-                {
-                  label: "With CV attached",
-                  value: candidates.applications.filter(
-                    (a: any) => !!a.attachments?.cv,
-                  ).length,
-                  color: "#2B656E",
-                },
-                {
-                  label: "Selected",
-                  value: selectedEntries.length,
-                  color: "#76325F",
-                },
-              ].map((stat) => (
-                <Box
-                  key={stat.label}
-                  sx={{
-                    flex: 1,
-                    px: 3,
-                    py: 1.5,
-                    borderRadius: "10px",
-                    border: "1px solid rgba(0,0,0,0.06)",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 0.25,
-                  }}
-                >
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      fontSize: "10px",
-                      fontWeight: 600,
-                      color: "text.secondary",
-                    }}
-                  >
-                    {stat.label}
-                  </Typography>
-                  <Typography
-                    variant="h5"
-                    sx={{ fontWeight: 700, color: stat.color }}
-                  >
-                    {stat.value}
-                  </Typography>
-                </Box>
-              ))}
-            </Box> */}
 
-            {/* ── Selection toolbar ── */}
-            {!loading && candidates.applications.length > 0 && (
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  mb: 2,
-                  px: 0.5,
-                  flexWrap: "wrap",
-                  gap: 1,
-                }}
-              >
-                {/* Left: select controls */}
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => {
-                      const allIds = candidates.applications.map((a: any) =>
-                        String(a.id),
-                      );
-                      const allSelected = allIds.every((id) =>
-                        selectedEntries.includes(id),
-                      );
-                      if (allSelected) {
-                        setSelectedEntries([]);
-                      } else {
-                        setSelectedEntries(allIds);
-                      }
-                    }}
-                    sx={{
-                      textTransform: "none",
-                      borderRadius: "8px",
-                      fontWeight: 500,
-                      borderColor: "rgba(17,17,17,0.16)",
-                      color: "rgba(17,17,17,0.72)",
-                      "&:hover": {
-                        borderColor: "#4444E2",
-                        color: "#4444E2",
-                      },
-                    }}
-                  >
-                    {candidates.applications.every((a: any) =>
-                      selectedEntries.includes(String(a.id)),
-                    )
-                      ? "Clear selection"
-                      : "Select all"}
-                  </Button>
-
-                  {selectedEntries.length > 0 && (
-                    <Chip
-                      label={`${selectedEntries.length} selected`}
-                      size="small"
-                      sx={{
-                        bgcolor: "rgba(68,68,226,0.1)",
-                        color: "#4444E2",
-                        fontWeight: 600,
-                        fontSize: 12,
-                        borderRadius: "6px",
-                      }}
-                      onDelete={() => setSelectedEntries([])}
-                    />
-                  )}
-                </Box>
-
-                {/* Right: export */}
-                {selectedEntries.length > 0 && (
-                  <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={<FileDownloadIcon />}
-                    onClick={handleExportCVs}
-                    sx={{
-                      textTransform: "none",
-                      borderRadius: "8px",
-                      fontWeight: 600,
-                      bgcolor: "#4444E2",
-                      "&:hover": { bgcolor: "#6666E6" },
-                    }}
-                  >
-                    Export {selectedEntries.length} CV
-                    {selectedEntries.length > 1 ? "s" : ""}
-                  </Button>
-                )}
-              </Box>
-            )}
+         
 
             {/* ── Content area ── */}
             {loading ? (
@@ -2386,7 +2215,7 @@ export default function Home() {
                   return (
                     <Box
                       key={app.id}
-                      onClick={() => handleSelectCandidate(app.id)}
+                     
                       sx={{
                         borderRadius: "5px",
                         border: isSelected
@@ -2628,7 +2457,7 @@ export default function Home() {
                           bgcolor: "rgba(68,68,226,0.04)",
                         },
                       }}
-                      onClick={() => handleSelectCandidate(app.id)}
+                      
                     >
                       {/* Left: avatar + name */}
                       <Box
