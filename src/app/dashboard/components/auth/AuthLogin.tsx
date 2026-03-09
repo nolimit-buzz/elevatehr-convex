@@ -3,8 +3,11 @@ import React, { useState } from "react";
 import { Box, Stack, TextField, Button, CircularProgress, Alert, Typography, Link } from "@mui/material";
 import CustomTextField from "@/app/dashboard/components/forms/theme-elements/CustomTextField";
 import NextLink from "next/link";
+import { useRouter } from "next/navigation";
 import { AuthQueries } from "@/queries/auth.queries";
 import { DefaultConstants } from "@/app/constants/defaults";
+import { setWithExpiry } from "@/app/utils/authStorage";
+import { setProfile } from "@/app/utils/authStorage";
 
 interface AuthLoginProps {
   subtext?: React.ReactNode;
@@ -13,6 +16,7 @@ interface AuthLoginProps {
 }
 
 export default function AuthLogin({ subtext, subtitle, onSuccess }: AuthLoginProps) {
+  const router = useRouter();
   const { Login } = AuthQueries();
   const [formData, setFormData] = useState({
     email: "",
@@ -68,21 +72,16 @@ export default function AuthLogin({ subtext, subtitle, onSuccess }: AuthLoginPro
       setLoading(false)
     );
 
-    console.log("Login result:", result?.companyInfo, "Error:", error);
-
     if (error) return setErrorMessage(error || "Login failed. Please try again.");
     if (result?.token) {
-      localStorage.setItem(DefaultConstants.tokenName, result.token);
-      localStorage.setItem("jwt", result.token);
-      localStorage.setItem(
-        "userProfile",
-        JSON.stringify({
-          personalInfo: result?.personalInfo,
-          companyInfo: result?.companyInfo,
-          notifications: result?.notifications,
-        })
-      );
+      setWithExpiry(DefaultConstants.tokenName, result.token);
+      setProfile({
+        personalInfo: result?.personalInfo,
+        companyInfo: result?.companyInfo,
+        notifications: result?.notifications,
+      });
       onSuccess && onSuccess(result);
+      router.push("/dashboard");
     }
   };
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { getProfile } from "@/app/utils/authStorage";
 import {
   Typography,
   Box,
@@ -217,10 +218,9 @@ const JobPostings = ({
   const [jobToDelete, setJobToDelete] = useState<JobPosting | null>(null);
 
   useEffect(() => {
-    const userProfile = localStorage.getItem("userProfile");
-    if (userProfile) {
-      const userProfileData = JSON.parse(userProfile);
-      setCompanyId(userProfileData.companyInfo?.company_id);
+    const profile = getProfile<any>();
+    if (profile) {
+      setCompanyId(profile.companyInfo?.company_id);
     }
   }, []);
   const handleStatusChange = (_event: React.SyntheticEvent, newValue: "all" | "active" | "closed") => {

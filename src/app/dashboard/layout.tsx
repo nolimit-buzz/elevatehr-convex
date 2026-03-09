@@ -1,7 +1,10 @@
 "use client";
 import { styled, Container, Box } from "@mui/material";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Header from "@/app/dashboard/layout/header/Header";
+import { DefaultConstants } from "@/app/constants/defaults";
+import { getWithExpiry } from "@/app/utils/authStorage";
 
 const MainWrapper = styled("div")(() => ({
   display: "flex",
@@ -20,11 +23,26 @@ const PageWrapper = styled("div")(() => ({
   width: "100%",
 }));
 
-interface Props {
+export default function RootLayout({
+  children,
+}: {
   children: React.ReactNode;
-}
+}) {
+  const router = useRouter();
+  const [authorized, setAuthorized] = useState(false);
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    const token = getWithExpiry(DefaultConstants.tokenName);
+    if (!token) {
+      router.replace("/");
+    } else {
+      setAuthorized(true);
+    }
+  }, [router]);
+
+  // Render nothing while checking — prevents dashboard flash for unauthed users
+  if (!authorized) return null;
+
   return (
     <main>
       <Header />
@@ -38,7 +56,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               width: "100% !important",
             }}
           >
-            <Box sx={{ width: "100%", minHeight: "calc(100vh - 170px)" }}>{children}</Box>
+            <Box sx={{ width: "100%", minHeight: "calc(100vh - 170px)" }}>
+              {children}
+            </Box>
           </Container>
         </PageWrapper>
       </MainWrapper>

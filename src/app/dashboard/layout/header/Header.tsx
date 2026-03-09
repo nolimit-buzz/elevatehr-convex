@@ -35,6 +35,8 @@ import WorkHistoryRoundedIcon from "@mui/icons-material/WorkHistoryRounded";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { useRouter } from "next/navigation";
+import { getProfile, removeProfile, removeWithExpiry } from "@/app/utils/authStorage";
+import { DefaultConstants } from "@/app/constants/defaults";
 
 interface ItemType {
   toggleMobileSidebar: (event: React.MouseEvent<HTMLElement>) => void;
@@ -79,9 +81,8 @@ const Header = () => {
 
   useEffect(() => {
     try {
-      const userProfileStr = localStorage.getItem("userProfile");
-      if (userProfileStr) {
-        const userProfile = JSON.parse(userProfileStr);
+      const userProfile = getProfile<{ companyInfo?: { company_logo?: string }; personalInfo?: { first_name?: string; last_name?: string } }>();
+      if (userProfile) {
         if (userProfile.companyInfo?.company_logo) {
           setCompanyLogo(userProfile.companyInfo.company_logo);
         }
@@ -104,10 +105,9 @@ const Header = () => {
   };
 
   const handleLogout = () => {
-    // Add your logout logic here
     if (typeof window !== "undefined") {
-      localStorage.removeItem("elevate_hr");
-      localStorage.removeItem("userProfile");
+      removeWithExpiry(DefaultConstants.tokenName);
+      removeProfile();
       localStorage.removeItem("jwt");
       localStorage.removeItem("calendly_access_token");
       localStorage.removeItem("calendly_refresh_token");
@@ -197,9 +197,8 @@ const Header = () => {
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   useEffect(() => {
     try {
-      const userProfileStr = localStorage.getItem("userProfile");
-      if (userProfileStr) {
-        const userProfile = JSON.parse(userProfileStr);
+      const userProfile = getProfile<{ personalInfo?: { role?: string } }>();
+      if (userProfile) {
         setIsSuperAdmin(userProfile.personalInfo?.role === "admin");
       }
     } catch {

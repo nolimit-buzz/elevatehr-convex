@@ -4,6 +4,7 @@ import { Box, Typography, Paper, Avatar } from "@mui/material";
 import PageContainer from "@/app/dashboard/components/container/PageContainer";
 import FullNotifications from "@/app/dashboard/components/dashboard/FullNotifications";
 import { useNotifications } from "@/queries/notifications.queries";
+import { getProfile } from "@/app/utils/authStorage";
 
 interface NotificationData {
   id: string | number;
@@ -52,10 +53,9 @@ const NotificationsPage = () => {
   });
 
   useEffect(() => {
-    // Get profile data from localStorage
-    const userProfile = localStorage.getItem("userProfile");
-    if (userProfile) {
-      const profile = JSON.parse(userProfile);
+    // Get profile data from sessionStorage via getProfile helper
+    const profile = getProfile<any>();
+    if (profile) {
       setProfileData({
         id: profile.id || 0,
         name: profile.name || "",

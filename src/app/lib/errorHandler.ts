@@ -1,4 +1,7 @@
 import { redirect } from 'next/navigation';
+import { removeWithExpiry } from '@/app/utils/authStorage';
+import { removeProfile } from '@/app/utils/authStorage';
+import { DefaultConstants } from '@/app/constants/defaults';
 
 /**
  * Handle API response errors and redirect to home if unauthorized (403)
@@ -9,8 +12,9 @@ export const handleApiError = (response: Response, redirectTo: string = '/') => 
   if (response.status === 403) {
     // Clear any stored authentication data
     if (typeof window !== 'undefined') {
+      removeWithExpiry(DefaultConstants.tokenName);
+      removeProfile();
       localStorage.removeItem('jwt');
-      localStorage.removeItem('userProfile');
       localStorage.removeItem('user_profile');
     }
     
@@ -39,8 +43,9 @@ export const isUnauthorized = (response: Response, redirectTo: string = '/'): bo
   if (response.status === 403) {
     // Clear any stored authentication data
     if (typeof window !== 'undefined') {
+      removeWithExpiry(DefaultConstants.tokenName);
+      removeProfile();
       localStorage.removeItem('jwt');
-      localStorage.removeItem('userProfile');
       localStorage.removeItem('user_profile');
     }
     

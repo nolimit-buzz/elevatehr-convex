@@ -43,6 +43,7 @@ import { AuthQueries, AuthQueriesReturnType } from "@/queries/auth.queries";
 import { CompanyQueries } from "@/queries/company.queries";
 import ProfileSkeleton from "@/components/skeletons/ProfileSkeleton";
 import { toast } from "sonner";
+import { getProfile, setProfile, removeProfile } from "@/app/utils/authStorage";
 
 // Custom styled TextField component
 const StyledTextField = styled(TextField)(({ theme }) => ({
@@ -194,9 +195,8 @@ const ProfilePage = () => {
   }, []);
 
   const loadDataFromStorage = () => {
-    const storedUserProfile = localStorage.getItem("userProfile");
-    if (storedUserProfile) {
-      const profile = JSON.parse(storedUserProfile);
+    const profile = getProfile<any>();
+    if (profile) {
       setProfileData({
         personal: profile?.personalInfo || null,
         company: profile?.companyInfo || null,
@@ -210,11 +210,9 @@ const ProfilePage = () => {
   };
 
   const updateLocalStorage = (result: any) => {
-    //update localStorage state and clear updatedProfileData
-
-    const userProfile = localStorage.getItem("userProfile");
-    if (userProfile && result) {
-      const profile = JSON.parse(userProfile);
+    //update storage state and clear updatedProfileData
+    const profile = getProfile<any>();
+    if (profile && result) {
       const updatedProfile = {
         ...profile,
         personalInfo: {
@@ -226,7 +224,7 @@ const ProfilePage = () => {
           ...result.companyInfo,
         },
       };
-      localStorage.setItem("userProfile", JSON.stringify(updatedProfile));
+      setProfile(updatedProfile);
       setProfileData({
         personal: updatedProfile.personalInfo,
         company: updatedProfile.companyInfo,
@@ -583,7 +581,7 @@ const ProfilePage = () => {
   }, [activeSection, integrations.calendly.connected, integrations, fetchCalendlyEvents]);
 
   const handleLogout = () => {
-    localStorage.removeItem("userProfile");
+    removeProfile();
     router.push("/");
   };
 
