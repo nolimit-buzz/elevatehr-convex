@@ -24,7 +24,13 @@ function paginate<T>(items: T[], page: number = 1, perPage: number = 10) {
 
 // Get experience years from application
 function getExperienceYears(app: ApplicationDoc): number {
-  return app.professional_info?.experience_years || app.cv_analysis?.experience_years || 0;
+  const years =
+    app.professional_info?.experience_years ||
+    app.cv_analysis?.experience_years ||
+    (app.custom_fields as Record<string, unknown> | undefined)?.experience ||
+    0;
+
+  return typeof years === "string" ? Number(years.replace(/[^0-9.]/g, "")) : Number(years);
 }
 
 // Get all skills from application (combines cv_analysis and professional_info skills)
@@ -274,6 +280,8 @@ export const listWithFilters = authedQuery({
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
 
+    console.log("Filtering applications with args:", args);
+
     // Verify job belongs to user's company
     await verifyJobOwnership(ctx.db, args.jobId, user.company_id!);
 
@@ -283,17 +291,32 @@ export const listWithFilters = authedQuery({
       .withIndex("by_job", (q) => q.eq("job_id", args.jobId))
       .collect();
 
+    console.log(`Initial DB query found ${applications.length} applications for jobId: ${args.jobId}`);
+    if (applications.length > 0) {
+      console.log(`Sample app 0: name=${applications[0].name}, stage=${applications[0].stage}`);
+    }
+
     // Filter by stage if provided
     if (args.stage) {
-      applications = applications.filter((app) => app.stage === args.stage);
+      applications = applications.filter((app) => {
+        const matches = app.stage === args.stage;
+        if (!matches) {
+          // console.log(`App ${app.name} excluded: stage ${app.stage} !== ${args.stage}`);
+        }
+        return matches;
+      });
+      console.log(`After stage ${args.stage} filter: ${applications.length} left`);
     }
 
     // Filter by experience
-    if (args.minExperience) {
+    if (args.minExperience !== undefined) {
       applications = applications.filter((app) => {
         const years = getExperienceYears(app);
-        return years >= args.minExperience!;
+        const matches = years >= args.minExperience!;
+        console.log(`App ${app.name}: years=${years}, minRequired=${args.minExperience}, matches=${matches}`);
+        return matches;
       });
+      console.log(`After minExperience ${args.minExperience} filter: ${applications.length} left`);
     }
 
     if (args.experienceRange) {
@@ -306,8 +329,10 @@ export const listWithFilters = authedQuery({
         if (isNaN(max)) {
           return years >= min;
         }
-        return years >= min && years <= max;
+        const matches = years >= min && years <= max;
+        return matches;
       });
+      console.log(`After experienceRange ${args.experienceRange} filter: ${applications.length} left`);
     }
 
     // Filter by skills
@@ -315,13 +340,61 @@ export const listWithFilters = authedQuery({
       applications = filterBySkills(applications, args.skills);
     }
 
-    // Filter by availability (stored in custom_fields.availability)
+    // Filter by availability (stored in custom_fields.availability or professional_info.start_date)
     if (args.availability) {
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      const nowTime = now.getTime();
+      const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
+      const ONE_MONTH = 30 * 24 * 60 * 60 * 1000;
+      const TWO_MONTHS = 60 * 24 * 60 * 60 * 1000;
+
       applications = applications.filter((app) => {
         const customFields = app.custom_fields as Record<string, unknown> | undefined;
-        const appAvailability = customFields?.availability;
-        return String(appAvailability).toLowerCase() === args.availability!.toLowerCase();
+        const appAvailability = (customFields?.availability || "").toString().toLowerCase();
+
+        // 1. Check if it matches explicit categories (e.g., "immediately", "week")
+        if (appAvailability === args.availability!.toLowerCase()) {
+          return true;
+        }
+
+        // 2. Extract date from string (e.g., "Available 2026-03-20" or "2026-03-20")
+        const dateMatch = (appAvailability + " " + (app.professional_info?.start_date || "")).match(
+          /\d{4}-\d{2}-\d{2}/,
+        );
+
+        if (!dateMatch) return false;
+
+        const startDate = new Date(dateMatch[0]).getTime();
+        if (isNaN(startDate)) return false;
+
+        const diff = startDate - nowTime;
+        const days = diff / (24 * 60 * 60 * 1000); // For logging
+
+        let matches = false;
+        switch (args.availability) {
+          case "immediately":
+            matches = diff <= 0;
+            break;
+          case "week":
+            matches = diff > 0 && diff <= ONE_WEEK;
+            break;
+          case "month":
+            matches = diff > ONE_WEEK && diff <= ONE_MONTH;
+            break;
+          case "2_months":
+            matches = diff > ONE_MONTH && diff <= TWO_MONTHS;
+            break;
+        }
+
+        if (!matches && args.availability) {
+          console.log(
+            `App ${app.name} availability: parsed=${dateMatch[0]}, diffDays=${days.toFixed(1)}, filter=${args.availability}`,
+          );
+        }
+        return matches;
       });
+      console.log(`After availability ${args.availability} filter: ${applications.length} left`);
     }
 
     // Filter by salary expectation (stored in custom_fields.salary)
@@ -385,6 +458,10 @@ export const listWithFilters = authedQuery({
         assessments_results: app.assessments_results,
       };
     });
+
+    console.log(
+      `Returning ${transformedApps.length} applications (total: ${totalItems}, page: ${page}, perPage: ${perPage})`,
+    );
 
     return {
       applications: transformedApps,
