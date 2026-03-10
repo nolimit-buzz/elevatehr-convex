@@ -3,7 +3,12 @@ const nextConfig = {
   output: "standalone",
   reactStrictMode: true,
   images: {
-    domains: ["localhost", "127.0.0.1", "app.elevatehr.ai", "api-convexy.codesordinatestudio.net.ng"],
+    domains: [
+      "localhost",
+      "127.0.0.1",
+      "app.elevatehr.ai",
+      "api-convexy.codesordinatestudio.net.ng",
+    ],
   },
   webpack: (config, { isServer }) => {
     // Fixes npm packages that depend on `fs` module
