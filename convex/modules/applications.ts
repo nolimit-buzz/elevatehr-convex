@@ -306,6 +306,34 @@ export const listWithFilters = authedQuery({
       applications = filterBySkills(applications, args.skills);
     }
 
+    // Filter by availability (stored in custom_fields.availability)
+    if (args.availability) {
+      applications = applications.filter((app) => {
+        const appAvailability = (app.custom_fields as Record<string, unknown> | undefined)?.availability;
+        return appAvailability === args.availability;
+      });
+    }
+
+    // Filter by salary expectation (stored in custom_fields.salary)
+    if (args.minSalary || args.maxSalary) {
+      applications = applications.filter((app) => {
+        const salaryRaw = (app.custom_fields as Record<string, unknown> | undefined)?.salary;
+        const salary = Number(salaryRaw);
+        if (isNaN(salary) || salary === 0) return false;
+        if (args.minSalary && salary < args.minSalary) return false;
+        if (args.maxSalary && salary > args.maxSalary) return false;
+        return true;
+      });
+    }
+
+    // Filter by trial (stored in custom_fields.trial)
+    if (args.trial) {
+      applications = applications.filter((app) => {
+        const appTrial = (app.custom_fields as Record<string, unknown> | undefined)?.trial;
+        return String(appTrial).toLowerCase() === args.trial!.toLowerCase();
+      });
+    }
+
     // Pagination
     const {
       paginatedItems: paginatedApps,

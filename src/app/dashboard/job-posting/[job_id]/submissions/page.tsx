@@ -65,11 +65,7 @@ import MobileStageDropdown from "@/app/dashboard/components/MobileStageDropdown"
 import CandidateSkeletonLoader from "@/app/dashboard/components/CandidateSkeletonLoader";
 import AssessmentIcon from "@/app/dashboard/components/AssessmentIcon";
 import Link from "next/link";
-import {
-  useJob,
-  useJobMutations,
-  useJobAssessments,
-} from "@/queries/jobs.queries";
+import { useJob, useJobMutations, useJobAssessments } from "@/queries/jobs.queries";
 import {
   useApplications,
   useApplicationsWithFilters,
@@ -114,8 +110,7 @@ export default function Home() {
   const { removeJob, updateJobStatus } = useJobMutations();
 
   // Convex hooks for applications
-  const { sendAssessment: sendAssessmentMutation, moveToStageWithEmail } =
-    useApplicationMutations();
+  const { sendAssessment: sendAssessmentMutation, moveToStageWithEmail } = useApplicationMutations();
 
   // Convex hook for email templates
   const convexEmailTemplates = useEmailTemplates();
@@ -132,8 +127,7 @@ export default function Home() {
   });
   const [subTabValue, setSubTabValue] = useState(0);
   const [selectedAssessmentType, setSelectedAssessmentType] = useState(0);
-  const [quickActionsAnchor, setQuickActionsAnchor] =
-    useState<HTMLElement | null>(null);
+  const [quickActionsAnchor, setQuickActionsAnchor] = useState<HTMLElement | null>(null);
   const [availableSkills, setAvailableSkills] = useState<Skill[]>([]);
   const [stageTotals, setStageTotals] = useState({
     new: 0,
@@ -151,8 +145,7 @@ export default function Home() {
     trial: "",
   });
   const [isApplyingFilters, setIsApplyingFilters] = useState(false);
-  const [filteredCandidates, setFilteredCandidates] =
-    useState<CandidateResponse>({ applications: [] });
+  const [filteredCandidates, setFilteredCandidates] = useState<CandidateResponse>({ applications: [] });
   const [jobDetails, setJobDetails] = useState<JobDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -172,11 +165,8 @@ export default function Home() {
   });
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [loadingAssessments, setLoadingAssessments] = useState(false);
-  const [filterMenuAnchor, setFilterMenuAnchor] = useState<HTMLElement | null>(
-    null,
-  );
-  const [dynamicPhaseOptions, setDynamicPhaseOptions] =
-    useState<Record<StageType, PhaseOption[]>>(PHASE_OPTIONS);
+  const [filterMenuAnchor, setFilterMenuAnchor] = useState<HTMLElement | null>(null);
+  const [dynamicPhaseOptions, setDynamicPhaseOptions] = useState<Record<StageType, PhaseOption[]>>(PHASE_OPTIONS);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -184,8 +174,7 @@ export default function Home() {
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
-  const [bulkActionsAnchor, setBulkActionsAnchor] =
-    useState<null | HTMLElement>(null);
+  const [bulkActionsAnchor, setBulkActionsAnchor] = useState<null | HTMLElement>(null);
   // CV Repositories view mode: 'grid' (default) or 'list'
   const [cvViewMode, setCvViewMode] = useState<"grid" | "list">("grid");
   // Per-card 3-dot menu anchor for grid view
@@ -215,12 +204,9 @@ export default function Home() {
   }, []);
 
   // Convex applications query based on filters
-  const currentStage =
-    subTabValue === 0 ? undefined : getStageValue(subTabValue);
+  const currentStage = subTabValue === 0 ? undefined : getStageValue(subTabValue);
   const currentAssessmentType =
-    subTabValue === 2 && selectedAssessmentType > 0
-      ? assessments[selectedAssessmentType - 1]?.type
-      : undefined;
+    subTabValue === 2 && selectedAssessmentType > 0 ? assessments[selectedAssessmentType - 1]?.type : undefined;
 
   const convexApplications = useApplications(
     jobId && !isApplyingFilters
@@ -236,12 +222,10 @@ export default function Home() {
 
   // Parse filter values for filtered query
   const parseExperienceFilter = useCallback(() => {
-    if (!filters.yearsOfExperience)
-      return { minExperience: undefined, experienceRange: undefined };
+    if (!filters.yearsOfExperience) return { minExperience: undefined, experienceRange: undefined };
     const [min, max] = filters.yearsOfExperience.split("-").map(Number);
     if (min && !max) return { minExperience: min, experienceRange: undefined };
-    if (min && max)
-      return { minExperience: undefined, experienceRange: `${min}-${max}` };
+    if (min && max) return { minExperience: undefined, experienceRange: `${min}-${max}` };
     return { minExperience: undefined, experienceRange: undefined };
   }, [filters.yearsOfExperience]);
 
@@ -251,17 +235,12 @@ export default function Home() {
     jobId && isApplyingFilters
       ? {
           jobId,
-          stage: (subTabValue === 0
-            ? "new"
-            : getStageValue(subTabValue)) as ConvexStageType,
+          stage: (subTabValue === 0 ? "new" : getStageValue(subTabValue)) as ConvexStageType,
           minExperience,
           experienceRange,
           minSalary: filters.salaryMin ? Number(filters.salaryMin) : undefined,
           maxSalary: filters.salaryMax ? Number(filters.salaryMax) : undefined,
-          skills:
-            filters.requiredSkills.length > 0
-              ? filters.requiredSkills
-              : undefined,
+          skills: filters.requiredSkills.length > 0 ? filters.requiredSkills : undefined,
           availability: filters.availability || undefined,
           trial: filters.trial || undefined,
           page,
@@ -298,9 +277,7 @@ export default function Home() {
 
   // Update candidates state when Convex applications data changes
   useEffect(() => {
-    const data = isApplyingFilters
-      ? convexFilteredApplications
-      : convexApplications;
+    const data = isApplyingFilters ? convexFilteredApplications : convexApplications;
     if (data !== undefined) {
       // Transform to match CandidateResponse interface
       const transformedData: CandidateResponse = {
@@ -340,10 +317,7 @@ export default function Home() {
 
       setDynamicPhaseOptions((prev) => ({
         ...prev,
-        skill_assessment: [
-          ...PHASE_OPTIONS.skill_assessment,
-          ...assessmentOptions,
-        ],
+        skill_assessment: [...PHASE_OPTIONS.skill_assessment, ...assessmentOptions],
       }));
       setLoadingAssessments(false);
     } else if (convexJobAssessments === undefined) {
@@ -378,10 +352,7 @@ export default function Home() {
     }
   };
 
-  const handlePageChange = (
-    _event: React.ChangeEvent<unknown>,
-    value: number,
-  ) => {
+  const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
     setPage(value);
   };
 
@@ -391,10 +362,7 @@ export default function Home() {
     // console.log("Job details received:", jobDetails);
     const loadSkills = async () => {
       if (jobDetails) {
-        const skills = await getSkillsForRole(
-          jobDetails.title,
-          jobDetails.about_role,
-        );
+        const skills = await getSkillsForRole(jobDetails.title, jobDetails.about_role);
         setAvailableSkills(skills);
       }
     };
@@ -415,10 +383,7 @@ export default function Home() {
     }
   }, []);
 
-  const handleFilterChange = (
-    filterName: keyof FilterState,
-    value: string | string[],
-  ) => {
+  const handleFilterChange = (filterName: keyof FilterState, value: string | string[]) => {
     setFilters((prev) => ({
       ...prev,
       [filterName]: value,
@@ -445,17 +410,11 @@ export default function Home() {
     // Convex will auto-refetch with the new parameters
   };
 
-  const handlePrimaryTabChange = (
-    _event: React.SyntheticEvent,
-    newValue: number,
-  ) => {
+  const handlePrimaryTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setPrimaryTabValue(newValue);
   };
 
-  const handleSubTabChange = (
-    _event: React.SyntheticEvent,
-    newValue: number,
-  ) => {
+  const handleSubTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setSelectedEntries([]);
     setSubTabValue(newValue);
     setSelectedAssessmentType(0);
@@ -479,9 +438,7 @@ export default function Home() {
 
     // Use modulo to cycle through colors if there are more skills than colors
     const colorIndex =
-      Math.abs(
-        skill.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0),
-      ) % skillColors.length;
+      Math.abs(skill.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0)) % skillColors.length;
     return skillColors[colorIndex];
   };
 
@@ -496,10 +453,7 @@ export default function Home() {
     });
   };
 
-  const handleCardClick = (
-    candidateId: string | number,
-    event: React.MouseEvent<HTMLElement>,
-  ) => {
+  const handleCardClick = (candidateId: string | number, event: React.MouseEvent<HTMLElement>) => {
     // Prevent redirection if clicking on checkbox or quick actions button
     if (
       (event.target as HTMLElement).closest(".checkbox-container") ||
@@ -513,9 +467,7 @@ export default function Home() {
     const jobIdFromPath = pathParts[pathParts.length - 2];
 
     // Navigate to the applicant details page
-    router.push(
-      `/dashboard/job-posting/${jobIdFromPath}/submissions/${candidateId}`,
-    );
+    router.push(`/dashboard/job-posting/${jobIdFromPath}/submissions/${candidateId}`);
   };
 
   const handleSendAssessment = async ({
@@ -531,11 +483,7 @@ export default function Home() {
 
     setIsMovingStage(assessment_id);
     try {
-      const { error } = await sendAssessmentMutation(
-        application_ids,
-        assessment_id,
-        emailContent,
-      );
+      const { error } = await sendAssessmentMutation(application_ids, assessment_id, emailContent);
 
       if (error) {
         throw new Error(error);
@@ -545,12 +493,8 @@ export default function Home() {
       setPendingAction(null);
       setSelectedEntries([]);
 
-      const matchedAssessment = assessments.find(
-        (a: any) => a.id === assessment_id,
-      );
-      const assessmentName = matchedAssessment
-        ? matchedAssessment.title
-        : assessment_id.replace("_", " ");
+      const matchedAssessment = assessments.find((a: any) => a.id === assessment_id);
+      const assessmentName = matchedAssessment ? matchedAssessment.title : assessment_id.replace("_", " ");
 
       handleNotification(
         `Successfully sent ${application_ids.length} candidate${
@@ -561,30 +505,21 @@ export default function Home() {
       // Convex will auto-update the data
     } catch (error) {
       console.error("Error updating stage:", error);
-      handleNotification(
-        error instanceof Error ? error.message : "Failed to update stage",
-        "error",
-      );
+      handleNotification(error instanceof Error ? error.message : "Failed to update stage", "error");
     } finally {
       setIsMovingStage("");
       setSelectedEntries([]);
     }
   };
 
-  const handleCloseNotification = (
-    _event?: React.SyntheticEvent | Event,
-    reason?: string,
-  ) => {
+  const handleCloseNotification = (_event?: React.SyntheticEvent | Event, reason?: string) => {
     if (reason === "clickaway") {
       return;
     }
     setNotification((prev) => ({ ...prev, open: false }));
   };
 
-  const handleNotification = (
-    message: string,
-    severity: "success" | "error",
-  ) => {
+  const handleNotification = (message: string, severity: "success" | "error") => {
     setNotification({
       open: true,
       message,
@@ -612,10 +547,7 @@ export default function Home() {
   };
 
   // Bulk email editor (client-only) with stable reference
-  const ReactQuill = React.useMemo(
-    () => dynamic(() => import("react-quill"), { ssr: false }),
-    [],
-  );
+  const ReactQuill = React.useMemo(() => dynamic(() => import("react-quill"), { ssr: false }), []);
   const quillModules = React.useMemo(
     () => ({
       toolbar: [
@@ -629,16 +561,7 @@ export default function Home() {
     [],
   );
   const quillFormats = React.useMemo(
-    () => [
-      "header",
-      "bold",
-      "italic",
-      "underline",
-      "strike",
-      "list",
-      "bullet",
-      "link",
-    ],
+    () => ["header", "bold", "italic", "underline", "strike", "list", "bullet", "link"],
     [],
   );
 
@@ -651,9 +574,7 @@ export default function Home() {
   const mapActionToTemplateKey = (action: string): string | null => {
     const matchedAssessment = assessments.find((a: any) => a.id === action);
     if (matchedAssessment) {
-      return (matchedAssessment as any).type === "technical_assessment"
-        ? "technical_assessment"
-        : "skill_assessment";
+      return (matchedAssessment as any).type === "technical_assessment" ? "technical_assessment" : "skill_assessment";
     }
     switch (action) {
       case "skill_assessment":
@@ -685,20 +606,15 @@ export default function Home() {
     // Use Convex email templates data (reactive)
     const key = mapActionToTemplateKey(action);
     const content =
-      key && convexEmailTemplates?.templates?.[key]?.content
-        ? convexEmailTemplates.templates[key].content
-        : "";
+      key && convexEmailTemplates?.templates?.[key]?.content ? convexEmailTemplates.templates[key].content : "";
     setEmailContent(content);
     setEmailModalOpen(true);
     setEmailLoading(false);
   };
 
   const handleSendBulkEmailAndMoveStage = async () => {
-    if (!pendingAction || !selectedEntries || selectedEntries.length === 0)
-      return;
-    const selectedAssessment = assessments.find(
-      (a: any) => a.id === pendingAction,
-    );
+    if (!pendingAction || !selectedEntries || selectedEntries.length === 0) return;
+    const selectedAssessment = assessments.find((a: any) => a.id === pendingAction);
     if (
       selectedAssessment ||
       pendingAction === "technical_assessment" ||
@@ -708,9 +624,7 @@ export default function Home() {
     ) {
       handleSendAssessment({
         application_ids: selectedEntries,
-        assessment_id: selectedAssessment
-          ? pendingAction
-          : jobDetails?.assessment_id,
+        assessment_id: selectedAssessment ? pendingAction : jobDetails?.assessment_id,
         emailContent,
       });
       return;
@@ -718,11 +632,7 @@ export default function Home() {
     try {
       setEmailLoading(true);
 
-      const { error } = await moveToStageWithEmail(
-        selectedEntries,
-        pendingAction as ConvexStageType,
-        emailContent,
-      );
+      const { error } = await moveToStageWithEmail(selectedEntries, pendingAction as ConvexStageType, emailContent);
 
       if (error) {
         throw new Error(error);
@@ -751,9 +661,7 @@ export default function Home() {
   const handleExportCVs = useCallback(async () => {
     if (!selectedEntries.length) return;
 
-    const selectedApps = candidates.applications.filter((app: any) =>
-      selectedEntries.includes(String(app.id)),
-    );
+    const selectedApps = candidates.applications.filter((app: any) => selectedEntries.includes(String(app.id)));
 
     let count = 0;
     for (const app of selectedApps) {
@@ -869,9 +777,7 @@ export default function Home() {
   };
 
   const JobDescriptionSkeleton = () => (
-    <Box
-      sx={{ display: "flex", gap: 3, alignItems: "flex-start", width: "100%" }}
-    >
+    <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start", width: "100%" }}>
       <Box
         sx={{
           width: { xs: "100%", md: 280 },
@@ -891,12 +797,7 @@ export default function Home() {
         <Skeleton variant="rounded" width={80} height={28} sx={{ mb: 1 }} />
         <Skeleton variant="rounded" width={60} height={28} sx={{ mb: 1 }} />
         <Skeleton variant="rounded" width={120} height={28} sx={{ mb: 2 }} />
-        <Skeleton
-          variant="rectangular"
-          width="60%"
-          height={24}
-          sx={{ mt: 2 }}
-        />
+        <Skeleton variant="rectangular" width="60%" height={24} sx={{ mt: 2 }} />
       </Box>
 
       {/* Main Job Details Skeleton */}
@@ -915,33 +816,13 @@ export default function Home() {
       >
         <Skeleton variant="circular" width={48} height={48} sx={{ mb: 2 }} />
         <Skeleton variant="text" width="40%" height={32} />
-        <Skeleton
-          variant="rectangular"
-          width="100%"
-          height={40}
-          sx={{ mb: 2, borderRadius: 1 }}
-        />
+        <Skeleton variant="rectangular" width="100%" height={40} sx={{ mb: 2, borderRadius: 1 }} />
         <Skeleton variant="text" width="30%" height={28} sx={{ mb: 1 }} />
-        <Skeleton
-          variant="rectangular"
-          width="100%"
-          height={60}
-          sx={{ mb: 2, borderRadius: 1 }}
-        />
+        <Skeleton variant="rectangular" width="100%" height={60} sx={{ mb: 2, borderRadius: 1 }} />
         <Skeleton variant="text" width="35%" height={28} sx={{ mb: 1 }} />
-        <Skeleton
-          variant="rectangular"
-          width="100%"
-          height={80}
-          sx={{ mb: 2, borderRadius: 1 }}
-        />
+        <Skeleton variant="rectangular" width="100%" height={80} sx={{ mb: 2, borderRadius: 1 }} />
         <Skeleton variant="text" width="25%" height={28} sx={{ mb: 1 }} />
-        <Skeleton
-          variant="rectangular"
-          width="100%"
-          height={60}
-          sx={{ borderRadius: 1 }}
-        />
+        <Skeleton variant="rectangular" width="100%" height={60} sx={{ borderRadius: 1 }} />
       </Box>
     </Box>
   );
@@ -1017,10 +898,7 @@ export default function Home() {
               }}
             >
               {getJobId() ? (
-                <span
-                  className="public-link"
-                  style={{ display: "inline-flex", alignItems: "center" }}
-                >
+                <span className="public-link" style={{ display: "inline-flex", alignItems: "center" }}>
                   <span className="job-title">{jobDetails?.title}</span>
                   <Link
                     href={`/job-openings/${getJobId()}${companyId ? `?company_id=${companyId}` : ""}`}
@@ -1112,19 +990,11 @@ export default function Home() {
             </Button>
           </Box>
         </Box>
-        <Dialog
-          open={deleteDialogOpen}
-          onClose={() => setDeleteDialogOpen(false)}
-          maxWidth="xs"
-          fullWidth
-        >
-          <DialogTitle sx={{ fontWeight: 600, pb: 2, px: 4, pt: 4 }}>
-            Delete Job
-          </DialogTitle>
+        <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="xs" fullWidth>
+          <DialogTitle sx={{ fontWeight: 600, pb: 2, px: 4, pt: 4 }}>Delete Job</DialogTitle>
           <DialogContent sx={{ px: 4, pb: 2 }}>
             <Typography sx={{ color: "rgba(17, 17, 17, 0.72)" }}>
-              Are you sure you want to delete this job? This action cannot be
-              undone.
+              Are you sure you want to delete this job? This action cannot be undone.
             </Typography>
           </DialogContent>
           <DialogActions sx={{ px: 4, pb: 3 }}>
@@ -1160,9 +1030,7 @@ export default function Home() {
         <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
           <Tabs
             value={primaryTabValue}
-            onChange={(_event: React.SyntheticEvent, newValue: number) =>
-              setPrimaryTabValue(newValue)
-            }
+            onChange={(_event: React.SyntheticEvent, newValue: number) => setPrimaryTabValue(newValue)}
             aria-label="primary tabs"
             sx={{
               minHeight: "auto",
@@ -1182,10 +1050,7 @@ export default function Home() {
               sx={{
                 textTransform: "none",
                 fontWeight: primaryTabValue === 0 ? "bold" : "normal",
-                color:
-                  primaryTabValue === 0
-                    ? theme.palette.secondary.main
-                    : theme.palette.grey[100],
+                color: primaryTabValue === 0 ? theme.palette.secondary.main : theme.palette.grey[100],
               }}
             />
             <Tab
@@ -1193,10 +1058,7 @@ export default function Home() {
               sx={{
                 textTransform: "none",
                 fontWeight: primaryTabValue === 1 ? "bold" : "normal",
-                color:
-                  primaryTabValue === 1
-                    ? theme.palette.secondary.main
-                    : theme.palette.grey[100],
+                color: primaryTabValue === 1 ? theme.palette.secondary.main : theme.palette.grey[100],
               }}
             />
             <Tab
@@ -1204,10 +1066,7 @@ export default function Home() {
               sx={{
                 textTransform: "none",
                 fontWeight: primaryTabValue === 2 ? "bold" : "normal",
-                color:
-                  primaryTabValue === 2
-                    ? theme.palette.secondary.main
-                    : theme.palette.grey[100],
+                color: primaryTabValue === 2 ? theme.palette.secondary.main : theme.palette.grey[100],
               }}
             />
           </Tabs>
@@ -1305,12 +1164,7 @@ export default function Home() {
         </Box>
 
         {primaryTabValue === 0 ? (
-          <Stack
-            direction="row"
-            maxWidth={"100%"}
-            gap={isFilterExpanded ? 3 : 0}
-            sx={{ position: "relative" }}
-          >
+          <Stack direction="row" maxWidth={"100%"} gap={isFilterExpanded ? 3 : 0} sx={{ position: "relative" }}>
             {!isFilterExpanded && (
               <IconButton
                 onClick={() => setIsFilterExpanded(true)}
@@ -1336,9 +1190,7 @@ export default function Home() {
                 position: "relative",
               }}
             >
-              <Box
-                sx={{ width: 308, pt: 4, bgcolor: "#FFFFFF", borderRadius: 2 }}
-              >
+              <Box sx={{ width: 308, pt: 4, bgcolor: "#FFFFFF", borderRadius: 2 }}>
                 <FilterSection
                   filters={filters}
                   availableSkills={availableSkills}
@@ -1394,15 +1246,10 @@ export default function Home() {
                 }}
               >
                 {/* Tabs for large screens */}
-                <Box
-                  sx={{ display: { xs: "none", lg: "block" }, px: { lg: 4 } }}
-                >
+                <Box sx={{ display: { xs: "none", lg: "block" }, px: { lg: 4 } }}>
                   <Tabs
                     value={subTabValue}
-                    onChange={(
-                      _event: React.SyntheticEvent,
-                      newValue: number,
-                    ) => {
+                    onChange={(_event: React.SyntheticEvent, newValue: number) => {
                       handleSubTabChange(_event, newValue);
                     }}
                     indicatorColor="secondary"
@@ -1428,18 +1275,13 @@ export default function Home() {
                   >
                     <Tab
                       label={
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                        >
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                           <span>All</span>
                         </Box>
                       }
                       sx={{
                         textTransform: "none",
-                        color:
-                          subTabValue === 0
-                            ? theme.palette.grey[100]
-                            : theme.palette.grey[200],
+                        color: subTabValue === 0 ? theme.palette.grey[100] : theme.palette.grey[200],
                         minWidth: "auto",
                         px: 1,
                         whiteSpace: "nowrap",
@@ -1447,18 +1289,13 @@ export default function Home() {
                     />
                     <Tab
                       label={
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                        >
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                           <span>Application Review</span>
                         </Box>
                       }
                       sx={{
                         textTransform: "none",
-                        color:
-                          subTabValue === 1
-                            ? theme.palette.grey[100]
-                            : theme.palette.grey[200],
+                        color: subTabValue === 1 ? theme.palette.grey[100] : theme.palette.grey[200],
                         minWidth: "auto",
                         px: 1,
                         whiteSpace: "nowrap",
@@ -1466,18 +1303,13 @@ export default function Home() {
                     />
                     <Tab
                       label={
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                        >
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                           <span>Skill assessment</span>
                         </Box>
                       }
                       sx={{
                         textTransform: "none",
-                        color:
-                          subTabValue === 2
-                            ? theme.palette.grey[100]
-                            : theme.palette.grey[200],
+                        color: subTabValue === 2 ? theme.palette.grey[100] : theme.palette.grey[200],
                         minWidth: "auto",
                         px: 1,
                         whiteSpace: "nowrap",
@@ -1485,18 +1317,13 @@ export default function Home() {
                     />
                     <Tab
                       label={
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                        >
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                           <span>Interviews</span>
                         </Box>
                       }
                       sx={{
                         textTransform: "none",
-                        color:
-                          subTabValue === 3
-                            ? theme.palette.grey[100]
-                            : theme.palette.grey[200],
+                        color: subTabValue === 3 ? theme.palette.grey[100] : theme.palette.grey[200],
                         minWidth: "auto",
                         px: 1,
                         whiteSpace: "nowrap",
@@ -1504,18 +1331,13 @@ export default function Home() {
                     />
                     <Tab
                       label={
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                        >
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                           <span>Acceptance</span>
                         </Box>
                       }
                       sx={{
                         textTransform: "none",
-                        color:
-                          subTabValue === 4
-                            ? theme.palette.grey[100]
-                            : theme.palette.grey[200],
+                        color: subTabValue === 4 ? theme.palette.grey[100] : theme.palette.grey[200],
                         minWidth: "auto",
                         px: 1,
                         whiteSpace: "nowrap",
@@ -1523,18 +1345,13 @@ export default function Home() {
                     />
                     <Tab
                       label={
-                        <Box
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                        >
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                           <span>Archived</span>
                         </Box>
                       }
                       sx={{
                         textTransform: "none",
-                        color:
-                          subTabValue === 5
-                            ? theme.palette.grey[100]
-                            : theme.palette.grey[200],
+                        color: subTabValue === 5 ? theme.palette.grey[100] : theme.palette.grey[200],
                         minWidth: "auto",
                         px: 1,
                         whiteSpace: "nowrap",
@@ -1582,15 +1399,9 @@ export default function Home() {
                       }}
                     >
                       {(() => {
-                        const allVisibleIds =
-                          filteredCandidates?.applications?.map((c) =>
-                            String(c.id),
-                          ) || [];
+                        const allVisibleIds = filteredCandidates?.applications?.map((c) => String(c.id)) || [];
                         const allSelected =
-                          allVisibleIds.length > 0 &&
-                          allVisibleIds.every((id) =>
-                            selectedEntries?.includes(id),
-                          );
+                          allVisibleIds.length > 0 && allVisibleIds.every((id) => selectedEntries?.includes(id));
                         return (
                           <Button
                             variant="outlined"
@@ -1614,18 +1425,14 @@ export default function Home() {
                               },
                             }}
                           >
-                            {allSelected
-                              ? "Clear selection"
-                              : "Select all candidates"}
+                            {allSelected ? "Clear selection" : "Select all candidates"}
                           </Button>
                         );
                       })()}
                     </Box>
 
                     {selectedEntries?.length > 0 && subTabValue !== 4 && (
-                      <Box
-                        sx={{ display: "flex", gap: 1, alignItems: "center" }}
-                      >
+                      <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
                         <Button
                           variant="outlined"
                           size="small"
@@ -1670,10 +1477,7 @@ export default function Home() {
                           }}
                         >
                           <MenuItem disabled sx={{ opacity: "1 !important" }}>
-                            <Typography
-                              variant="body2"
-                              sx={{ fontWeight: 600, color: "text.primary" }}
-                            >
+                            <Typography variant="body2" sx={{ fontWeight: 600, color: "text.primary" }}>
                               {selectedEntries.length} candidates selected
                             </Typography>
                           </MenuItem>
@@ -1689,27 +1493,25 @@ export default function Home() {
                             <ListItemText primary="Clear selection" />
                           </MenuItem>
                           <Divider />
-                          {dynamicPhaseOptions[getStageValue(subTabValue)]?.map(
-                            (option) => (
-                              <MenuItem
-                                key={option.action}
-                                onClick={() => {
-                                  openEmailModalForAction(option.action);
-                                  handleBulkActionsClose();
-                                }}
-                                disabled={isMovingStage.length > 0}
-                              >
-                                <ListItemIcon>
-                                  {isMovingStage === option.action ? (
-                                    <CircularProgress size={20} />
-                                  ) : (
-                                    <option.icon fontSize="small" />
-                                  )}
-                                </ListItemIcon>
-                                <ListItemText primary={option.label} />
-                              </MenuItem>
-                            ),
-                          )}
+                          {dynamicPhaseOptions[getStageValue(subTabValue)]?.map((option) => (
+                            <MenuItem
+                              key={option.action}
+                              onClick={() => {
+                                openEmailModalForAction(option.action);
+                                handleBulkActionsClose();
+                              }}
+                              disabled={isMovingStage.length > 0}
+                            >
+                              <ListItemIcon>
+                                {isMovingStage === option.action ? (
+                                  <CircularProgress size={20} />
+                                ) : (
+                                  <option.icon fontSize="small" />
+                                )}
+                              </ListItemIcon>
+                              <ListItemText primary={option.label} />
+                            </MenuItem>
+                          ))}
                         </Menu>
                       </Box>
                     )}
@@ -1756,10 +1558,7 @@ export default function Home() {
                           assessment.title ||
                           assessment.type
                             .split("_")
-                            .map(
-                              (word) =>
-                                word.charAt(0).toUpperCase() + word.slice(1),
-                            )
+                            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
                             .join(" ");
 
                         let label = title;
@@ -1796,11 +1595,7 @@ export default function Home() {
                 ) : filteredCandidates?.applications?.length === 0 ? (
                   <EmptyState
                     subTabValue={subTabValue}
-                    assessmentType={
-                      subTabValue === 1
-                        ? assessments[selectedAssessmentType]?.type
-                        : undefined
-                    }
+                    assessmentType={subTabValue === 1 ? assessments[selectedAssessmentType]?.type : undefined}
                   />
                 ) : (
                   <>
@@ -1832,13 +1627,9 @@ export default function Home() {
                             isQuickActionsVisible={true}
                             isCheckboxVisible={true}
                             candidate={candidate}
-                            isSelected={selectedEntries?.includes(
-                              String(candidate.id),
-                            )}
+                            isSelected={selectedEntries?.includes(String(candidate.id))}
                             onSelectCandidate={handleSelectCandidate}
-                            onUpdateStages={(action) =>
-                              openEmailModalForAction(action)
-                            }
+                            onUpdateStages={(action) => openEmailModalForAction(action)}
                             currentStage={getStageValue(subTabValue)}
                             selectedEntries={selectedEntries}
                             setSelectedEntries={setSelectedEntries}
@@ -1849,34 +1640,30 @@ export default function Home() {
                       ))}
                     </Box>
                     <MobileCandidateGrid
-                      candidates={(filteredCandidates?.applications || []).map(
-                        (app) => ({
-                          id: app.id,
-                          name: `${app.personal_info?.firstname || ""} ${app.personal_info?.lastname || ""}`.trim(),
-                          email: "",
-                          phone: "",
-                          cv_url: app.attachments?.cv || "",
-                          status: "",
-                          created_at: "",
-                          professional_info: {
-                            experience_years:
-                              Number(app.professional_info?.experience) || 0,
-                            skills: app.professional_info?.skills || "",
-                            education: [],
-                            start_date: app.professional_info?.start_date || "",
-                          },
-                          cv_analysis: app.cv_analysis
-                            ? {
-                                experience_years:
-                                  app.cv_analysis.experience_years || 0,
-                                skills: app.cv_analysis.skills || [],
-                                education: app.cv_analysis.education || [],
-                                ...app.cv_analysis,
-                              }
-                            : undefined,
-                          attachments: app.attachments,
-                        }),
-                      )}
+                      candidates={(filteredCandidates?.applications || []).map((app) => ({
+                        id: app.id,
+                        name: `${app.personal_info?.firstname || ""} ${app.personal_info?.lastname || ""}`.trim(),
+                        email: "",
+                        phone: "",
+                        cv_url: app.attachments?.cv || "",
+                        status: "",
+                        created_at: "",
+                        professional_info: {
+                          experience_years: Number(app.professional_info?.experience) || 0,
+                          skills: app.professional_info?.skills || "",
+                          education: [],
+                          start_date: app.professional_info?.start_date || "",
+                        },
+                        cv_analysis: app.cv_analysis
+                          ? {
+                              experience_years: app.cv_analysis.experience_years || 0,
+                              skills: app.cv_analysis.skills || [],
+                              education: app.cv_analysis.education || [],
+                              ...app.cv_analysis,
+                            }
+                          : undefined,
+                        attachments: app.attachments,
+                      }))}
                       selectedEntries={selectedEntries}
                       subTabValue={subTabValue}
                       isMovingStage={isMovingStage}
@@ -1932,32 +1719,17 @@ export default function Home() {
                           },
                         }}
                       />
-                      <Typography
-                        variant="body2"
-                        color="grey.200"
-                        align="center"
-                        sx={{ mb: 3 }}
-                      >
-                        Showing{" "}
-                        <span style={{ fontWeight: 600 }}>
-                          {(page - 1) * perPage + 1}
-                        </span>{" "}
-                        to{" "}
-                        <span style={{ fontWeight: 600 }}>
-                          {Math.min(page * perPage, totalItems)}
-                        </span>{" "}
-                        of <span style={{ fontWeight: 600 }}>{totalItems}</span>{" "}
-                        entries
+                      <Typography variant="body2" color="grey.200" align="center" sx={{ mb: 3 }}>
+                        Showing <span style={{ fontWeight: 600 }}>{(page - 1) * perPage + 1}</span> to{" "}
+                        <span style={{ fontWeight: 600 }}>{Math.min(page * perPage, totalItems)}</span> of{" "}
+                        <span style={{ fontWeight: 600 }}>{totalItems}</span> entries
                       </Typography>
                     </Box>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <Typography variant="body2" color="grey.200">
                         Show per Page:
                       </Typography>
-                      <FormControl
-                        size="small"
-                        sx={{ minWidth: 72, borderRadius: "1000px" }}
-                      >
+                      <FormControl size="small" sx={{ minWidth: 72, borderRadius: "1000px" }}>
                         <Select
                           value={perPage}
                           onChange={(e) => {
@@ -1978,41 +1750,24 @@ export default function Home() {
                 )}
               </Paper>
               {/* Custom Email Modal */}
-              <Dialog
-                open={emailModalOpen}
-                onClose={() => setEmailModalOpen(false)}
-                fullWidth
-                maxWidth="md"
-              >
-                <DialogTitle
-                  sx={{ fontWeight: 600, color: "rgba(17, 17, 17, 0.92)" }}
-                >
+              <Dialog open={emailModalOpen} onClose={() => setEmailModalOpen(false)} fullWidth maxWidth="md">
+                <DialogTitle sx={{ fontWeight: 600, color: "rgba(17, 17, 17, 0.92)" }}>
                   {pendingAction
                     ? `Send email for ${(() => {
-                        const matched = assessments.find(
-                          (a: any) => a.id === pendingAction,
-                        );
+                        const matched = assessments.find((a: any) => a.id === pendingAction);
                         return matched
                           ? (matched as any).title ||
                               (matched as any).type
                                 .split("_")
-                                .map(
-                                  (w: string) =>
-                                    w.charAt(0).toUpperCase() + w.slice(1),
-                                )
+                                .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
                                 .join(" ")
                           : pendingAction.replace("_", " ");
                       })()}`
                     : "Send Email"}
                 </DialogTitle>
-                <DialogContent
-                  dividers
-                  sx={{ bgcolor: theme.palette.background.paper }}
-                >
+                <DialogContent dividers sx={{ bgcolor: theme.palette.background.paper }}>
                   {emailLoading ? (
-                    <Box
-                      sx={{ display: "flex", justifyContent: "center", py: 6 }}
-                    >
+                    <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
                       <CircularProgress />
                     </Box>
                   ) : (
@@ -2059,26 +1814,16 @@ export default function Home() {
                   )}
                 </DialogContent>
                 <DialogActions sx={{ p: 2 }}>
-                  <Button
-                    onClick={() => setEmailModalOpen(false)}
-                    variant="outlined"
-                    color="primary"
-                  >
+                  <Button onClick={() => setEmailModalOpen(false)} variant="outlined" color="primary">
                     Cancel
                   </Button>
                   <Button
-                    onClick={async () =>
-                      await handleSendBulkEmailAndMoveStage()
-                    }
+                    onClick={async () => await handleSendBulkEmailAndMoveStage()}
                     variant="contained"
                     color="secondary"
                     disabled={emailLoading || !emailContent}
                   >
-                    {emailLoading ? (
-                      <CircularProgress size={20} color="inherit" />
-                    ) : (
-                      "Send"
-                    )}
+                    {emailLoading ? <CircularProgress size={20} color="inherit" /> : "Send"}
                   </Button>
                 </DialogActions>
               </Dialog>
@@ -2107,16 +1852,10 @@ export default function Home() {
               }}
             >
               <Box>
-                <Typography
-                  variant="h6"
-                  sx={{ fontWeight: 700, color: "rgba(17,17,17,0.84)" }}
-                >
+                <Typography variant="h6" sx={{ fontWeight: 700, color: "rgba(17,17,17,0.84)" }}>
                   CV Repository
                 </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ color: "rgba(17,17,17,0.54)", mt: 0.5 }}
-                >
+                <Typography variant="body2" sx={{ color: "rgba(17,17,17,0.54)", mt: 0.5 }}>
                   All CVs submitted for this role in one place.
                 </Typography>
               </Box>
@@ -2140,14 +1879,8 @@ export default function Home() {
                       borderRadius: 0,
                       px: 1.5,
                       py: 1,
-                      bgcolor:
-                        cvViewMode === "list"
-                          ? "rgba(68,68,226,0.1)"
-                          : "transparent",
-                      color:
-                        cvViewMode === "list"
-                          ? "#4444E2"
-                          : "rgba(17,17,17,0.54)",
+                      bgcolor: cvViewMode === "list" ? "rgba(68,68,226,0.1)" : "transparent",
+                      color: cvViewMode === "list" ? "#4444E2" : "rgba(17,17,17,0.54)",
                       transition: "all 0.15s ease",
                       "&:hover": { bgcolor: "rgba(68,68,226,0.06)" },
                     }}
@@ -2168,14 +1901,8 @@ export default function Home() {
                       borderRadius: 0,
                       px: 1.5,
                       py: 1,
-                      bgcolor:
-                        cvViewMode === "grid"
-                          ? "rgba(68,68,226,0.1)"
-                          : "transparent",
-                      color:
-                        cvViewMode === "grid"
-                          ? "#4444E2"
-                          : "rgba(17,17,17,0.54)",
+                      bgcolor: cvViewMode === "grid" ? "rgba(68,68,226,0.1)" : "transparent",
+                      color: cvViewMode === "grid" ? "#4444E2" : "rgba(17,17,17,0.54)",
                       transition: "all 0.15s ease",
                       "&:hover": { bgcolor: "rgba(68,68,226,0.06)" },
                     }}
@@ -2273,12 +2000,8 @@ export default function Home() {
                     variant="outlined"
                     size="small"
                     onClick={() => {
-                      const allIds = candidates.applications.map((a: any) =>
-                        String(a.id),
-                      );
-                      const allSelected = allIds.every((id) =>
-                        selectedEntries.includes(id),
-                      );
+                      const allIds = candidates.applications.map((a: any) => String(a.id));
+                      const allSelected = allIds.every((id) => selectedEntries.includes(id));
                       if (allSelected) {
                         setSelectedEntries([]);
                       } else {
@@ -2297,9 +2020,7 @@ export default function Home() {
                       },
                     }}
                   >
-                    {candidates.applications.every((a: any) =>
-                      selectedEntries.includes(String(a.id)),
-                    )
+                    {candidates.applications.every((a: any) => selectedEntries.includes(String(a.id)))
                       ? "Clear selection"
                       : "Select all"}
                   </Button>
@@ -2378,8 +2099,7 @@ export default function Home() {
               >
                 {candidates.applications.map((app: any) => {
                   const name =
-                    `${app.personal_info?.firstname || ""} ${app.personal_info?.lastname || ""}`.trim() ||
-                    "Unknown";
+                    `${app.personal_info?.firstname || ""} ${app.personal_info?.lastname || ""}`.trim() || "Unknown";
                   const cvUrl = app.attachments?.cv;
                   const isSelected = selectedEntries.includes(String(app.id));
 
@@ -2389,9 +2109,7 @@ export default function Home() {
                       onClick={() => handleSelectCandidate(app.id)}
                       sx={{
                         borderRadius: "5px",
-                        border: isSelected
-                          ? "2px solid #4444E2"
-                          : "1px solid rgba(0,0,0,0.10)",
+                        border: isSelected ? "2px solid #4444E2" : "1px solid rgba(0,0,0,0.10)",
                         bgcolor: "#fff",
                         overflow: "hidden",
                         cursor: "pointer",
@@ -2399,9 +2117,7 @@ export default function Home() {
                         display: "flex",
                         flexDirection: "column",
                         width: 300,
-                        boxShadow: isSelected
-                          ? "0 0 0 3px rgba(68,68,226,0.15)"
-                          : "0px 2px 6px rgba(0,0,0,0.04)",
+                        boxShadow: isSelected ? "0 0 0 3px rgba(68,68,226,0.15)" : "0px 2px 6px rgba(0,0,0,0.04)",
                         "&:hover": {
                           // border: "2px solid #4444E2",
                           // boxShadow: "0 0 0 3px rgba(68,68,226,0.12)",
@@ -2501,8 +2217,7 @@ export default function Home() {
                               sx={{
                                 fontSize: 64,
                                 color: "#E53935",
-                                filter:
-                                  "drop-shadow(0 2px 8px rgba(229,57,53,0.25))",
+                                filter: "drop-shadow(0 2px 8px rgba(229,57,53,0.25))",
                               }}
                             />
                             <Typography
@@ -2529,10 +2244,7 @@ export default function Home() {
                             }}
                           >
                             <PictureAsPdfIcon sx={{ fontSize: 48 }} />
-                            <Typography
-                              variant="caption"
-                              sx={{ fontWeight: 500 }}
-                            >
+                            <Typography variant="caption" sx={{ fontWeight: 500 }}>
                               No CV uploaded
                             </Typography>
                           </Box>
@@ -2558,8 +2270,7 @@ export default function Home() {
                 >
                   <MenuItem
                     onClick={() => {
-                      if (cvCardMenuAnchor?.cvUrl)
-                        window.open(cvCardMenuAnchor.cvUrl, "_blank");
+                      if (cvCardMenuAnchor?.cvUrl) window.open(cvCardMenuAnchor.cvUrl, "_blank");
                       setCvCardMenuAnchor(null);
                     }}
                   >
@@ -2601,8 +2312,7 @@ export default function Home() {
               <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
                 {candidates.applications.map((app: any) => {
                   const name =
-                    `${app.personal_info?.firstname || ""} ${app.personal_info?.lastname || ""}`.trim() ||
-                    "Unknown";
+                    `${app.personal_info?.firstname || ""} ${app.personal_info?.lastname || ""}`.trim() || "Unknown";
                   const cvUrl = app.attachments?.cv;
                   const isSelected = selectedEntries.includes(String(app.id));
                   return (
@@ -2615,12 +2325,8 @@ export default function Home() {
                         px: 3,
                         py: 2,
                         borderRadius: "12px",
-                        border: isSelected
-                          ? "1.5px solid #4444E2"
-                          : "1px solid rgba(0,0,0,0.08)",
-                        bgcolor: isSelected
-                          ? "rgba(68,68,226,0.04)"
-                          : "#fafafa",
+                        border: isSelected ? "1.5px solid #4444E2" : "1px solid rgba(0,0,0,0.08)",
+                        bgcolor: isSelected ? "rgba(68,68,226,0.04)" : "#fafafa",
                         transition: "all 0.15s ease",
                         cursor: "pointer",
                         "&:hover": {
@@ -2631,9 +2337,7 @@ export default function Home() {
                       onClick={() => handleSelectCandidate(app.id)}
                     >
                       {/* Left: avatar + name */}
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 2 }}
-                      >
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                         <Box
                           sx={{
                             width: 40,
@@ -2662,22 +2366,14 @@ export default function Home() {
                           >
                             {name}
                           </Typography>
-                          <Typography
-                            variant="caption"
-                            sx={{ color: "rgba(17,17,17,0.48)" }}
-                          >
-                            {app.professional_info?.current_role ||
-                              app.stage ||
-                              "Applicant"}
+                          <Typography variant="caption" sx={{ color: "rgba(17,17,17,0.48)" }}>
+                            {app.professional_info?.current_role || app.stage || "Applicant"}
                           </Typography>
                         </Box>
                       </Box>
 
                       {/* Right: actions */}
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }} onClick={(e) => e.stopPropagation()}>
                         {cvUrl ? (
                           <>
                             <Chip
@@ -2693,9 +2389,7 @@ export default function Home() {
                             <Button
                               variant="outlined"
                               size="small"
-                              startIcon={
-                                <OpenInNewIcon sx={{ fontSize: 15 }} />
-                              }
+                              startIcon={<OpenInNewIcon sx={{ fontSize: 15 }} />}
                               href={cvUrl}
                               target="_blank"
                               rel="noopener noreferrer"
@@ -2717,9 +2411,7 @@ export default function Home() {
                             <Button
                               variant="outlined"
                               size="small"
-                              startIcon={
-                                <FileDownloadIcon sx={{ fontSize: 15 }} />
-                              }
+                              startIcon={<FileDownloadIcon sx={{ fontSize: 15 }} />}
                               onClick={async () => {
                                 try {
                                   const res = await fetch(cvUrl);
@@ -2804,9 +2496,7 @@ export default function Home() {
               </Box>
             ) : (
               <Box sx={{ p: 3, textAlign: "center" }}>
-                <Typography color="textSecondary">
-                  No job details available
-                </Typography>
+                <Typography color="textSecondary">No job details available</Typography>
               </Box>
             )}
           </Paper>
@@ -2815,9 +2505,7 @@ export default function Home() {
       <DeleteSnackbar
         open={notification.open}
         message={notification.message}
-        onClose={() =>
-          setNotification({ open: false, message: "", severity: "success" })
-        }
+        onClose={() => setNotification({ open: false, message: "", severity: "success" })}
       />
     </Box>
   );
