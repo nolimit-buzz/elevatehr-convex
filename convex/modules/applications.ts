@@ -280,8 +280,6 @@ export const listWithFilters = authedQuery({
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
 
-    console.log("Filtering applications with args:", args);
-
     // Verify job belongs to user's company
     await verifyJobOwnership(ctx.db, args.jobId, user.company_id!);
 
@@ -291,32 +289,17 @@ export const listWithFilters = authedQuery({
       .withIndex("by_job", (q) => q.eq("job_id", args.jobId))
       .collect();
 
-    console.log(`Initial DB query found ${applications.length} applications for jobId: ${args.jobId}`);
-    if (applications.length > 0) {
-      console.log(`Sample app 0: name=${applications[0].name}, stage=${applications[0].stage}`);
-    }
-
     // Filter by stage if provided
     if (args.stage) {
-      applications = applications.filter((app) => {
-        const matches = app.stage === args.stage;
-        if (!matches) {
-          // console.log(`App ${app.name} excluded: stage ${app.stage} !== ${args.stage}`);
-        }
-        return matches;
-      });
-      console.log(`After stage ${args.stage} filter: ${applications.length} left`);
+      applications = applications.filter((app) => app.stage === args.stage);
     }
 
     // Filter by experience
     if (args.minExperience !== undefined) {
       applications = applications.filter((app) => {
         const years = getExperienceYears(app);
-        const matches = years >= args.minExperience!;
-        console.log(`App ${app.name}: years=${years}, minRequired=${args.minExperience}, matches=${matches}`);
-        return matches;
+        return years >= args.minExperience!;
       });
-      console.log(`After minExperience ${args.minExperience} filter: ${applications.length} left`);
     }
 
     if (args.experienceRange) {
@@ -329,10 +312,8 @@ export const listWithFilters = authedQuery({
         if (isNaN(max)) {
           return years >= min;
         }
-        const matches = years >= min && years <= max;
-        return matches;
+        return years >= min && years <= max;
       });
-      console.log(`After experienceRange ${args.experienceRange} filter: ${applications.length} left`);
     }
 
     // Filter by skills
@@ -369,32 +350,20 @@ export const listWithFilters = authedQuery({
         if (isNaN(startDate)) return false;
 
         const diff = startDate - nowTime;
-        const days = diff / (24 * 60 * 60 * 1000); // For logging
 
-        let matches = false;
         switch (args.availability) {
           case "immediately":
-            matches = diff <= 0;
-            break;
+            return diff <= 0;
           case "week":
-            matches = diff > 0 && diff <= ONE_WEEK;
-            break;
+            return diff > 0 && diff <= ONE_WEEK;
           case "month":
-            matches = diff > ONE_WEEK && diff <= ONE_MONTH;
-            break;
+            return diff > ONE_WEEK && diff <= ONE_MONTH;
           case "2_months":
-            matches = diff > ONE_MONTH && diff <= TWO_MONTHS;
-            break;
+            return diff > ONE_MONTH && diff <= TWO_MONTHS;
+          default:
+            return false;
         }
-
-        if (!matches && args.availability) {
-          console.log(
-            `App ${app.name} availability: parsed=${dateMatch[0]}, diffDays=${days.toFixed(1)}, filter=${args.availability}`,
-          );
-        }
-        return matches;
       });
-      console.log(`After availability ${args.availability} filter: ${applications.length} left`);
     }
 
     // Filter by salary expectation (stored in custom_fields.salary)
@@ -458,10 +427,6 @@ export const listWithFilters = authedQuery({
         assessments_results: app.assessments_results,
       };
     });
-
-    console.log(
-      `Returning ${transformedApps.length} applications (total: ${totalItems}, page: ${page}, perPage: ${perPage})`,
-    );
 
     return {
       applications: transformedApps,

@@ -79,7 +79,6 @@ const QuickActionsDropdown = ({ submissionId, onViewApplication, onStageUpdate }
       // Call the callback to refresh the parent component
       onStageUpdate?.();
     } catch (error) {
-      console.error("Error updating stage:", error);
       setNotification({
         open: true,
         message: error instanceof Error ? error.message : "Failed to update stage",

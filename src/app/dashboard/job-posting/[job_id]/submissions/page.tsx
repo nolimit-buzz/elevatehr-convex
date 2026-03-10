@@ -224,18 +224,18 @@ export default function Home() {
   // Parse filter values for filtered query
   const parseExperienceFilter = useCallback((yearsOfExperience: string) => {
     if (!yearsOfExperience) return { minExperience: undefined, experienceRange: undefined };
-    
+
     // Handle formats: "7+", "1-3", "5"
     if (yearsOfExperience.includes("+")) {
       const min = Number(yearsOfExperience.replace("+", ""));
       return { minExperience: isNaN(min) ? undefined : min, experienceRange: undefined };
     }
-    
+
     if (yearsOfExperience.includes("-")) {
       const [min, max] = yearsOfExperience.split("-").map(Number);
-      return { 
-        minExperience: undefined, 
-        experienceRange: !isNaN(min) && !isNaN(max) ? `${min}-${max}` : undefined 
+      return {
+        minExperience: undefined,
+        experienceRange: !isNaN(min) && !isNaN(max) ? `${min}-${max}` : undefined,
       };
     }
 
@@ -246,7 +246,7 @@ export default function Home() {
   const getFilteredAppsParams = useCallback(() => {
     if (!jobId || !activeFilters) return null;
     const { minExperience, experienceRange } = parseExperienceFilter(activeFilters.yearsOfExperience);
-    
+
     // Determine the current stage from the UI tabs
     // If subTabValue is 0 ("All Candidates"), we don't filter by stage at all
     const currentStage = subTabValue === 0 ? undefined : getStageValue(subTabValue);
