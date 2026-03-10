@@ -4,12 +4,12 @@ import { Infer } from "convex/values";
 import { UserSchema } from "../modules/user";
 import { UserPayload } from "./types";
 
-export const hashPassword = async (password: string) => {
-  return await Bcryptjs.hash(password, 10);
+export const hashPassword = (password: string) => {
+  return Bcryptjs.hashSync(password, 10);
 };
 
-export const verifyPassword = async (args: { password: string; hashedPassword: string }) => {
-  return await Bcryptjs.compare(args.password, args.hashedPassword);
+export const verifyPassword = (args: { password: string; hashedPassword: string }) => {
+  return Bcryptjs.compareSync(args.password, args.hashedPassword);
 };
 
 export const generateToken = async (userPayload: UserPayload) => {

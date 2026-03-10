@@ -201,7 +201,7 @@ export const create = mutation({
       });
     }
 
-    args.user.password = await hashPassword(args.user.password);
+    args.user.password = hashPassword(args.user.password);
     const newUser = await ctx.db.insert("users", {
       ...args.user,
       company_id: newCompany,
