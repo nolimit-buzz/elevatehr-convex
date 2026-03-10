@@ -145,6 +145,7 @@ export default function Home() {
     trial: "",
   });
   const [isApplyingFilters, setIsApplyingFilters] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<FilterState | null>(null);
   const [filteredCandidates, setFilteredCandidates] = useState<CandidateResponse>({ applications: [] });
   const [jobDetails, setJobDetails] = useState<JobDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -221,33 +222,33 @@ export default function Home() {
   );
 
   // Parse filter values for filtered query
-  const parseExperienceFilter = useCallback(() => {
-    if (!filters.yearsOfExperience) return { minExperience: undefined, experienceRange: undefined };
-    const [min, max] = filters.yearsOfExperience.split("-").map(Number);
+  const parseExperienceFilter = useCallback((yearsOfExperience: string) => {
+    if (!yearsOfExperience) return { minExperience: undefined, experienceRange: undefined };
+    const [min, max] = yearsOfExperience.split("-").map(Number);
     if (min && !max) return { minExperience: min, experienceRange: undefined };
     if (min && max) return { minExperience: undefined, experienceRange: `${min}-${max}` };
     return { minExperience: undefined, experienceRange: undefined };
-  }, [filters.yearsOfExperience]);
+  }, []);
 
-  const { minExperience, experienceRange } = parseExperienceFilter();
+  const getFilteredAppsParams = useCallback(() => {
+    if (!jobId || !activeFilters) return null;
+    const { minExperience, experienceRange } = parseExperienceFilter(activeFilters.yearsOfExperience);
+    return {
+      jobId,
+      stage: (subTabValue === 0 ? "new" : getStageValue(subTabValue)) as ConvexStageType,
+      minExperience,
+      experienceRange,
+      minSalary: activeFilters.salaryMin ? Number(activeFilters.salaryMin) : undefined,
+      maxSalary: activeFilters.salaryMax ? Number(activeFilters.salaryMax) : undefined,
+      skills: activeFilters.requiredSkills.length > 0 ? activeFilters.requiredSkills : undefined,
+      availability: activeFilters.availability || undefined,
+      trial: activeFilters.trial || undefined,
+      page,
+      perPage,
+    };
+  }, [jobId, activeFilters, subTabValue, getStageValue, parseExperienceFilter, page, perPage]);
 
-  const convexFilteredApplications = useApplicationsWithFilters(
-    jobId && isApplyingFilters
-      ? {
-          jobId,
-          stage: (subTabValue === 0 ? "new" : getStageValue(subTabValue)) as ConvexStageType,
-          minExperience,
-          experienceRange,
-          minSalary: filters.salaryMin ? Number(filters.salaryMin) : undefined,
-          maxSalary: filters.salaryMax ? Number(filters.salaryMax) : undefined,
-          skills: filters.requiredSkills.length > 0 ? filters.requiredSkills : undefined,
-          availability: filters.availability || undefined,
-          trial: filters.trial || undefined,
-          page,
-          perPage,
-        }
-      : null,
-  );
+  const convexFilteredApplications = useApplicationsWithFilters(isApplyingFilters ? getFilteredAppsParams() : null);
 
   // Simplified getJobId function
   const getJobId = useCallback((): string => {
@@ -393,19 +394,22 @@ export default function Home() {
   // Apply filters - sets flag to use filtered query
   const applyFilters = () => {
     setLoading(true);
+    // Explicitly set active filters only when button is clicked
+    setActiveFilters({ ...filters });
     setIsApplyingFilters(true);
-    // The filtered data will be fetched automatically by the convexFilteredApplications hook
   };
 
   const clearFilters = () => {
-    setFilters({
+    const defaultFilters = {
       yearsOfExperience: "",
       salaryMin: "",
       salaryMax: "",
       requiredSkills: [],
       availability: "",
       trial: "",
-    });
+    };
+    setFilters(defaultFilters);
+    setActiveFilters(null);
     setIsApplyingFilters(false);
     // Convex will auto-refetch with the new parameters
   };

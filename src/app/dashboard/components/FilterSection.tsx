@@ -273,7 +273,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({
             }}
           />
           <FormControlLabel
-            value="in-a-week"
+            value="week"
             control={<StyledRadio />}
             label="In a week"
             sx={{
@@ -284,7 +284,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({
             }}
           />
           <FormControlLabel
-            value="in-a-month"
+            value="month"
             control={<StyledRadio />}
             label="In a month"
             sx={{
@@ -295,7 +295,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({
             }}
           />
           <FormControlLabel
-            value="in-two-months"
+            value="2_months"
             control={<StyledRadio />}
             label="In two months"
             sx={{

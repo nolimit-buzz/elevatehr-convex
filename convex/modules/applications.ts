@@ -290,13 +290,22 @@ export const listWithFilters = authedQuery({
 
     // Filter by experience
     if (args.minExperience) {
-      applications = applications.filter((app) => getExperienceYears(app) >= args.minExperience!);
+      applications = applications.filter((app) => {
+        const years = getExperienceYears(app);
+        return years >= args.minExperience!;
+      });
     }
 
     if (args.experienceRange) {
-      const [min, max] = args.experienceRange.split("-").map(Number);
+      const [minStr, maxStr] = args.experienceRange.split("-");
+      const min = Number(minStr);
+      const max = Number(maxStr);
+
       applications = applications.filter((app) => {
         const years = getExperienceYears(app);
+        if (isNaN(max)) {
+          return years >= min;
+        }
         return years >= min && years <= max;
       });
     }
@@ -309,15 +318,17 @@ export const listWithFilters = authedQuery({
     // Filter by availability (stored in custom_fields.availability)
     if (args.availability) {
       applications = applications.filter((app) => {
-        const appAvailability = (app.custom_fields as Record<string, unknown> | undefined)?.availability;
-        return appAvailability === args.availability;
+        const customFields = app.custom_fields as Record<string, unknown> | undefined;
+        const appAvailability = customFields?.availability;
+        return String(appAvailability).toLowerCase() === args.availability!.toLowerCase();
       });
     }
 
     // Filter by salary expectation (stored in custom_fields.salary)
     if (args.minSalary || args.maxSalary) {
       applications = applications.filter((app) => {
-        const salaryRaw = (app.custom_fields as Record<string, unknown> | undefined)?.salary;
+        const customFields = app.custom_fields as Record<string, unknown> | undefined;
+        const salaryRaw = customFields?.salary;
         const salary = Number(salaryRaw);
         if (isNaN(salary) || salary === 0) return false;
         if (args.minSalary && salary < args.minSalary) return false;
