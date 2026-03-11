@@ -37,6 +37,8 @@ import CustomFieldsSection from "../components/CustomFieldsSection";
 import ResumeViewer from "../components/ResumeViewer";
 import ActionButtons from "../components/ActionButtons";
 import DetailsSkeleton from "../components/DetailsSkeleton";
+import ScoreAnalysisSection from "../components/ScoreAnalysisSection";
+import GradingFeedbacks from "../components/GradingFeedbacks";
 
 // Set up the PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
@@ -46,7 +48,7 @@ export const dynamic = "force-dynamic";
 export default function ApplicantDetails() {
   const router = useRouter();
   const params = useParams();
-  
+
   // Get applicant_id and job_id from params
   const applicantId = typeof params.applicant_id === "string" ? params.applicant_id : null;
   const jobId = typeof params.job_id === "string" ? params.job_id : null;
@@ -170,10 +172,10 @@ export default function ApplicantDetails() {
         <Typography variant="h6" sx={{ color: "grey.100" }}>{applicant?.job_title || "Job Title"}</Typography>
       </Stack>
       <Box sx={{ display: "flex", gap: 3, minHeight: "100vh" }}>
-        <Sidebar 
-          applicants={applicants} 
-          currentApplicantId={applicant?.id} 
-          onApplicantClick={handleApplicantClick} 
+        <Sidebar
+          applicants={applicants}
+          currentApplicantId={applicant?.id ?? null}
+          onApplicantClick={handleApplicantClick}
         />
         <Paper elevation={0} sx={{ flex: 1, p: 4, borderRadius: 2, width: "80%" }}>
           <Paper elevation={0} sx={{ p: 2, borderRadius: 2 }}>
@@ -185,30 +187,32 @@ export default function ApplicantDetails() {
               </Box>
             ) : (
               <Fragment>
-                <ApplicantHeader 
+                <ApplicantHeader
                   firstname={applicant.personal_info.firstname}
                   lastname={applicant.personal_info.lastname}
-                  location={applicant.personal_info.location}
+                  matchScore={applicant.cv_analysis?.match_score}
                   email={applicant.personal_info.email}
                   assessmentsResults={applicant.assessments_results}
                 />
-                
+
                 <SkillsSection skills={applicant.professional_info.skills} />
-                
+
                 <KeyInfo startDate={applicant.professional_info.start_date} />
 
+                <ScoreAnalysisSection assessmentsResults={applicant.assessments_results} />
                 <CVAnalysisSection cvAnalysis={applicant.cv_analysis as any} />
 
                 <CustomFieldsSection jobData={jobData} applicant={applicant} />
+                <GradingFeedbacks jobData={jobData} applicant={applicant} />
 
-                <ResumeViewer 
-                  cvUrl={applicant.attachments?.cv} 
-                  externalCvLink={applicant.attachments?.external_cv_link} 
+                <ResumeViewer
+                  cvUrl={applicant.attachments?.cv}
+                  externalCvLink={applicant.attachments?.external_cv_link}
                 />
 
-                <ActionButtons 
-                  onReject={handleReject} 
-                  onMoveToAssessment={handleMoveToAssessment} 
+                <ActionButtons
+                  onReject={handleReject}
+                  onMoveToAssessment={handleMoveToAssessment}
                 />
               </Fragment>
             )}

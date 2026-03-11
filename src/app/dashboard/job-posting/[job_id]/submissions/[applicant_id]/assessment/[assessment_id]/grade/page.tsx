@@ -62,9 +62,11 @@ export default function GradingPage() {
             <Typography color="text.secondary">
               View the candidate's submission link and add a score based on their performance.
             </Typography>
+
+            {/* coming back to chang this to !submissionLink  */}
             {(() => {
               const submissionLink = applicant.assessments_results?.[assessment_id as string]?.assessment_submission_link;
-              if (!submissionLink) return null;
+              if (submissionLink) return null;
               return (
                 <Button 
                   component="a"

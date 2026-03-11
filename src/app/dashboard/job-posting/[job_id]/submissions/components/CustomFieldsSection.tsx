@@ -22,7 +22,7 @@ export default function CustomFieldsSection({ jobData, applicant }: CustomFields
 
   return (
     <Box sx={{ mb: 4 }}>
-      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+      <Typography variant="subtitle1" sx={{ fontWeight: 600, }}>
         Application Responses
       </Typography>
       <Stack spacing={3} sx={{
@@ -48,7 +48,7 @@ export default function CustomFieldsSection({ jobData, applicant }: CustomFields
           );
         })}
       </Stack>
-      <Divider sx={{ my: 4 }} />
+
     </Box>
   );
 }
