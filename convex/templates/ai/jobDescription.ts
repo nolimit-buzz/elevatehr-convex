@@ -91,7 +91,6 @@ export async function generateJobDescription(args: {
 
     return { success: true, data: parsedResponse };
   } catch (error) {
-    console.error("Error generating job description:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to generate job description",
@@ -138,7 +137,6 @@ export async function generateSkillsForRole(args: {
     const result = JSON.parse(response.choices[0].message.content || '{"technical":[],"soft":[]}');
     return result as GenerateSkillsResult;
   } catch (error) {
-    console.error("Error generating skills:", error);
     return { technical: [], soft: [] };
   }
 }

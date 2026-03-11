@@ -512,7 +512,7 @@ const ShareModal = React.memo(
         </DialogContent>
       </Dialog>
     );
-  }
+  },
 );
 
 ShareModal.displayName = "ShareModal";
@@ -531,7 +531,7 @@ const LocationIcon = () => (
 );
 
 const JobPostings = () => {
-  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "closed">("active");
+  const [statusFilter, setStatusFilter] = useState<"" | "active" | "closed">("active");
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const theme = useTheme();
   const router = useRouter();
@@ -548,7 +548,7 @@ const JobPostings = () => {
     work_model: "",
     job_type: "",
   });
-  const [tempStatusFilter, setTempStatusFilter] = useState<"all" | "active" | "closed">("active");
+  const [tempStatusFilter, setTempStatusFilter] = useState<"" | "active" | "closed">("active");
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedJob, setSelectedJob] = useState<JobPosting | null>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -562,7 +562,7 @@ const JobPostings = () => {
 
   // Convex hooks
   const { updateJobStatus, removeJob } = useJobMutations();
-  const convexJobs = useJobsList(statusFilter === "all" ? undefined : statusFilter);
+  const convexJobs = useJobsList(statusFilter === "" ? undefined : (statusFilter as any));
 
   // Derive jobPostings from Convex data
   const jobPostings: JobPosting[] = useMemo(() => {
@@ -570,6 +570,15 @@ const JobPostings = () => {
     return (convexJobs || []).map((job: any) => ({
       ...job,
       id: job._id,
+      job_type: job.job_type === "fulltime" ? "Full-time" : job.job_type === "contract" ? "Contract" : job.job_type,
+      work_model:
+        job.work_model === "onsite"
+          ? "On-site"
+          : job.work_model === "remote"
+            ? "Remote"
+            : job.work_model === "hybrid"
+              ? "Hybrid"
+              : job.work_model,
     }));
   }, [convexJobs]);
 
@@ -593,8 +602,8 @@ const JobPostings = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const handleStatusChange = async (_event: React.SyntheticEvent, newValue: "all" | "active" | "closed") => {
-    setStatusFilter(newValue);
+  const handleStatusChange = async (_event: React.SyntheticEvent, newValue: "" | "active" | "closed") => {
+    setStatusFilter(newValue as any);
     // Convex query will automatically refetch with new status filter
   };
 
@@ -613,51 +622,60 @@ const JobPostings = () => {
       job_type: "",
     });
     setTempStatusFilter("active");
+    setFilters({
+      job_title: "",
+      location: "",
+      work_model: "",
+      job_type: "",
+    });
+    setStatusFilter("active");
   };
 
   const applyFilters = async () => {
     setFilters(tempFilters);
-    setStatusFilter(tempStatusFilter);
+    setStatusFilter(tempStatusFilter as any);
     // Filtering is done client-side in filteredJobPostings useMemo
     // Convex query will automatically refetch if statusFilter changes
   };
 
   const hasActiveFilters = () => {
     return (
-      tempStatusFilter !== "active" ||
-      tempFilters.job_title !== "" ||
-      tempFilters.location !== "" ||
-      tempFilters.work_model !== "" ||
-      tempFilters.job_type !== ""
+      (tempStatusFilter as any) !== statusFilter ||
+      tempFilters.job_title !== filters.job_title ||
+      tempFilters.location !== filters.location ||
+      tempFilters.work_model !== filters.work_model ||
+      tempFilters.job_type !== filters.job_type
     );
   };
 
-  const filteredJobPostings = (jobPostings || []).filter((job) => {
-    if (filters.job_title && !job.title.toLowerCase().includes(filters.job_title.toLowerCase())) {
-      return false;
-    }
-    if (filters.location && !job.location.toLowerCase().includes(filters.location.toLowerCase())) {
-      return false;
-    }
-    if (filters.work_model && job.work_model !== filters.work_model) {
-      return false;
-    }
-    if (filters.job_type && job.job_type !== filters.job_type) {
-      return false;
-    }
+  const filteredJobPostings = useMemo(() => {
+    return (jobPostings || []).filter((job) => {
+      if (filters.job_title && !job.title.toLowerCase().includes(filters.job_title.toLowerCase())) {
+        return false;
+      }
+      if (filters.location && !job.location.toLowerCase().includes(filters.location.toLowerCase())) {
+        return false;
+      }
+      if (filters.work_model && job.work_model !== filters.work_model) {
+        return false;
+      }
+      if (filters.job_type && job.job_type !== filters.job_type) {
+        return false;
+      }
 
-    if (searchQuery) {
-      const searchLower = searchQuery.toLowerCase();
-      return (
-        job.title.toLowerCase().includes(searchLower) ||
-        job.location.toLowerCase().includes(searchLower) ||
-        job.job_type.toLowerCase().includes(searchLower) ||
-        job.work_model.toLowerCase().includes(searchLower)
-      );
-    }
+      if (searchQuery) {
+        const searchLower = searchQuery.toLowerCase();
+        return (
+          job.title.toLowerCase().includes(searchLower) ||
+          job.location.toLowerCase().includes(searchLower) ||
+          job.job_type.toLowerCase().includes(searchLower) ||
+          job.work_model.toLowerCase().includes(searchLower)
+        );
+      }
 
-    return true;
-  });
+      return true;
+    });
+  }, [jobPostings, filters, searchQuery]);
 
   const copyToClipboard = (jobId: string) => {
     const link = `${process.env.NEXT_PUBLIC_HOST}/job-openings/${jobId}`;
@@ -1506,7 +1524,7 @@ const JobPostings = () => {
                     <FormControl sx={{ minWidth: 150 }}>
                       <Select
                         value={statusFilter}
-                        onChange={(e) => handleStatusChange(e as any, e.target.value as "all" | "active" | "closed")}
+                        onChange={(e) => handleStatusChange(e as any, e.target.value as "" | "active" | "closed")}
                         displayEmpty
                         sx={{
                           backgroundColor: "#fff",

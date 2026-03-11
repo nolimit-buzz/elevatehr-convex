@@ -109,7 +109,6 @@ export async function analyzeCVWithAI(args: AnalyzeCVArgs): Promise<CVAnalysisRe
       summary: typeof parsedResponse.summary === "string" ? parsedResponse.summary : "",
     };
   } catch (error) {
-    console.error("Error analyzing CV:", error);
     // Return default values if analysis fails
     return {
       match_score: 0,
@@ -134,7 +133,6 @@ export async function extractTextFromPDF(pdfBuffer: ArrayBuffer): Promise<string
     const data = await pdfParse(buffer);
     return data.text || "";
   } catch (error) {
-    console.error("Error extracting PDF text:", error);
     throw new Error("Failed to extract text from PDF");
   }
 }
@@ -147,7 +145,6 @@ export async function extractTextFromDOCX(docxBuffer: ArrayBuffer): Promise<stri
     const result = await mammoth.extractRawText({ buffer });
     return result.value || "";
   } catch (error) {
-    console.error("Error extracting DOCX text:", error);
     throw new Error("Failed to extract text from DOCX");
   }
 }

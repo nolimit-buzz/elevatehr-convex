@@ -222,14 +222,12 @@ export const get = authedMutation({
   args: {},
   handler: async (ctx) => {
     const user = ctx.user;
-    if (!user?.company_id)
-      throw new ConvexError({ message: "Company not found", code: 404 });
+    if (!user?.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
     const company = await ctx.db
       .query("companies")
       .filter((q) => q.eq(q.field("_id"), user.company_id))
       .first();
-    if (!company)
-      throw new ConvexError({ message: "Company not found", code: 404 });
+    if (!company) throw new ConvexError({ message: "Company not found", code: 404 });
     return company;
   },
 });
@@ -248,8 +246,7 @@ export const update = authedMutation({
       });
     }
 
-    if (!user.company_id)
-      throw new ConvexError({ message: "Company not found", code: 404 });
+    if (!user.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
 
     if (args.company) {
       await ctx.db.patch(user.company_id, args.company);
@@ -296,13 +293,11 @@ export const updateLogo = authedMutation({
       });
     }
 
-    if (!user.company_id)
-      throw new ConvexError({ message: "Company not found", code: 404 });
+    if (!user.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
 
     // Get the URL for the uploaded file
     const logoUrl = await ctx.storage.getUrl(args.storageId);
-    if (!logoUrl)
-      throw new ConvexError({ message: "Failed to get logo URL", code: 500 });
+    if (!logoUrl) throw new ConvexError({ message: "Failed to get logo URL", code: 500 });
 
     // Update the company with the new logo URL
     await ctx.db.patch(user.company_id, { company_logo: logoUrl });

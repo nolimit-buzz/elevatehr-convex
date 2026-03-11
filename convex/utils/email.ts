@@ -134,11 +134,8 @@ export class Mailman {
     });
 
     if (error) {
-      console.error("[Mailman] Resend error:", JSON.stringify(error));
       throw new ConvexError(`Failed to send email: ${(error as any).message ?? JSON.stringify(error)}`);
     }
-
-    console.log("[Mailman] Email sent, id:", (data as any)?.id);
   }
 
   /**
@@ -174,21 +171,12 @@ export class Mailman {
 
     let htmlContent: string;
 
-    console.log(`[Mailman] Processing template: ${template}`);
-    console.log(
-      `[Mailman] Assessment link present: ${!!templatePayload.assessment_link} (${templatePayload.assessment_link})`,
-    );
-    console.log(`[Mailman] Custom content present: ${!!customHtmlContent}`);
-
     if (customHtmlContent) {
       // First, perform variable substitution on the custom content
       htmlContent = replacePlaceholders(customHtmlContent, vars);
 
       // If we have an assessment link available, ALWAYS append the button automatically.
-      if (templatePayload.assessment_link) {
-        console.log(`[Mailman] Appending assessment link HTML to custom content`, { assessmentLinkHtml });
-        htmlContent += assessmentLinkHtml;
-      }
+      if (templatePayload.assessment_link) htmlContent += assessmentLinkHtml;
     } else {
       htmlContent = buildFallbackHtml(template, templatePayload);
     }
@@ -202,7 +190,6 @@ export class Mailman {
     }
 
     await Mailman.sendEmail({ to, subject: replacePlaceholders(subject, vars), html: htmlContent });
-    console.log(`[Mailman] Sent '${template}' email to ${to.join(", ")}`);
   }
 
   /** @deprecated Use sendTemplatedEmail instead */

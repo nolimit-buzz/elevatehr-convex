@@ -24,7 +24,13 @@ function paginate<T>(items: T[], page: number = 1, perPage: number = 10) {
 
 // Get experience years from application
 function getExperienceYears(app: ApplicationDoc): number {
-  return app.professional_info?.experience_years || app.cv_analysis?.experience_years || 0;
+  const years =
+    app.professional_info?.experience_years ||
+    app.cv_analysis?.experience_years ||
+    (app.custom_fields as Record<string, unknown> | undefined)?.experience ||
+    0;
+
+  return typeof years === "string" ? Number(years.replace(/[^0-9.]/g, "")) : Number(years);
 }
 
 // Get all skills from application (combines cv_analysis and professional_info skills)
@@ -289,14 +295,23 @@ export const listWithFilters = authedQuery({
     }
 
     // Filter by experience
-    if (args.minExperience) {
-      applications = applications.filter((app) => getExperienceYears(app) >= args.minExperience!);
+    if (args.minExperience !== undefined) {
+      applications = applications.filter((app) => {
+        const years = getExperienceYears(app);
+        return years >= args.minExperience!;
+      });
     }
 
     if (args.experienceRange) {
-      const [min, max] = args.experienceRange.split("-").map(Number);
+      const [minStr, maxStr] = args.experienceRange.split("-");
+      const min = Number(minStr);
+      const max = Number(maxStr);
+
       applications = applications.filter((app) => {
         const years = getExperienceYears(app);
+        if (isNaN(max)) {
+          return years >= min;
+        }
         return years >= min && years <= max;
       });
     }
@@ -304,6 +319,72 @@ export const listWithFilters = authedQuery({
     // Filter by skills
     if (args.skills && args.skills.length > 0) {
       applications = filterBySkills(applications, args.skills);
+    }
+
+    // Filter by availability (stored in custom_fields.availability or professional_info.start_date)
+    if (args.availability) {
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      const nowTime = now.getTime();
+      const ONE_WEEK = 7 * 24 * 60 * 60 * 1000;
+      const ONE_MONTH = 30 * 24 * 60 * 60 * 1000;
+      const TWO_MONTHS = 60 * 24 * 60 * 60 * 1000;
+
+      applications = applications.filter((app) => {
+        const customFields = app.custom_fields as Record<string, unknown> | undefined;
+        const appAvailability = (customFields?.availability || "").toString().toLowerCase();
+
+        // 1. Check if it matches explicit categories (e.g., "immediately", "week")
+        if (appAvailability === args.availability!.toLowerCase()) {
+          return true;
+        }
+
+        // 2. Extract date from string (e.g., "Available 2026-03-20" or "2026-03-20")
+        const dateMatch = (appAvailability + " " + (app.professional_info?.start_date || "")).match(
+          /\d{4}-\d{2}-\d{2}/,
+        );
+
+        if (!dateMatch) return false;
+
+        const startDate = new Date(dateMatch[0]).getTime();
+        if (isNaN(startDate)) return false;
+
+        const diff = startDate - nowTime;
+
+        switch (args.availability) {
+          case "immediately":
+            return diff <= 0;
+          case "week":
+            return diff > 0 && diff <= ONE_WEEK;
+          case "month":
+            return diff > ONE_WEEK && diff <= ONE_MONTH;
+          case "2_months":
+            return diff > ONE_MONTH && diff <= TWO_MONTHS;
+          default:
+            return false;
+        }
+      });
+    }
+
+    // Filter by salary expectation (stored in custom_fields.salary)
+    if (args.minSalary || args.maxSalary) {
+      applications = applications.filter((app) => {
+        const customFields = app.custom_fields as Record<string, unknown> | undefined;
+        const salaryRaw = customFields?.salary;
+        const salary = Number(salaryRaw);
+        if (isNaN(salary) || salary === 0) return false;
+        if (args.minSalary && salary < args.minSalary) return false;
+        if (args.maxSalary && salary > args.maxSalary) return false;
+        return true;
+      });
+    }
+
+    // Filter by trial (stored in custom_fields.trial)
+    if (args.trial) {
+      applications = applications.filter((app) => {
+        const appTrial = (app.custom_fields as Record<string, unknown> | undefined)?.trial;
+        return String(appTrial).toLowerCase() === args.trial!.toLowerCase();
+      });
     }
 
     // Pagination

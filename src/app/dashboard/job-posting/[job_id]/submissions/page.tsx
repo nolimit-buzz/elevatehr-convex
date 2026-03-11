@@ -36,11 +36,7 @@ import {
   PhaseOption,
 } from "@/app/dashboard/types/candidate";
 import Link from "next/link";
-import {
-  useJob,
-  useJobMutations,
-  useJobAssessments,
-} from "@/queries/jobs.queries";
+import { useJob, useJobMutations, useJobAssessments } from "@/queries/jobs.queries";
 import {
   useApplications,
   useApplicationsWithFilters,
@@ -87,8 +83,7 @@ export default function Home() {
   const { removeJob, updateJobStatus } = useJobMutations();
 
   // Convex hooks for applications
-  const { sendAssessment: sendAssessmentMutation, moveToStageWithEmail } =
-    useApplicationMutations();
+  const { sendAssessment: sendAssessmentMutation, moveToStageWithEmail } = useApplicationMutations();
 
   // Convex hook for email templates
   const convexEmailTemplates = useEmailTemplates();
@@ -105,8 +100,7 @@ export default function Home() {
   });
   const [subTabValue, setSubTabValue] = useState(0);
   const [selectedAssessmentType, setSelectedAssessmentType] = useState(0);
-  const [quickActionsAnchor, setQuickActionsAnchor] =
-    useState<HTMLElement | null>(null);
+  const [quickActionsAnchor, setQuickActionsAnchor] = useState<HTMLElement | null>(null);
   const [availableSkills, setAvailableSkills] = useState<Skill[]>([]);
   const [stageTotals, setStageTotals] = useState({
     new: 0,
@@ -124,8 +118,8 @@ export default function Home() {
     trial: "",
   });
   const [isApplyingFilters, setIsApplyingFilters] = useState(false);
-  const [filteredCandidates, setFilteredCandidates] =
-    useState<CandidateResponse>({ applications: [] });
+  const [activeFilters, setActiveFilters] = useState<FilterState | null>(null);
+  const [filteredCandidates, setFilteredCandidates] = useState<CandidateResponse>({ applications: [] });
   const [jobDetails, setJobDetails] = useState<JobDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -145,11 +139,8 @@ export default function Home() {
   });
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [loadingAssessments, setLoadingAssessments] = useState(false);
-  const [filterMenuAnchor, setFilterMenuAnchor] = useState<HTMLElement | null>(
-    null,
-  );
-  const [dynamicPhaseOptions, setDynamicPhaseOptions] =
-    useState<Record<StageType, PhaseOption[]>>(PHASE_OPTIONS);
+  const [filterMenuAnchor, setFilterMenuAnchor] = useState<HTMLElement | null>(null);
+  const [dynamicPhaseOptions, setDynamicPhaseOptions] = useState<Record<StageType, PhaseOption[]>>(PHASE_OPTIONS);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -157,8 +148,7 @@ export default function Home() {
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [isFilterExpanded, setIsFilterExpanded] = useState(false);
-  const [bulkActionsAnchor, setBulkActionsAnchor] =
-    useState<null | HTMLElement>(null);
+  const [bulkActionsAnchor, setBulkActionsAnchor] = useState<null | HTMLElement>(null);
   // CV Repositories view mode: 'grid' (default) or 'list'
   const [cvViewMode, setCvViewMode] = useState<"grid" | "list">("grid");
   // Per-card 3-dot menu anchor for grid view
@@ -188,60 +178,68 @@ export default function Home() {
   }, []);
 
   // Convex applications query based on filters
-  const currentStage =
-    subTabValue === 0 ? undefined : getStageValue(subTabValue);
+  const currentStage = subTabValue === 0 ? undefined : getStageValue(subTabValue);
   const currentAssessmentType =
-    subTabValue === 2 && selectedAssessmentType > 0
-      ? assessments[selectedAssessmentType - 1]?.type
-      : undefined;
+    subTabValue === 2 && selectedAssessmentType > 0 ? assessments[selectedAssessmentType - 1]?.type : undefined;
 
   const convexApplications = useApplications(
     jobId && !isApplyingFilters
       ? {
-          jobId,
-          stage: currentStage as ConvexStageType | undefined,
-          assessmentType: currentAssessmentType,
-          page,
-          perPage,
-        }
+        jobId,
+        stage: currentStage as ConvexStageType | undefined,
+        assessmentType: currentAssessmentType,
+        page,
+        perPage,
+      }
       : null,
   );
 
   // Parse filter values for filtered query
-  const parseExperienceFilter = useCallback(() => {
-    if (!filters.yearsOfExperience)
-      return { minExperience: undefined, experienceRange: undefined };
-    const [min, max] = filters.yearsOfExperience.split("-").map(Number);
-    if (min && !max) return { minExperience: min, experienceRange: undefined };
-    if (min && max)
-      return { minExperience: undefined, experienceRange: `${min}-${max}` };
-    return { minExperience: undefined, experienceRange: undefined };
-  }, [filters.yearsOfExperience]);
+  const parseExperienceFilter = useCallback((yearsOfExperience: string) => {
+    if (!yearsOfExperience) return { minExperience: undefined, experienceRange: undefined };
 
-  const { minExperience, experienceRange } = parseExperienceFilter();
+    // Handle formats: "7+", "1-3", "5"
+    if (yearsOfExperience.includes("+")) {
+      const min = Number(yearsOfExperience.replace("+", ""));
+      return { minExperience: isNaN(min) ? undefined : min, experienceRange: undefined };
+    }
 
-  const convexFilteredApplications = useApplicationsWithFilters(
-    jobId && isApplyingFilters
-      ? {
-          jobId,
-          stage: (subTabValue === 0
-            ? "new"
-            : getStageValue(subTabValue)) as ConvexStageType,
-          minExperience,
-          experienceRange,
-          minSalary: filters.salaryMin ? Number(filters.salaryMin) : undefined,
-          maxSalary: filters.salaryMax ? Number(filters.salaryMax) : undefined,
-          skills:
-            filters.requiredSkills.length > 0
-              ? filters.requiredSkills
-              : undefined,
-          availability: filters.availability || undefined,
-          trial: filters.trial || undefined,
-          page,
-          perPage,
-        }
-      : null,
-  );
+    if (yearsOfExperience.includes("-")) {
+      const [min, max] = yearsOfExperience.split("-").map(Number);
+      return {
+        minExperience: undefined,
+        experienceRange: !isNaN(min) && !isNaN(max) ? `${min}-${max}` : undefined,
+      };
+    }
+
+    const val = Number(yearsOfExperience);
+    return { minExperience: isNaN(val) ? undefined : val, experienceRange: undefined };
+  }, []);
+
+  const getFilteredAppsParams = useCallback(() => {
+    if (!jobId || !activeFilters) return null;
+    const { minExperience, experienceRange } = parseExperienceFilter(activeFilters.yearsOfExperience);
+
+    // Determine the current stage from the UI tabs
+    // If subTabValue is 0 ("All Candidates"), we don't filter by stage at all
+    const currentStage = subTabValue === 0 ? undefined : getStageValue(subTabValue);
+
+    return {
+      jobId,
+      stage: currentStage as ConvexStageType | undefined,
+      minExperience,
+      experienceRange,
+      minSalary: activeFilters.salaryMin ? Number(activeFilters.salaryMin) : undefined,
+      maxSalary: activeFilters.salaryMax ? Number(activeFilters.salaryMax) : undefined,
+      skills: activeFilters.requiredSkills.length > 0 ? activeFilters.requiredSkills : undefined,
+      availability: activeFilters.availability || undefined,
+      trial: activeFilters.trial || undefined,
+      page,
+      perPage,
+    };
+  }, [jobId, activeFilters, subTabValue, getStageValue, parseExperienceFilter, page, perPage]);
+
+  const convexFilteredApplications = useApplicationsWithFilters(isApplyingFilters ? getFilteredAppsParams() : null);
 
   // Simplified getJobId function
   const getJobId = useCallback((): string => {
@@ -254,11 +252,11 @@ export default function Home() {
       // Transform Convex job data to match JobDetails interface
       const transformedJob = convexJobDetails
         ? ({
-            ...convexJobDetails,
-            id: (convexJobDetails as any)._id || (convexJobDetails as any).id,
-            // Map description to about_role for compatibility
-            about_role: (convexJobDetails as any).description || "",
-          } as unknown as JobDetails)
+          ...convexJobDetails,
+          id: (convexJobDetails as any)._id || (convexJobDetails as any).id,
+          // Map description to about_role for compatibility
+          about_role: (convexJobDetails as any).description || "",
+        } as unknown as JobDetails)
         : null;
       setJobDetails(transformedJob);
       setLoading(false);
@@ -271,9 +269,7 @@ export default function Home() {
 
   // Update candidates state when Convex applications data changes
   useEffect(() => {
-    const data = isApplyingFilters
-      ? convexFilteredApplications
-      : convexApplications;
+    const data = isApplyingFilters ? convexFilteredApplications : convexApplications;
     if (data !== undefined) {
       // Transform to match CandidateResponse interface
       const transformedData: CandidateResponse = {
@@ -300,13 +296,12 @@ export default function Home() {
 
       // Update dynamic phase options with assessment options
       const assessmentOptions = fetchedAssessments.map((assessment: any) => ({
-        label: `Send ${
-          assessment.title ||
+        label: `Send ${assessment.title ||
           assessment.type
             .split("_")
             .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
             .join(" ")
-        }`,
+          }`,
         icon: AssessmentIcon,
         action: assessment.id,
         id: assessment.id,
@@ -314,10 +309,7 @@ export default function Home() {
 
       setDynamicPhaseOptions((prev) => ({
         ...prev,
-        skill_assessment: [
-          ...PHASE_OPTIONS.skill_assessment,
-          ...assessmentOptions,
-        ],
+        skill_assessment: [...PHASE_OPTIONS.skill_assessment, ...assessmentOptions],
       }));
       setLoadingAssessments(false);
     } else if (convexJobAssessments === undefined) {
@@ -352,10 +344,7 @@ export default function Home() {
     }
   };
 
-  const handlePageChange = (
-    _event: React.ChangeEvent<unknown>,
-    value: number,
-  ) => {
+  const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
     setPage(value);
   };
 
@@ -365,10 +354,7 @@ export default function Home() {
     // console.log("Job details received:", jobDetails);
     const loadSkills = async () => {
       if (jobDetails) {
-        const skills = await getSkillsForRole(
-          jobDetails.title,
-          jobDetails.about_role,
-        );
+        const skills = await getSkillsForRole(jobDetails.title, jobDetails.about_role);
         setAvailableSkills(skills);
       }
     };
@@ -389,10 +375,7 @@ export default function Home() {
     }
   }, []);
 
-  const handleFilterChange = (
-    filterName: keyof FilterState,
-    value: string | string[],
-  ) => {
+  const handleFilterChange = (filterName: keyof FilterState, value: string | string[]) => {
     setFilters((prev) => ({
       ...prev,
       [filterName]: value,
@@ -402,34 +385,31 @@ export default function Home() {
   // Apply filters - sets flag to use filtered query
   const applyFilters = () => {
     setLoading(true);
+    // Explicitly set active filters only when button is clicked
+    setActiveFilters({ ...filters });
     setIsApplyingFilters(true);
-    // The filtered data will be fetched automatically by the convexFilteredApplications hook
   };
 
   const clearFilters = () => {
-    setFilters({
+    const defaultFilters = {
       yearsOfExperience: "",
       salaryMin: "",
       salaryMax: "",
       requiredSkills: [],
       availability: "",
       trial: "",
-    });
+    };
+    setFilters(defaultFilters);
+    setActiveFilters(null);
     setIsApplyingFilters(false);
     // Convex will auto-refetch with the new parameters
   };
 
-  const handlePrimaryTabChange = (
-    _event: React.SyntheticEvent,
-    newValue: number,
-  ) => {
+  const handlePrimaryTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setPrimaryTabValue(newValue);
   };
 
-  const handleSubTabChange = (
-    _event: React.SyntheticEvent,
-    newValue: number,
-  ) => {
+  const handleSubTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setSelectedEntries([]);
     setSubTabValue(newValue);
     setSelectedAssessmentType(0);
@@ -453,9 +433,7 @@ export default function Home() {
 
     // Use modulo to cycle through colors if there are more skills than colors
     const colorIndex =
-      Math.abs(
-        skill.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0),
-      ) % skillColors.length;
+      Math.abs(skill.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0)) % skillColors.length;
     return skillColors[colorIndex];
   };
 
@@ -470,10 +448,7 @@ export default function Home() {
     });
   };
 
-  const handleCardClick = (
-    candidateId: string | number,
-    event: React.MouseEvent<HTMLElement>,
-  ) => {
+  const handleCardClick = (candidateId: string | number, event: React.MouseEvent<HTMLElement>) => {
     // Prevent redirection if clicking on checkbox or quick actions button
     if (
       (event.target as HTMLElement).closest(".checkbox-container") ||
@@ -487,9 +462,7 @@ export default function Home() {
     const jobIdFromPath = pathParts[pathParts.length - 2];
 
     // Navigate to the applicant details page
-    router.push(
-      `/dashboard/job-posting/${jobIdFromPath}/submissions/${candidateId}`,
-    );
+    router.push(`/dashboard/job-posting/${jobIdFromPath}/submissions/${candidateId}`);
   };
 
   const handleSendAssessment = async ({
@@ -505,11 +478,7 @@ export default function Home() {
 
     setIsMovingStage(assessment_id);
     try {
-      const { error } = await sendAssessmentMutation(
-        application_ids,
-        assessment_id,
-        emailContent,
-      );
+      const { error } = await sendAssessmentMutation(application_ids, assessment_id, emailContent);
 
       if (error) {
         throw new Error(error);
@@ -519,46 +488,32 @@ export default function Home() {
       setPendingAction(null);
       setSelectedEntries([]);
 
-      const matchedAssessment = assessments.find(
-        (a: any) => a.id === assessment_id,
-      );
-      const assessmentName = matchedAssessment
-        ? matchedAssessment.title
-        : assessment_id.replace("_", " ");
+      const matchedAssessment = assessments.find((a: any) => a.id === assessment_id);
+      const assessmentName = matchedAssessment ? matchedAssessment.title : assessment_id.replace("_", " ");
 
       handleNotification(
-        `Successfully sent ${application_ids.length} candidate${
-          application_ids.length > 1 ? "s" : ""
+        `Successfully sent ${application_ids.length} candidate${application_ids.length > 1 ? "s" : ""
         } to ${assessmentName}`,
         "success",
       );
       // Convex will auto-update the data
     } catch (error) {
       console.error("Error updating stage:", error);
-      handleNotification(
-        error instanceof Error ? error.message : "Failed to update stage",
-        "error",
-      );
+      handleNotification(error instanceof Error ? error.message : "Failed to update stage", "error");
     } finally {
       setIsMovingStage("");
       setSelectedEntries([]);
     }
   };
 
-  const handleCloseNotification = (
-    _event?: React.SyntheticEvent | Event,
-    reason?: string,
-  ) => {
+  const handleCloseNotification = (_event?: React.SyntheticEvent | Event, reason?: string) => {
     if (reason === "clickaway") {
       return;
     }
     setNotification((prev) => ({ ...prev, open: false }));
   };
 
-  const handleNotification = (
-    message: string,
-    severity: "success" | "error",
-  ) => {
+  const handleNotification = (message: string, severity: "success" | "error") => {
     setNotification({
       open: true,
       message,
@@ -586,10 +541,7 @@ export default function Home() {
   };
 
   // Bulk email editor (client-only) with stable reference
-  const ReactQuill = React.useMemo(
-    () => dynamic(() => import("react-quill"), { ssr: false }),
-    [],
-  );
+  const ReactQuill = React.useMemo(() => dynamic(() => import("react-quill"), { ssr: false }), []);
   const quillModules = React.useMemo(
     () => ({
       toolbar: [
@@ -603,16 +555,7 @@ export default function Home() {
     [],
   );
   const quillFormats = React.useMemo(
-    () => [
-      "header",
-      "bold",
-      "italic",
-      "underline",
-      "strike",
-      "list",
-      "bullet",
-      "link",
-    ],
+    () => ["header", "bold", "italic", "underline", "strike", "list", "bullet", "link"],
     [],
   );
 
@@ -625,9 +568,7 @@ export default function Home() {
   const mapActionToTemplateKey = (action: string): string | null => {
     const matchedAssessment = assessments.find((a: any) => a.id === action);
     if (matchedAssessment) {
-      return (matchedAssessment as any).type === "technical_assessment"
-        ? "technical_assessment"
-        : "skill_assessment";
+      return (matchedAssessment as any).type === "technical_assessment" ? "technical_assessment" : "skill_assessment";
     }
     switch (action) {
       case "skill_assessment":
@@ -659,20 +600,15 @@ export default function Home() {
     // Use Convex email templates data (reactive)
     const key = mapActionToTemplateKey(action);
     const content =
-      key && convexEmailTemplates?.templates?.[key]?.content
-        ? convexEmailTemplates.templates[key].content
-        : "";
+      key && convexEmailTemplates?.templates?.[key]?.content ? convexEmailTemplates.templates[key].content : "";
     setEmailContent(content);
     setEmailModalOpen(true);
     setEmailLoading(false);
   };
 
   const handleSendBulkEmailAndMoveStage = async () => {
-    if (!pendingAction || !selectedEntries || selectedEntries.length === 0)
-      return;
-    const selectedAssessment = assessments.find(
-      (a: any) => a.id === pendingAction,
-    );
+    if (!pendingAction || !selectedEntries || selectedEntries.length === 0) return;
+    const selectedAssessment = assessments.find((a: any) => a.id === pendingAction);
     if (
       selectedAssessment ||
       pendingAction === "technical_assessment" ||
@@ -682,9 +618,7 @@ export default function Home() {
     ) {
       handleSendAssessment({
         application_ids: selectedEntries,
-        assessment_id: selectedAssessment
-          ? pendingAction
-          : jobDetails?.assessment_id,
+        assessment_id: selectedAssessment ? pendingAction : jobDetails?.assessment_id,
         emailContent,
       });
       return;
@@ -692,11 +626,7 @@ export default function Home() {
     try {
       setEmailLoading(true);
 
-      const { error } = await moveToStageWithEmail(
-        selectedEntries,
-        pendingAction as ConvexStageType,
-        emailContent,
-      );
+      const { error } = await moveToStageWithEmail(selectedEntries, pendingAction as ConvexStageType, emailContent);
 
       if (error) {
         throw new Error(error);
@@ -824,7 +754,6 @@ export default function Home() {
   };
 
 
-
   return (
     <Box
       sx={{
@@ -896,10 +825,7 @@ export default function Home() {
               }}
             >
               {getJobId() ? (
-                <span
-                  className="public-link"
-                  style={{ display: "inline-flex", alignItems: "center" }}
-                >
+                <span className="public-link" style={{ display: "inline-flex", alignItems: "center" }}>
                   <span className="job-title">{jobDetails?.title}</span>
                   <Link
                     href={`/job-openings/${getJobId()}${companyId ? `?company_id=${companyId}` : ""}`}
@@ -991,19 +917,11 @@ export default function Home() {
             </Button>
           </Box>
         </Box>
-        <Dialog
-          open={deleteDialogOpen}
-          onClose={() => setDeleteDialogOpen(false)}
-          maxWidth="xs"
-          fullWidth
-        >
-          <DialogTitle sx={{ fontWeight: 600, pb: 2, px: 4, pt: 4 }}>
-            Delete Job
-          </DialogTitle>
+        <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="xs" fullWidth>
+          <DialogTitle sx={{ fontWeight: 600, pb: 2, px: 4, pt: 4 }}>Delete Job</DialogTitle>
           <DialogContent sx={{ px: 4, pb: 2 }}>
             <Typography sx={{ color: "rgba(17, 17, 17, 0.72)" }}>
-              Are you sure you want to delete this job? This action cannot be
-              undone.
+              Are you sure you want to delete this job? This action cannot be undone.
             </Typography>
           </DialogContent>
           <DialogActions sx={{ px: 4, pb: 3 }}>
@@ -1039,9 +957,7 @@ export default function Home() {
         <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
           <Tabs
             value={primaryTabValue}
-            onChange={(_event: React.SyntheticEvent, newValue: number) =>
-              setPrimaryTabValue(newValue)
-            }
+            onChange={(_event: React.SyntheticEvent, newValue: number) => setPrimaryTabValue(newValue)}
             aria-label="primary tabs"
             sx={{
               minHeight: "auto",
@@ -1061,10 +977,7 @@ export default function Home() {
               sx={{
                 textTransform: "none",
                 fontWeight: primaryTabValue === 0 ? "bold" : "normal",
-                color:
-                  primaryTabValue === 0
-                    ? theme.palette.secondary.main
-                    : theme.palette.grey[100],
+                color: primaryTabValue === 0 ? theme.palette.secondary.main : theme.palette.grey[100],
               }}
             />
             <Tab
@@ -1072,10 +985,7 @@ export default function Home() {
               sx={{
                 textTransform: "none",
                 fontWeight: primaryTabValue === 1 ? "bold" : "normal",
-                color:
-                  primaryTabValue === 1
-                    ? theme.palette.secondary.main
-                    : theme.palette.grey[100],
+                color: primaryTabValue === 1 ? theme.palette.secondary.main : theme.palette.grey[100],
               }}
             />
             <Tab
@@ -1083,10 +993,7 @@ export default function Home() {
               sx={{
                 textTransform: "none",
                 fontWeight: primaryTabValue === 2 ? "bold" : "normal",
-                color:
-                  primaryTabValue === 2
-                    ? theme.palette.secondary.main
-                    : theme.palette.grey[100],
+                color: primaryTabValue === 2 ? theme.palette.secondary.main : theme.palette.grey[100],
               }}
             />
           </Tabs>
@@ -1173,9 +1080,7 @@ export default function Home() {
       <DeleteSnackbar
         open={notification.open}
         message={notification.message}
-        onClose={() =>
-          setNotification({ open: false, message: "", severity: "success" })
-        }
+        onClose={() => setNotification({ open: false, message: "", severity: "success" })}
       />
     </Box>
   );

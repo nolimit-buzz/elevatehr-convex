@@ -88,7 +88,6 @@ async function performCVAnalysis(ctx: ActionCtx, args: AnalyzeCVArgs): Promise<A
   });
 
   if (!application) {
-    console.error("[CV Analysis] Application not found:", applicationId);
     return { success: false, error: "Application not found" };
   }
 
@@ -98,7 +97,6 @@ async function performCVAnalysis(ctx: ActionCtx, args: AnalyzeCVArgs): Promise<A
   });
 
   if (!job) {
-    console.error("[CV Analysis] Job not found:", application.job_id);
     return { success: false, error: "Job not found" };
   }
 
@@ -108,14 +106,12 @@ async function performCVAnalysis(ctx: ActionCtx, args: AnalyzeCVArgs): Promise<A
   });
 
   if (!company) {
-    console.error("[CV Analysis] Company not found:", application.company_id);
     return { success: false, error: "Company not found" };
   }
 
   // Use company API key
   const aiApiKey = company.ai_api_key;
   if (!aiApiKey) {
-    console.error("[CV Analysis] Company ai_api_key not set. Please configure it in company settings.");
     return { success: false, error: "AI API key not configured for this company" };
   }
 
@@ -133,14 +129,12 @@ async function performCVAnalysis(ctx: ActionCtx, args: AnalyzeCVArgs): Promise<A
   }
 
   if (!cvUrl) {
-    console.error("[CV Analysis] No CV URL available for analysis");
     return { success: false, error: "No CV URL available" };
   }
 
   // Fetch the CV file
   const cvResponse = await fetch(cvUrl);
   if (!cvResponse.ok) {
-    console.error("[CV Analysis] Failed to fetch CV:", cvResponse.statusText);
     return { success: false, error: "Failed to fetch CV file" };
   }
 
@@ -213,16 +207,10 @@ export const sendStageEmailInternal = internalAction({
       });
 
       if (!data) {
-        console.error("[Email] Missing data for application:", args.applicationId);
         return { success: false, error: "Missing application data" };
       }
 
       const { application, job, company } = data;
-
-      console.log(`[Email] sendStageEmailInternal - Application ID: ${application._id}`);
-      console.log(`[Email] sendStageEmailInternal - Template Type: ${args.templateType}`);
-      console.log(`[Email] sendStageEmailInternal - Origin: ${args.origin}`);
-      console.log(`[Email] sendStageEmailInternal - Assessment ID: ${application.assessment_id}`);
 
       // Fetch company-specific email template (may be null)
       const template = await ctx.runQuery(internal.modules.emailTemplates.getByTypeInternal, {
@@ -274,7 +262,6 @@ export const sendStageEmailInternal = internalAction({
 
       return { success: true };
     } catch (error) {
-      console.error("[Email] sendStageEmailInternal failed:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
     }
   },
@@ -295,7 +282,6 @@ export const analyzeCVActionInternal = internalAction({
     try {
       return await performCVAnalysis(ctx, args);
     } catch (error) {
-      console.error("[CV Analysis Internal] Action failed:", error);
       return {
         success: false,
         error: error instanceof Error ? error.message : "Unknown error during CV analysis",
@@ -315,7 +301,6 @@ export const analyzeCVAction = action({
     try {
       return await performCVAnalysis(ctx, args);
     } catch (error) {
-      console.error("[CV Analysis] Action failed:", error);
       return {
         success: false,
         error: error instanceof Error ? error.message : "Unknown error during CV analysis",
@@ -360,7 +345,6 @@ export const submitPublicApplication = action({
         });
       } catch (error) {
         // Log but don't fail the application submission
-        console.error("Failed to schedule CV analysis:", error);
       }
     }
 
@@ -370,9 +354,7 @@ export const submitPublicApplication = action({
         applicationId: result.id,
         templateType: "application_received",
       });
-    } catch (error) {
-      console.error("Failed to schedule application-received email:", error);
-    }
+    } catch (error) {}
 
     return {
       id: result.id,
