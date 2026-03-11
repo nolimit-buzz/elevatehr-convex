@@ -8,8 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "docker:build": "docker buildx build --platform linux/amd64 -t ghcr.io/chijioke-udokporo/elevatehr-app:latest . --no-cache --progress=plain",
-    "docker:tag": "docker tag ghcr.io/chijioke-udokporo/elevatehr-with-convex:latest ghcr.io/chijioke-udokporo/elevatehr-app:1.0.0",
-    "docker:push": "docker push ghcr.io/chijioke-udokporo/elevatehr-app:1.0.0"
+    "docker:tag": "docker tag ghcr.io/chijioke-udokporo/elevatehr-app:latest ghcr.io/chijioke-udokporo/elevatehr-app:1.0.2",
+    "docker:push": "docker push ghcr.io/chijioke-udokporo/elevatehr-app:1.0.2"
   },
   "dependencies": {
     "@base-ui-components/react": "^1.0.0-beta.0",

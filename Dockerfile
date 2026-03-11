@@ -20,6 +20,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # Copy .env.local for build (only NEXT_PUBLIC_ vars are safe to include)
 COPY .env.local .env.local
 
+# Override NEXT_PUBLIC_ vars at build time so convex dev rewrites to 127.0.0.1
+# never leak into the production bundle
+ARG NEXT_PUBLIC_CONVEX_URL=https://api-convexy.codesordinatestudio.net.ng
+ARG NEXT_PUBLIC_CONVEX_SITE_URL=https://http-convexy.codesordinatestudio.net.ng
+ENV NEXT_PUBLIC_CONVEX_URL=$NEXT_PUBLIC_CONVEX_URL
+ENV NEXT_PUBLIC_CONVEX_SITE_URL=$NEXT_PUBLIC_CONVEX_SITE_URL
+
 RUN bun run build
 
 # Production image, copy all the files and run next
@@ -35,6 +42,7 @@ RUN mkdir .next && chown bun:bun .next
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=bun:bun /app/.next/standalone ./
 COPY --from=builder --chown=bun:bun /app/.next/static ./.next/static
+COPY --from=builder --chown=bun:bun /app/public ./public
 
 USER bun
 
