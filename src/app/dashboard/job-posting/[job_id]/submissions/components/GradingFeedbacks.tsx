@@ -23,10 +23,10 @@ export default function GradingFeedbacks({ jobData, applicant }: GradingFeedback
 
     return (
         <Box sx={{ mb: 4 }}>
-            <Accordion 
-                elevation={0} 
-                sx={{ 
-                    bgcolor: "rgba(17, 17, 17, 0.04)", 
+            <Accordion
+                elevation={0}
+                sx={{
+                    bgcolor: "rgba(17, 17, 17, 0.04)",
                     borderRadius: "8px !important",
                     '&:before': { display: 'none' }
                 }}
@@ -41,7 +41,7 @@ export default function GradingFeedbacks({ jobData, applicant }: GradingFeedback
                 </AccordionSummary>
                 <AccordionDetails sx={{ pt: 0, px: 2, pb: 2 }}>
                     <Stack spacing={3}>
-                        {validFields.map((field: any, index: number) => {
+                        {/* {validFields.map((field: any, index: number) => {
                             const response = customFieldResponses[field.key];
                             const displayValue = typeof response === 'object' && response !== null && 'value' in response
                                 ? String(response.value)
@@ -57,7 +57,7 @@ export default function GradingFeedbacks({ jobData, applicant }: GradingFeedback
                                     </Typography>
                                 </Box>
                             );
-                        })}
+                        })} */}
                     </Stack>
                 </AccordionDetails>
             </Accordion>
