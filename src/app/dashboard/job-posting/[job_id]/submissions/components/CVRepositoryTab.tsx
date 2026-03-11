@@ -162,7 +162,7 @@ export default function CVRepositoryTab({
               md: "repeat(3, 1fr)",
               xl: "repeat(4, 1fr)",
             },
-            gap: 2.5,
+            gap: 1,
           }}
         >
           {candidates.applications.map((app: any) => {
@@ -175,7 +175,7 @@ export default function CVRepositoryTab({
                 key={app.id}
                 sx={{
                   borderRadius: "5px",
-                  border: isSelected ? "2px solid #4444E2" : "1px solid rgba(0,0,0,0.10)",
+                  // border: isSelected ? "2px solid #4444E2" : "1px solid rgba(0,0,0,0.10)",
                   bgcolor: "#fff",
                   overflow: "hidden",
                   cursor: "pointer",
@@ -243,7 +243,8 @@ export default function CVRepositoryTab({
                   sx={{
                     height: 200,
                     position: "relative",
-                    bgcolor: cvUrl ? "#F7F7FF" : "#F5F5F5",
+                    // bgcolor: cvUrl ? "#F7F7FF" : "#F5F5F5",
+                    bgcolor: "#fafafa",
                     overflow: "hidden",
                   }}
                 >
@@ -357,15 +358,14 @@ export default function CVRepositoryTab({
                   px: 3,
                   py: 2,
                   borderRadius: "12px",
-                  border: isSelected ? "1.5px solid #4444E2" : "1px solid rgba(0,0,0,0.08)",
-                  bgcolor: isSelected ? "rgba(68,68,226,0.04)" : "#fafafa",
+                  bgcolor: "#fafafa",
                   transition: "all 0.15s ease",
                   cursor: "pointer",
                   "&:hover": { bgcolor: "rgba(68,68,226,0.04)" },
                 }}
               >
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                  <Box
+                  {/* <Box
                     sx={{
                       width: 40,
                       height: 40,
@@ -382,14 +382,22 @@ export default function CVRepositoryTab({
                     }}
                   >
                     {name.charAt(0).toUpperCase()}
-                  </Box>
+                  </Box> */}
+                     <PictureAsPdfIcon
+                        sx={{
+                          fontSize: 30,
+                          color: "#E53935",
+                          filter: "drop-shadow(0 2px 8px rgba(229,57,53,0.25))",
+                        }}
+                      />
+                  
                   <Box>
                     <Typography variant="body2" sx={{ fontWeight: 600, color: "rgba(17,17,17,0.84)" }}>
                       {name}
                     </Typography>
-                    <Typography variant="caption" sx={{ color: "rgba(17,17,17,0.48)" }}>
+                    {/* <Typography variant="caption" sx={{ color: "rgba(17,17,17,0.48)" }}>
                       {app.professional_info?.current_role || app.stage || "Applicant"}
-                    </Typography>
+                    </Typography> */}
                   </Box>
                 </Box>
 

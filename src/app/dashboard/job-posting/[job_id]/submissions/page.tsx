@@ -725,6 +725,7 @@ export default function Home() {
   const handleExportCVs = useCallback(async () => {
     if (!selectedEntries.length) return;
 
+    let count = 0;
     const selectedApps = candidates.applications.filter((app: any) =>
       selectedEntries.includes(String(app.id)),
     );
