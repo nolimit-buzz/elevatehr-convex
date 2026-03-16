@@ -20,6 +20,8 @@ import {
   InputBase,
   Avatar,
   styled,
+  CircularProgress,
+  Tooltip,
 } from "@mui/material";
 import {
   EllipsisHorizontalIcon,
@@ -37,6 +39,9 @@ import {
   BuildingOfficeIcon,
   StopIcon,
   CheckIcon,
+  ArrowDownTrayIcon,
+  ChevronDownIcon,
+  ArrowsUpDownIcon,
 } from "@heroicons/react/24/outline";
 
 import { useRouter } from "next/navigation";
@@ -48,22 +53,68 @@ import { useAdminRecruiters } from "@/queries/admin.queries";
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   borderBottom: `1px solid ${theme.palette.divider}`,
-  padding: "20px 24px",
+  padding: "16px 20px",
+  [theme.breakpoints.down("xl")]: {
+    padding: "12px 14px",
+  },
+  [theme.breakpoints.down("lg")]: {
+    padding: "8px 8px",
+    fontSize: "0.8125rem",
+  },
   color: theme.palette.text.secondary,
   fontSize: "0.875rem",
+  whiteSpace: "nowrap",
 }));
 
-function StatusDot({ status }: { status: RecruiterStatus }) {
-  const color = status === "active" ? "success.main" : status === "pending" ? "warning.main" : "error.main";
+const TableHeaderCell = styled(StyledTableCell)(({ theme }) => ({
+  fontWeight: 500,
+  color: theme.palette.text.secondary,
+  fontSize: "0.75rem",
+  textTransform: "capitalize",
+  padding: "12px 20px",
+  [theme.breakpoints.down("xl")]: {
+    padding: "10px 14px",
+  },
+  [theme.breakpoints.down("lg")]: {
+    padding: "8px 8px",
+  },
+  backgroundColor: "transparent",
+}));
+
+function StatusChip({ status }: { status: RecruiterStatus }) {
+  const getColors = () => {
+    switch (status) {
+      case "active":
+        return { bg: "#ECFDF5", text: "#10B981" };
+      case "pending":
+        return { bg: "#FFF7ED", text: "#F97316" };
+      case "inactive":
+        return { bg: "#FEF2F2", text: "#EF4444" };
+      default:
+        return { bg: "#F3F4F6", text: "#6B7280" };
+    }
+  };
+  const { bg, text } = getColors();
   return (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-      <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: color }} />
-      <Typography variant="body2" sx={{ fontWeight: 500, textTransform: "capitalize", color: "text.primary" }}>
-        {status}
-      </Typography>
+    <Box
+      sx={{
+        px: 1.5,
+        py: 0.4,
+        borderRadius: "20px",
+        bgcolor: bg,
+        color: text,
+        display: "inline-block",
+        fontSize: "0.75rem",
+        fontWeight: 600,
+        textTransform: "capitalize",
+      }}
+    >
+      {status}
     </Box>
   );
 }
+
+const SortIcon = () => <ArrowsUpDownIcon style={{ width: 14, height: 14, marginLeft: 4, color: "#9CA3AF" }} />;
 
 function getIndustryTagProps(industry: string) {
   const i = industry.toLowerCase();
@@ -74,6 +125,86 @@ function getIndustryTagProps(industry: string) {
     return { color: "warning.light", textColor: "warning.dark", icon: <PaintBrushIcon style={s} /> };
   if (i.includes("oil")) return { color: "primary.light", textColor: "primary.dark", icon: <BeakerIcon style={s} /> };
   return { color: "action.hover", textColor: "text.secondary", icon: <BuildingOfficeIcon style={s} /> };
+}
+
+function RecruiterMobileCard({ row, onMenuOpen, tagConfig }: { row: any; onMenuOpen: any; tagConfig: any }) {
+  return (
+    <Paper elevation={0} sx={{ ...ADMIN_CARD_SX, p: 2, mb: 2 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2 }}>
+        <Box sx={{ display: "flex", gap: 1.5 }}>
+          <Avatar
+            src={row.companyLogo}
+            sx={{
+              width: 40,
+              height: 40,
+              bgcolor: row.companyLogo ? "transparent" : "action.hover",
+              border: row.companyLogo ? "none" : "1px solid",
+              borderColor: row.companyLogo ? "transparent" : "divider",
+            }}
+          >
+            {!row.companyLogo && <BuildingOfficeIcon style={{ width: 20, height: 20, color: "rgba(17,17,17,0.58)" }} />}
+          </Avatar>
+          <Box>
+            <Typography variant="subtitle2" fontWeight={700}>
+              {row.companyName}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              {row.primaryAdmin}
+            </Typography>
+          </Box>
+        </Box>
+        <IconButton size="small" onClick={(e) => onMenuOpen(e, row)}>
+          <EllipsisHorizontalIcon style={{ width: 24, height: 24 }} />
+        </IconButton>
+      </Box>
+
+      <Stack spacing={1.5}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Typography variant="caption" color="text.secondary">
+            Status
+          </Typography>
+          <StatusChip status={row.status} />
+        </Box>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Typography variant="caption" color="text.secondary">
+            Email
+          </Typography>
+          <Tooltip title={row.email}>
+            <Typography variant="body2">
+              {row.email.length > 30 ? `${row.email.substring(0, 30)}...` : row.email}
+            </Typography>
+          </Tooltip>
+        </Box>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Typography variant="caption" color="text.secondary">
+            Industry
+          </Typography>
+          <Box
+            sx={{
+              bgcolor: tagConfig.color,
+              color: tagConfig.textColor,
+              px: 1,
+              py: 0.25,
+              borderRadius: 2,
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              gap: 0.5,
+            }}
+          >
+            {tagConfig.icon} {row.industry}
+          </Box>
+        </Box>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Typography variant="caption" color="text.secondary">
+            Usage
+          </Typography>
+          <Typography variant="body2">{row.activeJobs} active jobs</Typography>
+        </Box>
+      </Stack>
+    </Paper>
+  );
 }
 
 export default function RecruiterDirectoryPage() {
@@ -121,251 +252,370 @@ export default function RecruiterDirectoryPage() {
 
   return (
     <Box sx={{ width: "100%", overflow: "hidden", pb: 4 }}>
-      {/* Page Header */}
-      <Box sx={{ display: "flex", justifyContent: "flex-end", alignItems: "center", mb: 3, flexWrap: "wrap", gap: 2 }}>
-        <Button
-          variant="contained"
-          disableElevation
-          sx={{
-            bgcolor: "primary.main",
-            color: "primary.contrastText",
-            textTransform: "none",
-            fontWeight: 500,
-            borderRadius: "30px",
-            px: 2.5,
-            py: 1,
-            "&:hover": { bgcolor: "primary.dark" },
-            boxShadow: "none",
-          }}
-          startIcon={<PlusIcon style={{ width: 20, height: 20 }} />}
-          onClick={() => setNewRecruiterOpen(true)}
-        >
-          Add New Recruiter
-        </Button>
-      </Box>
-
-      {/* Table Container */}
-      <TableContainer
-        component={Paper}
-        elevation={0}
-        sx={{
-          ...ADMIN_CARD_SX,
-          overflow: "hidden",
-        }}
-      >
-        {/* Table Toolbar - without "Recruiter List" title */}
+      {/* Page Header Redesign */}
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
         <Box
           sx={{
             display: "flex",
-            justifyContent: "flex-start",
             alignItems: "center",
-            px: 3,
-            py: 2.5,
-            flexWrap: "wrap",
-            gap: 2,
+            bgcolor: "background.paper",
+            border: "1px solid",
+            borderColor: "divider",
+            borderRadius: "30px",
+            px: 2,
+            py: 0.75,
+            width: { xs: "100%", sm: 280 },
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              bgcolor: "background.paper",
-              border: "1px solid",
-              borderColor: "divider",
-              borderRadius: "30px",
-              px: 2,
-              py: 0.75,
-              width: { xs: "100%", sm: 280 },
-            }}
-          >
-            <MagnifyingGlassIcon style={{ width: 20, height: 20, color: "gray" }} />
-            <InputBase
-              placeholder="Search here..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              sx={{ fontSize: "0.875rem", width: "100%", ml: 1 }}
-            />
+          <MagnifyingGlassIcon style={{ width: 20, height: 20, color: "gray" }} />
+          <InputBase
+            placeholder="Search here..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            sx={{ fontSize: "0.875rem", width: "100%", ml: 1 }}
+          />
+        </Box>
+
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          {/* Showing Count */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              Showing
+            </Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              endIcon={<ChevronDownIcon style={{ width: 14, height: 14 }} />}
+              sx={{
+                borderRadius: "8px",
+                borderColor: "divider",
+                color: "text.primary",
+                textTransform: "none",
+                bgcolor: "#F3F4F6",
+                minWidth: "70px",
+                justifyContent: "space-between",
+              }}
+            >
+              10
+            </Button>
           </Box>
 
+          {/* Filter Button */}
           <Button
             variant="outlined"
+            startIcon={<AdjustmentsHorizontalIcon style={{ width: 18, height: 18 }} />}
             sx={{
-              borderRadius: "30px",
-              color: "text.primary",
+              borderRadius: "8px",
               borderColor: "divider",
+              color: "text.primary",
               textTransform: "none",
-              fontWeight: 600,
               px: 2,
-              py: 0.75,
-              "&:hover": { bgcolor: "action.hover" },
             }}
-            startIcon={<AdjustmentsHorizontalIcon style={{ width: 20, height: 20 }} />}
           >
             Filter
           </Button>
+
+
+
+          {/* Add New Button */}
+          <Button
+            variant="contained"
+            disableElevation
+            startIcon={<PlusIcon style={{ width: 20, height: 20 }} />}
+            sx={{
+              bgcolor: "#3B82F6",
+              "&:hover": { bgcolor: "#2563EB" },
+              borderRadius: "8px",
+              textTransform: "none",
+              px: 3,
+            }}
+            onClick={() => setNewRecruiterOpen(true)}
+          >
+            Add New Recruiter
+          </Button>
         </Box>
-        <Table>
-          <TableHead>
-            <TableRow sx={{ "& th": { bgcolor: "transparent", borderBottom: "1px solid", borderColor: "divider" } }}>
-              <StyledTableCell padding="checkbox">
-                <Checkbox
-                  size="small"
-                  icon={<StopIcon style={{ width: 18, height: 18 }} />}
-                  checkedIcon={<CheckIcon style={{ width: 18, height: 18 }} />}
-                />
-              </StyledTableCell>
-              <StyledTableCell sx={{ fontWeight: 600, color: "text.primary" }}>Name</StyledTableCell>
-              <StyledTableCell sx={{ fontWeight: 600, color: "text.primary" }}>E-mail</StyledTableCell>
-              <StyledTableCell sx={{ fontWeight: 600, color: "text.primary" }}>Account Date</StyledTableCell>
-              <StyledTableCell sx={{ fontWeight: 600, color: "text.primary" }}>Industry</StyledTableCell>
-              <StyledTableCell sx={{ fontWeight: 600, color: "text.primary" }}>Usage</StyledTableCell>
-              <StyledTableCell sx={{ fontWeight: 600, color: "text.primary" }}>Status</StyledTableCell>
-              <StyledTableCell align="right" sx={{ fontWeight: 600, color: "text.primary" }}>
-                Action
-              </StyledTableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Loading recruiters...
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 4 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    No recruiters found.
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map((row) => {
-                const tagConfig = getIndustryTagProps(row.industry);
-                return (
-                  <TableRow key={row.id} hover>
-                    <StyledTableCell padding="checkbox">
-                      <Checkbox
-                        size="small"
-                        icon={<StopIcon style={{ width: 18, height: 18 }} />}
-                        checkedIcon={<CheckIcon style={{ width: 18, height: 18 }} />}
-                      />
-                    </StyledTableCell>
-                    <StyledTableCell>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                        <Avatar
-                          src={row.companyLogo}
-                          sx={{
-                            width: 36,
-                            height: 36,
-                            bgcolor: row.companyLogo ? "transparent" : "action.hover",
-                            border: row.companyLogo ? "none" : "1px solid",
-                            borderColor: row.companyLogo ? "transparent" : "divider",
-                          }}
-                        >
-                          {!row.companyLogo && (
-                            <BuildingOfficeIcon style={{ width: 18, height: 18, color: "rgba(17,17,17,0.58)" }} />
-                          )}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="body2" fontWeight={600} color="text.primary">
-                            {row.companyName}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {row.primaryAdmin}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </StyledTableCell>
-                    <StyledTableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {row.email}
-                      </Typography>
-                    </StyledTableCell>
-                    <StyledTableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {row.joinedAt}
-                      </Typography>
-                    </StyledTableCell>
-                    <StyledTableCell>
-                      <Stack direction="row" gap={1} alignItems="center">
-                        <Box
-                          sx={{
-                            bgcolor: tagConfig.color,
-                            color: tagConfig.textColor,
-                            px: 1,
-                            py: 0.25,
-                            borderRadius: 2,
-                            fontSize: "0.75rem",
-                            fontWeight: 600,
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 0.5,
-                          }}
-                        >
-                          {tagConfig.icon} {row.industry}
-                        </Box>
-                      </Stack>
-                    </StyledTableCell>
-                    <StyledTableCell>
-                      <Typography variant="body2" color="text.secondary">
-                        {row.activeJobs} active jobs
-                      </Typography>
-                    </StyledTableCell>
-                    <StyledTableCell>
-                      <StatusDot status={row.status} />
-                    </StyledTableCell>
-                    <StyledTableCell align="right">
-                      <IconButton size="small" onClick={(e) => handleOpenMenu(e, row)}>
-                        <EllipsisHorizontalIcon style={{ width: 24, height: 24 }} />
-                      </IconButton>
-                    </StyledTableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-        {/* Pagination footer */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            p: 2,
-            borderTop: "1px solid",
-            borderColor: "divider",
-          }}
-        >
-          <Box sx={{ border: "1px solid", borderColor: "divider", px: 1.5, py: 0.5, borderRadius: 2 }}>
-            <Typography variant="body2" color="text.secondary">
-              100 Page
-            </Typography>
-          </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
-              Page 1
-            </Typography>
-            <IconButton size="small" sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2 }}>
-              <ChevronLeftIcon style={{ width: 24, height: 24 }} />
-            </IconButton>
-            <IconButton
-              size="small"
+      </Box>
+
+      {/* Content Area */}
+      {isLoading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+          <CircularProgress />
+        </Box>
+      ) : filtered.length === 0 ? (
+        <Paper elevation={0} sx={{ ...ADMIN_CARD_SX, p: 4, textAlign: "center" }}>
+          <Typography variant="body2" color="text.secondary">
+            No recruiters found.
+          </Typography>
+        </Paper>
+      ) : (
+        <>
+          {/* Table for Desktop & Large Tablets */}
+          <TableContainer
+            component={Paper}
+            elevation={0}
+            sx={{
+              ...ADMIN_CARD_SX,
+              display: { xs: "none", md: "block" },
+              width: "100%",
+              overflowX: "scroll", // Disable scroll
+              scrollbarWidth: "none",
+            }}
+          >
+            {/* Table Toolbar */}
+            <Box
               sx={{
-                bgcolor: "primary.main",
-                color: "primary.contrastText",
-                borderRadius: 2,
-                "&:hover": { bgcolor: "primary.dark" },
+                display: "flex",
+                justifyContent: "flex-start",
+                alignItems: "center",
+                px: 3,
+                py: 2,
+              }}
+            />
+            <Table>
+              <TableHead>
+                <TableRow sx={{ "& th": { bgcolor: "transparent", borderBottom: "1px solid", borderColor: "divider" } }}>
+                  <TableHeaderCell padding="checkbox">
+                    <Checkbox
+                      size="small"
+                      icon={<StopIcon style={{ width: 18, height: 18 }} />}
+                      checkedIcon={<CheckIcon style={{ width: 18, height: 18 }} />}
+                    />
+                  </TableHeaderCell>
+                  <TableHeaderCell>
+                    Name <SortIcon />
+                  </TableHeaderCell>
+                  <TableHeaderCell>
+                    E-mail <SortIcon />
+                  </TableHeaderCell>
+                  <TableHeaderCell>
+                    Account Date <SortIcon />
+                  </TableHeaderCell>
+                  <TableHeaderCell>
+                    Industry <SortIcon />
+                  </TableHeaderCell>
+                  <TableHeaderCell>
+                    Usage <SortIcon />
+                  </TableHeaderCell>
+                  <TableHeaderCell>
+                    Status <SortIcon />
+                  </TableHeaderCell>
+                  <TableHeaderCell align="right">
+                    Action <SortIcon />
+                  </TableHeaderCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filtered.map((row) => {
+                  const tagConfig = getIndustryTagProps(row.industry);
+                  return (
+                    <TableRow key={row.id} hover>
+                      <StyledTableCell padding="checkbox">
+                        <Checkbox
+                          size="small"
+                          icon={<StopIcon style={{ width: 18, height: 18 }} />}
+                          checkedIcon={<CheckIcon style={{ width: 18, height: 18 }} />}
+                        />
+                      </StyledTableCell>
+                      <StyledTableCell>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                          <Avatar
+                            src={row.companyLogo}
+                            sx={{
+                              width: 28,
+                              height: 28,
+                              bgcolor: row.companyLogo ? "transparent" : "action.hover",
+                              border: row.companyLogo ? "none" : "1px solid",
+                              borderColor: row.companyLogo ? "transparent" : "divider",
+                            }}
+                          >
+                            {!row.companyLogo && (
+                              <BuildingOfficeIcon style={{ width: 14, height: 14, color: "rgba(17,17,17,0.58)" }} />
+                            )}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="body2" fontWeight={600} color="text.primary">
+                              {row.companyName}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {row.primaryAdmin}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </StyledTableCell>
+                      <StyledTableCell>
+                        <Tooltip title={row.email}>
+                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: "inherit" }}>
+                            {row.email.length > 20 ? `${row.email.substring(0, 10)}...` : row.email}
+                          </Typography>
+                        </Tooltip>
+                      </StyledTableCell>
+                      <StyledTableCell>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: "inherit" }}>
+                          {row.joinedAt}
+                        </Typography>
+                      </StyledTableCell>
+                      <StyledTableCell>
+                        <Stack direction="row" gap={1} alignItems="center">
+                          <Box
+                            sx={{
+                              bgcolor: tagConfig.color,
+                              color: tagConfig.textColor,
+                              px: 1,
+                              py: 0.25,
+                              borderRadius: 2,
+                              fontSize: "0.75rem",
+                              fontWeight: 600,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 0.5,
+                            }}
+                          >
+                            {tagConfig.icon} {row.industry}
+                          </Box>
+                        </Stack>
+                      </StyledTableCell>
+                      <StyledTableCell>
+                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: "inherit" }}>
+                          {row.activeJobs} active jobs
+                        </Typography>
+                      </StyledTableCell>
+                      <StyledTableCell>
+                        <StatusChip status={row.status} />
+                      </StyledTableCell>
+                      <StyledTableCell align="right">
+                        <IconButton size="small" onClick={(e) => handleOpenMenu(e, row)}>
+                          <EllipsisHorizontalIcon style={{ width: 24, height: 24, color: "#9CA3AF" }} />
+                        </IconButton>
+                      </StyledTableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+
+            {/* Pagination footer */}
+            {/* Pagination footer redesigned */}
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                px: 3,
+                py: 2.5,
+                borderTop: "1px solid",
+                borderColor: "divider",
               }}
             >
-              <ChevronRightIcon style={{ width: 24, height: 24 }} />
-            </IconButton>
+              <Button
+                size="small"
+                startIcon={<ChevronLeftIcon style={{ width: 18, height: 18 }} />}
+                sx={{ color: "text.secondary", textTransform: "none", fontWeight: 500 }}
+              >
+                Previous
+              </Button>
+
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                {[1, 2, 3, 4, "...", 10, 11].map((p, i) => (
+                  <Box
+                    key={i}
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: "8px",
+                      cursor: "pointer",
+                      fontSize: "0.875rem",
+                      fontWeight: p === 3 ? 600 : 400,
+                      bgcolor: p === 3 ? "#3B82F6" : "transparent",
+                      color: p === 3 ? "white" : "text.secondary",
+                      "&:hover": { bgcolor: p === 3 ? "#2563EB" : "action.hover" },
+                    }}
+                  >
+                    {p}
+                  </Box>
+                ))}
+              </Box>
+
+              <Button
+                size="small"
+                endIcon={<ChevronRightIcon style={{ width: 18, height: 18 }} />}
+                sx={{ color: "text.secondary", textTransform: "none", fontWeight: 500 }}
+              >
+                Next
+              </Button>
+            </Box>
+          </TableContainer>
+
+          {/* Cards for Mobile & Small Tablets */}
+          <Box sx={{ display: { xs: "block", md: "none" } }}>
+            <Box sx={{ mb: 3 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  bgcolor: "background.paper",
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: "30px",
+                  px: 2,
+                  py: 0.75,
+                  mb: 2,
+                }}
+              >
+                <MagnifyingGlassIcon style={{ width: 20, height: 20, color: "gray" }} />
+                <InputBase
+                  placeholder="Search here..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  sx={{ fontSize: "0.875rem", width: "100%", ml: 1 }}
+                />
+              </Box>
+              <Button
+                fullWidth
+                variant="outlined"
+                sx={{
+                  borderRadius: "30px",
+                  color: "text.primary",
+                  borderColor: "divider",
+                  textTransform: "none",
+                  fontWeight: 600,
+                  py: 1,
+                }}
+                startIcon={<AdjustmentsHorizontalIcon style={{ width: 20, height: 20 }} />}
+              >
+                Filter
+              </Button>
+            </Box>
+
+            {filtered.map((row) => (
+              <RecruiterMobileCard
+                key={row.id}
+                row={row}
+                onMenuOpen={handleOpenMenu}
+                tagConfig={getIndustryTagProps(row.industry)}
+              />
+            ))}
+
+            {/* Simple Pagination for Mobile */}
+            <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 2, mt: 3, pt: 2 }}>
+              <IconButton size="small" sx={{ border: "1px solid", borderColor: "divider" }}>
+                <ChevronLeftIcon style={{ width: 20, height: 20 }} />
+              </IconButton>
+              <Typography variant="body2" fontWeight={600}>
+                Page 1
+              </Typography>
+              <IconButton
+                size="small"
+                sx={{ bgcolor: "primary.main", color: "primary.contrastText", "&:hover": { bgcolor: "primary.dark" } }}
+              >
+                <ChevronRightIcon style={{ width: 20, height: 20 }} />
+              </IconButton>
+            </Box>
           </Box>
-        </Box>
-      </TableContainer>
+        </>
+      )}
 
       <Menu
         anchorEl={anchorEl}
