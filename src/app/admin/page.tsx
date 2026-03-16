@@ -89,6 +89,8 @@ export default function AdminDashboardPage() {
       subtitle: "Active recruiter accounts",
       value: stats?.kpis.totalRecruiters ?? 0,
       icon: <UserGroupIcon style={iconSize} />,
+      linkText: "View all recruiters",
+      linkHref: "/admin/recruiters",
     },
     {
       id: "activeJobs",
@@ -96,13 +98,17 @@ export default function AdminDashboardPage() {
       subtitle: "Open positions",
       value: stats?.kpis.activeJobs ?? 0,
       icon: <BriefcaseIcon style={iconSize} />,
+      linkText: "Manage job postings",
+      linkHref: "/admin/jobs",
     },
     {
       id: "candidates",
-      title: "Candidates",
-      subtitle: "Total applicants",
+      title: "Total Candidates",
+      subtitle: "Across all jobs",
       value: stats?.kpis.candidates ?? 0,
       icon: <UserGroupIcon style={iconSize} />,
+      linkText: "Go to candidate pool",
+      linkHref: "/admin/candidates",
     },
     {
       id: "assessments",
@@ -110,6 +116,8 @@ export default function AdminDashboardPage() {
       subtitle: "Completed this month",
       value: stats?.kpis.assessments ?? 0,
       icon: <ClipboardDocumentCheckIcon style={iconSize} />,
+      linkText: "View assessment reports",
+      linkHref: "/admin/assessments",
     },
   ];
 
@@ -118,53 +126,88 @@ export default function AdminDashboardPage() {
       {/* KPI overview cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {kpiCards.map((card) => (
-          <Grid item xs={12} sm={6} md={3} key={card.id}>
+          <Grid item xs={12} sm={6} md={6} key={card.id}>
             <Paper
               elevation={0}
               sx={{
                 ...cardSx,
-                p: 2.5,
+                p: 0,
                 height: "100%",
                 display: "flex",
                 flexDirection: "column",
+                border: "1px solid",
+                borderColor: "divider",
+                borderRadius: 2,
+                overflow: "hidden",
+                transition: "all 0.2s ease-in-out",
+                "&:hover": {
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                  borderColor: "primary.main",
+                },
               }}
             >
-              <Stack direction="row" alignItems="flex-start" spacing={1.5}>
-                <Box
-                  sx={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: "50%",
-                    bgcolor: "primary.light",
-                    color: "primary.main",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                    "& svg": { width: 22, height: 22 },
-                  }}
-                >
-                  {card.icon}
-                </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="subtitle1" fontWeight={600} color="text.primary">
-                    {card.title}
+              <Box sx={{ p: 2.5, flex: 1 }}>
+                <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
+                  <Box
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 1.5,
+                      bgcolor: "action.hover",
+                      color: "text.primary",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      "& svg": { width: 24, height: 24 },
+                    }}
+                  >
+                    {card.icon}
+                  </Box>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography variant="h6" fontWeight={700} color="text.primary" sx={{ lineHeight: 1.2 }}>
+                      {card.title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {card.subtitle}
+                    </Typography>
+                  </Box>
+                </Stack>
+                <Box>
+                  <Typography
+                    variant="h3"
+                    fontWeight={800}
+                    color="text.primary"
+                    sx={{ letterSpacing: "-0.04em", lineHeight: 1 }}
+                  >
+                    {card.value}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.25 }}>
-                    {card.subtitle}
-                  </Typography>
                 </Box>
-              </Stack>
-              <Box sx={{ mt: "auto", pt: 2 }}>
-                <Typography
-                  variant="h2"
-                  fontWeight={700}
-                  color="text.primary"
-                  sx={{ letterSpacing: "-0.02em", lineHeight: 1.2 }}
-                >
-                  {card.value}
-                </Typography>
               </Box>
+              <Link
+                href={card.linkHref}
+                underline="none"
+                sx={{
+                  borderTop: "1px solid",
+                  borderColor: "divider",
+                  px: 2.5,
+                  py: 1.5,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  color: "text.secondary",
+                  transition: "all 0.2s",
+                  "&:hover": {
+                    bgcolor: "action.hover",
+                    color: "primary.main",
+                  },
+                }}
+              >
+                <Typography variant="caption" fontWeight={600} sx={{ fontSize: "0.75rem" }}>
+                  {card.linkText}
+                </Typography>
+                <ChevronRightIcon style={{ width: 16, height: 16 }} />
+              </Link>
             </Paper>
           </Grid>
         ))}

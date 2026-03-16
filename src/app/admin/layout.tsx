@@ -76,7 +76,7 @@ function AdminLayoutInner({ children }: { children: React.ReactNode }) {
             component="main"
             sx={{
               flex: 1,
-              px: { xs: 3, md: "120px" },
+              px: { xs: 3, md: "40px" },
               py: 3,
               display: "flex",
               flexDirection: "column",

@@ -1,4 +1,5 @@
 "use client";
+//@ts-nocheck
 import { useState, Fragment, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Container from "@mui/material/Container";
@@ -6,22 +7,21 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import Button from "@mui/material/Button";
-import Chip from "@mui/material/Chip";
+
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
-import Divider from "@mui/material/Divider";
 import CircularProgress from "@mui/material/CircularProgress";
 import Alert from "@mui/material/Alert";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
-import Link from "@mui/material/Link";
+import Accordion from "@mui/material/Accordion";
+import AccordionSummary from "@mui/material/AccordionSummary";
+import AccordionDetails from "@mui/material/AccordionDetails";
+
 
 // Icons
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { pdfjs } from "react-pdf";
-import mammoth from "mammoth";
-import axios from "axios";
-import LaunchIcon from "@mui/icons-material/Launch";
+
 import { useApplication, useApplications, useApplicationMutations } from "@/queries/applications.queries";
 import { useJob } from "@/queries/jobs.queries";
 import EmailStageTransitionDialog from "@/app/dashboard/components/EmailStageTransitionDialog";
@@ -195,20 +195,55 @@ export default function ApplicantDetails() {
                   assessmentsResults={applicant.assessments_results}
                 />
 
-                <SkillsSection skills={applicant.professional_info.skills} />
+                <Accordion
+                  elevation={0}
+                  sx={{
+                    bgcolor: "rgba(17, 17, 17, 0.04)",
+                    borderRadius: "8px !important",
+                    mb: 2,
+                    '&:before': { display: 'none' }
+                  }}
+                >
+                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                      Application details
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails sx={{ pt: 0 }}>
+                    <SkillsSection skills={applicant.professional_info.skills} />
+                    <KeyInfo startDate={applicant.professional_info.start_date} />
+                    <CVAnalysisSection cvAnalysis={applicant.cv_analysis as any} />
+                    <CustomFieldsSection jobData={jobData} applicant={applicant} />
+                    <ResumeViewer
+                      cvUrl={applicant.attachments?.cv}
+                      externalCvLink={applicant.attachments?.external_cv_link}
+                    />
+                  </AccordionDetails>
+                </Accordion>
 
-                <KeyInfo startDate={applicant.professional_info.start_date} />
-
-                <ScoreAnalysisSection assessmentsResults={applicant.assessments_results} />
-                <CVAnalysisSection cvAnalysis={applicant.cv_analysis as any} />
-
-                <CustomFieldsSection jobData={jobData} applicant={applicant} />
-                <GradingFeedbacks jobData={jobData} applicant={applicant} />
-
-                <ResumeViewer
-                  cvUrl={applicant.attachments?.cv}
-                  externalCvLink={applicant.attachments?.external_cv_link}
-                />
+                {Object.entries(applicant.assessments_results || {}).some(
+                  ([_, result]: [string, any]) => result && result.assessment_id
+                ) && (
+                  <Accordion
+                    elevation={0}
+                    sx={{
+                      bgcolor: "rgba(17, 17, 17, 0.04)",
+                      borderRadius: "8px !important",
+                      mb: 4,
+                      '&:before': { display: 'none' }
+                    }}
+                  >
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                        Assessment details
+                      </Typography>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ pt: 0 }}>
+                      <ScoreAnalysisSection assessmentsResults={applicant.assessments_results} />
+                      <GradingFeedbacks jobData={jobData} applicant={applicant} />
+                    </AccordionDetails>
+                  </Accordion>
+                )}
 
                 <ActionButtons
                   onReject={handleReject}

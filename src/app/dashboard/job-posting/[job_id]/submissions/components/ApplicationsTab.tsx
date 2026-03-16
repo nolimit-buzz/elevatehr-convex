@@ -256,6 +256,7 @@ export default function ApplicationsTab({
             }}
           >
             <MenuOpenIcon />
+
           </IconButton>
         )}
 
@@ -279,14 +280,19 @@ export default function ApplicationsTab({
               onClick={() => setIsFilterExpanded(true)}
               sx={{
                 position: "absolute",
-                left: 0,
-                top: "2",
+                left: 4,
+                top: "14px",
                 color: "rgba(17, 17, 17, 0.68)",
                 zIndex: 50,
                 "&:hover": { bgcolor: "transparent" },
               }}
             >
-              <AutoAwesomeMosaicOutlinedIcon sx={{ height: "30px", width: "30px" }} />
+              <Box>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6" width={24} height={24}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+              </Box>
+
             </IconButton>
           )}
           <Box
@@ -340,7 +346,7 @@ export default function ApplicationsTab({
               subTabValue={subTabValue}
               stageTotals={stageTotals}
               onTabChange={handleSubTabChange}
-              onFilterClick={() => {}} // This would need to be passed correctly if used
+              onFilterClick={() => { }} // This would need to be passed correctly if used
             />
           </Box>
 
