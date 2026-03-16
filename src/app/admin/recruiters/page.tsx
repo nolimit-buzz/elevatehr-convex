@@ -127,6 +127,30 @@ function getIndustryTagProps(industry: string) {
   return { color: "action.hover", textColor: "text.secondary", icon: <BuildingOfficeIcon style={s} /> };
 }
 
+function ScrollingEmail({ email }: { email: string }) {
+  return (
+    <Box
+      sx={{
+        width: "120px",
+        overflow: "hidden",
+        whiteSpace: "nowrap",
+        cursor: "default",
+        "& .scroll-text": {
+          display: "inline-block",
+          transition: "transform 2s ease-in-out",
+        },
+        "&:hover .scroll-text": {
+          transform: "translateX(min(0px, calc(120px - 100%)))",
+        },
+      }}
+    >
+      <Typography variant="body2" className="scroll-text" color="text.secondary" sx={{ fontSize: "inherit" }}>
+        {email}
+      </Typography>
+    </Box>
+  );
+}
+
 function RecruiterMobileCard({ row, onMenuOpen, tagConfig }: { row: any; onMenuOpen: any; tagConfig: any }) {
   return (
     <Paper elevation={0} sx={{ ...ADMIN_CARD_SX, p: 2, mb: 2 }}>
@@ -169,11 +193,7 @@ function RecruiterMobileCard({ row, onMenuOpen, tagConfig }: { row: any; onMenuO
           <Typography variant="caption" color="text.secondary">
             Email
           </Typography>
-          <Tooltip title={row.email}>
-            <Typography variant="body2">
-              {row.email.length > 30 ? `${row.email.substring(0, 30)}...` : row.email}
-            </Typography>
-          </Tooltip>
+          <ScrollingEmail email={row.email} />
         </Box>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Typography variant="caption" color="text.secondary">
@@ -443,11 +463,7 @@ export default function RecruiterDirectoryPage() {
                         </Box>
                       </StyledTableCell>
                       <StyledTableCell>
-                        <Tooltip title={row.email}>
-                          <Typography variant="body2" color="text.secondary" sx={{ fontSize: "inherit" }}>
-                            {row.email.length > 20 ? `${row.email.substring(0, 10)}...` : row.email}
-                          </Typography>
-                        </Tooltip>
+                        <ScrollingEmail email={row.email} />
                       </StyledTableCell>
                       <StyledTableCell>
                         <Typography variant="body2" color="text.secondary" sx={{ fontSize: "inherit" }}>
