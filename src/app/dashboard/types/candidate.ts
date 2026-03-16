@@ -45,9 +45,9 @@ export interface Candidate {
     [key: string]: any;
   };
   cv_analysis?: {
-    experience_years: number;
-    skills: string[];
-    education: string[];
+    experience_years?: number;
+    skills?: string[];
+    education?: string[];
     [key: string]: any;
   };
   attachments?: {
@@ -61,6 +61,7 @@ import type { CompanyApplication } from "@/queries/applications.queries";
 
 export interface CandidateResponse {
   applications: CompanyApplication[];
+  total?: number;
 }
 
 export interface SkillColor {

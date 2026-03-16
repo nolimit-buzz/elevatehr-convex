@@ -28,6 +28,7 @@ import {
 } from "@mui/material";
 import React, { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import NextLink from "next/link";
 import "react-quill/dist/quill.snow.css";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import BlockIcon from "@mui/icons-material/Block";
@@ -511,14 +512,21 @@ export default function CandidateListSection({
             Object.entries(candidate.assessments_results).map(([type, result]: [string, any]) => {
               if (result) {
                 const status = result.assessment_submission_status || result.assessment_status;
-                console.log("[Assessment Chip Debug]", {
-                  type,
-                  result,
-                  candidateTopLevelScore: (candidate as any).assessment_score,
-                  candidateAssessmentsResults: candidate.assessments_results,
-                });
                 if (status) {
-                  let label = `${type
+                  // Try to find a better label from phaseOptions
+                  let assessmentName = "";
+                  // Search through all stages in phaseOptions for a matching assessment ID
+                  Object.values(phaseOptions).some((stageOptions) => {
+                    const match = stageOptions.find((opt) => opt.id === result.assessment_id);
+                    if (match) {
+                      // Remove "Send " prefix if it exists to get just the title
+                      assessmentName = match.label.replace(/^Send\s+/, "");
+                      return true;
+                    }
+                    return false;
+                  });
+
+                  let label = assessmentName || `${type
                     .split("_")
                     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
                     .join(" ")}`;
@@ -533,8 +541,10 @@ export default function CandidateListSection({
 
                   // Determine colors based on assessment type and status
                   let bgColor, textColor;
-                  if (type === "technical_assessment") {
-                    if (result.assessment_submission_link) {
+                  const isTechnical = type === "technical_assessment" || (result.assessment_type === "technical_assessment");
+
+                  if (isTechnical) {
+                    if (result.assessment_submission_link || status === "submitted") {
                       bgColor = "#E3F2FD"; // Light blue for technical assessment submitted
                       textColor = "#1976D2"; // Dark blue text
                     } else if (status === "sent") {
@@ -561,7 +571,7 @@ export default function CandidateListSection({
                     }
                   }
 
-                  return (
+                  const chip = (
                     <Chip
                       key={type}
                       size="small"
@@ -570,12 +580,30 @@ export default function CandidateListSection({
                         backgroundColor: bgColor,
                         color: textColor,
                         fontWeight: 500,
+                        cursor: isTechnical ? "pointer" : "default",
+                        textDecoration: isTechnical ? "underline" : "none",
                         "& .MuiChip-label": {
                           px: 1,
                         },
                       }}
                     />
                   );
+
+                  if (isTechnical) {
+                    return (
+                      <NextLink
+                        key={type}
+                        href={`/dashboard/job-posting/${candidate.job_id}/submissions/${candidate.id}/assessment/${result.assessment_id}/grade`}
+                        style={{ textDecoration: 'none' }}
+                        onClick={(e) => e.stopPropagation()}
+                        passHref
+                      >
+                        {chip}
+                      </NextLink>
+                    );
+                  }
+
+                  return chip;
                 }
               }
               return null;

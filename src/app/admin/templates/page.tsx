@@ -6,11 +6,72 @@ import { PlusIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import { ADMIN_CARD_SX } from "../styles";
 import { useAdminEmailTemplatesList } from "@/queries/adminEmailTemplates.queries";
 
+const DEFAULT_TEMPLATES = [
+  { id: "blank", title: "Blank document", subtitle: "", previewType: "blank" },
+  { id: "software", title: "Software develop...", subtitle: "by PandaDoc", previewType: "software" },
+  { id: "resume-serif", title: "Resume", subtitle: "Serif", previewType: "resume-serif" },
+  { id: "privacy", title: "Privacy policy", subtitle: "by UpCounsel", previewType: "privacy" },
+  { id: "resume-coral", title: "Resume", subtitle: "Coral", previewType: "resume-coral" },
+  { id: "letter", title: "Letter", subtitle: "Spearmint", previewType: "letter" },
+  { id: "project", title: "Project proposal", subtitle: "Tropic", previewType: "project" },
+];
+
+function TemplateCard({ template }: { template: (typeof DEFAULT_TEMPLATES)[0] }) {
+  return (
+    <Box sx={{ width: 140, cursor: "pointer", "&:hover .preview": { borderColor: "primary.main" } }}>
+      <Paper
+        className="preview"
+        elevation={0}
+        sx={{
+          width: 140,
+          height: 180,
+          borderRadius: "4px",
+          border: "1px solid",
+          borderColor: "rgba(0,0,0,0.08)",
+          bgcolor: "#fff",
+          mb: 1,
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+          transition: "border-color 0.2s",
+        }}
+      >
+        {template.previewType === "blank" ? (
+          <Box sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <PlusIcon style={{ width: 48, height: 48, color: "rgba(0,0,0,0.12)" }} />
+          </Box>
+        ) : (
+          <Box sx={{ flex: 1, p: 1.5 }}>
+            <Box sx={{ width: "100%", height: "100%", bgcolor: "rgba(0,0,0,0.02)", borderRadius: "2px", p: 1 }}>
+              <Box sx={{ width: "60%", height: 4, bgcolor: "rgba(0,0,0,0.06)", mb: 1 }} />
+              <Box sx={{ width: "100%", height: 2, bgcolor: "rgba(0,0,0,0.04)", mb: 0.5 }} />
+              <Box sx={{ width: "100%", height: 2, bgcolor: "rgba(0,0,0,0.04)", mb: 0.5 }} />
+              <Box sx={{ width: "80%", height: 2, bgcolor: "rgba(0,0,0,0.04)", mb: 2 }} />
+              <Box sx={{ width: "40%", height: 4, bgcolor: "rgba(0,0,0,0.06)", mb: 1 }} />
+              <Box sx={{ width: "100%", height: 2, bgcolor: "rgba(0,0,0,0.04)", mb: 0.5 }} />
+              <Box sx={{ width: "90%", height: 2, bgcolor: "rgba(0,0,0,0.04)" }} />
+            </Box>
+          </Box>
+        )}
+      </Paper>
+      <Typography variant="body2" fontWeight={500} noWrap sx={{ color: "text.primary", fontSize: "0.875rem" }}>
+        {template.title}
+      </Typography>
+      {template.subtitle && (
+        <Typography variant="caption" color="text.secondary" noWrap sx={{ display: "block" }}>
+          {template.subtitle}
+        </Typography>
+      )}
+    </Box>
+  );
+}
+
 export default function GlobalCommunicationTemplatesPage() {
   const templates = useAdminEmailTemplatesList();
 
   return (
     <Box sx={{ width: "100%", pb: 4 }}>
+      {/* ─── Header ───────────────────────────────────────────────────────────── */}
       <Box
         sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2, mb: 4 }}
       >
@@ -36,6 +97,31 @@ export default function GlobalCommunicationTemplatesPage() {
         </Button>
       </Box>
 
+      {/* ─── Template Gallery ─────────────────────────────────────────────────── */}
+      <Box sx={{ mb: 6 }}>
+        <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2, color: "text.primary" }}>
+          Start a new template
+        </Typography>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 3,
+            overflowX: "auto",
+            pb: 2,
+            "&::-webkit-scrollbar": { height: 6 },
+            "&::-webkit-scrollbar-thumb": { bgcolor: "rgba(0,0,0,0.05)", borderRadius: 3 },
+          }}
+        >
+          {DEFAULT_TEMPLATES.map((template) => (
+            <TemplateCard key={template.id} template={template} />
+          ))}
+        </Box>
+      </Box>
+
+      {/* ─── Existing Templates List ─────────────────────────────────────────── */}
+      <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 2, color: "text.primary" }}>
+        Recent templates
+      </Typography>
       {templates === undefined ? (
         <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
           <CircularProgress />

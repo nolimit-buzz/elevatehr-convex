@@ -17,6 +17,8 @@ interface AssessmentSuccessModalProps {
   onClose: () => void;
   savedAssessmentId: string | null;
   router: AppRouterInstance;
+  isSimulation?: boolean;
+  backUrl?: string;
 }
 
 export default function AssessmentSuccessModal({
@@ -24,6 +26,8 @@ export default function AssessmentSuccessModal({
   onClose,
   savedAssessmentId,
   router,
+  isSimulation = false,
+  backUrl = "/dashboard/assessments",
 }: AssessmentSuccessModalProps) {
   return (
     <Dialog
@@ -83,11 +87,14 @@ export default function AssessmentSuccessModal({
         </Box>
         <Stack spacing={2}>
           <Button
-            component="a"
-            href={`/assessment?assessment_id=${savedAssessmentId}`}
+            {...(!isSimulation && {
+              component: "a",
+              href: `/assessment?assessment_id=${savedAssessmentId}`,
+              target: "_blank",
+            })}
             fullWidth
             variant="contained"
-            target="_blank"
+            onClick={isSimulation ? undefined : undefined} // already handled by component="a" if not simulation
             sx={{
               bgcolor: "#4444E2",
               color: "#fff",
@@ -97,7 +104,8 @@ export default function AssessmentSuccessModal({
               py: 1.5,
               textTransform: "none",
               boxShadow: "none",
-              "&:hover": { bgcolor: "#5656E6" },
+              cursor: isSimulation ? "default" : "pointer",
+              "&:hover": { bgcolor: isSimulation ? "#4444E2" : "#5656E6" },
             }}
           >
             View Assessment
@@ -105,7 +113,7 @@ export default function AssessmentSuccessModal({
           <Button
             fullWidth
             variant="outlined"
-            onClick={() => router.push("/dashboard/assessments")}
+            onClick={() => router.push(backUrl)}
             sx={{
               borderColor: "#4444E2",
               color: "#4444E2",
@@ -114,6 +122,7 @@ export default function AssessmentSuccessModal({
               borderRadius: "12px",
               py: 1.5,
               textTransform: "none",
+              cursor: "pointer",
               "&:hover": {
                 borderColor: "#5656E6",
                 bgcolor: "rgba(68, 68, 226, 0.04)",

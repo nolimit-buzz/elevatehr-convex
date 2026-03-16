@@ -1,14 +1,71 @@
 "use client";
 
-import React from "react";
-import { Box, Button, Paper, Typography, Chip, Link, IconButton, CircularProgress } from "@mui/material";
+import React, { useState, useRef, useEffect } from "react";
+import {
+  Box,
+  Button,
+  Paper,
+  Typography,
+  Chip,
+  Link,
+  IconButton,
+  CircularProgress,
+  Dialog,
+  DialogContent,
+  MenuItem,
+  Select,
+  Snackbar,
+  Alert,
+  Stack,
+  TextField,
+  InputAdornment,
+  Backdrop,
+} from "@mui/material";
 import { PlusIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
 import { ADMIN_CARD_SX } from "../styles";
 import { useAdminAssessmentsList } from "@/queries/adminAssessments.queries";
+import { useRouter } from "next/navigation";
+import * as XLSX from "xlsx";
+import { pdfjs } from "react-pdf";
+import mammoth from "mammoth";
+import { AssessmentQueries, type Id } from "@/queries/assessment.queries";
+import AssessmentTypeDialog from "@/app/dashboard/components/dashboard/assessments/AssessmentTypeDialog";
+import AssessmentUploadDialog from "@/app/dashboard/components/dashboard/assessments/AssessmentUploadDialog";
+import AssessmentConfigDialog from "@/app/dashboard/components/dashboard/assessments/AssessmentConfigDialog";
+import TechnicalAssessmentEditor from "@/app/dashboard/components/dashboard/assessments/TechnicalAssessmentEditor";
+import AssessmentFormBuilder from "@/app/dashboard/components/dashboard/assessments/AssessmentFormBuilder";
+import AssessmentSuccessModal from "@/app/dashboard/components/dashboard/assessments/AssessmentSuccessModal";
 
 export default function MasterAssessmentLibraryPage() {
+  const router = useRouter();
   const assessments = useAdminAssessmentsList();
   const isLoading = assessments === undefined;
+
+  const {
+    RemoveAssessment,
+    GenerateSkills,
+    GenerateQuestions,
+    GenerateTechnicalContent,
+    CreateAssessment,
+    CreateTechnicalAssessment,
+    UpdateAssessment,
+  } = AssessmentQueries();
+
+  // ─── Creation flow state ───────────────────────────────────────────────────
+  const [selectTypeOpen, setSelectTypeOpen] = useState(false);
+  const [selectedType, setSelectedType] = useState("technical_assessment");
+
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">("success");
+
+  // ─── Helpers ───────────────────────────────────────────────────────────────
+  const handleContinueFromTypeSelect = () => {
+    setSelectTypeOpen(false);
+    router.push(`/admin/assessments/new?type=${selectedType}`);
+  };
+
+  const handleSnackbarClose = () => setSnackbarOpen(false);
 
   return (
     <Box sx={{ width: "100%", pb: 4 }}>
@@ -32,6 +89,7 @@ export default function MasterAssessmentLibraryPage() {
             borderRadius: 2,
             px: 2,
           }}
+          onClick={() => setSelectTypeOpen(true)}
         >
           + New Master Template
         </Button>
@@ -112,6 +170,7 @@ export default function MasterAssessmentLibraryPage() {
           <Paper
             elevation={0}
             component={Button}
+            onClick={() => setSelectTypeOpen(true)}
             sx={{
               width: 320,
               height: 200,
@@ -139,6 +198,81 @@ export default function MasterAssessmentLibraryPage() {
           </Paper>
         </Box>
       )}
+
+
+      {/* ─── Step 1: Select Type Dialog (stays on page) ─────────────────────── */}
+      <Dialog
+        open={selectTypeOpen}
+        onClose={() => setSelectTypeOpen(false)}
+        maxWidth="xs"
+        slotProps={{ backdrop: { sx: { backgroundColor: "rgba(17, 17, 17, 0.32)", backdropFilter: "blur(4px)" } } }}
+        PaperProps={{ sx: { borderRadius: "8px", p: 0, bgcolor: "rgba(241, 244, 249, 1)" } }}
+      >
+        <DialogContent
+          sx={{
+            p: { xs: 3, md: 4 },
+            position: "relative",
+            bgcolor: "rgba(241, 244, 249, 1)",
+            minWidth: { xs: 320, md: 400 },
+          }}
+        >
+          <Typography sx={{ fontWeight: 700, fontSize: 20, color: "rgba(17, 17, 17, 0.92)", mb: 3, textAlign: "left" }}>
+            Select Assessment Type
+          </Typography>
+          <Select
+            value={selectedType}
+            onChange={(e) => setSelectedType(e.target.value)}
+            fullWidth
+            displayEmpty
+            sx={{
+              mb: 3,
+              bgcolor: "#F6F7FB",
+              borderRadius: "10px",
+              fontWeight: 500,
+              fontSize: 16,
+              "& .MuiSelect-select": { color: "rgba(17, 17, 17, 0.92)", fontWeight: 500, fontSize: 16, py: 2 },
+            }}
+          >
+            <MenuItem value="technical_assessment" sx={{ fontWeight: 400, fontSize: 15 }}>
+              Technical assessment
+            </MenuItem>
+            <MenuItem value="online_assessment_1" sx={{ fontWeight: 400, fontSize: 15 }}>
+              Online assessment
+            </MenuItem>
+          </Select>
+          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
+            <Button
+              variant="outlined"
+              onClick={() => setSelectTypeOpen(false)}
+              color="inherit"
+              sx={{ fontWeight: 500, fontSize: 16, borderRadius: "8px", px: 3, py: 1 }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleContinueFromTypeSelect}
+              sx={{
+                fontWeight: 600,
+                fontSize: 16,
+                borderRadius: "8px",
+                px: 3,
+                py: 1,
+                bgcolor: "#4444E2",
+                "&:hover": { bgcolor: "#5656E6" },
+              }}
+            >
+              Continue
+            </Button>
+          </Box>
+        </DialogContent>
+      </Dialog>
+
+      <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleSnackbarClose}>
+        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: "100%" }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
