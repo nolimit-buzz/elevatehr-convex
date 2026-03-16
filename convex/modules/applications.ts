@@ -231,9 +231,11 @@ export const listByJob = authedQuery({
         personal_info: {
           firstname,
           lastname,
+          location: (app.custom_fields as any)?.location || "",
         },
         professional_info: {
           experience: String(app.professional_info?.experience_years || ""),
+          experience_years: app.professional_info?.experience_years,
           salary_range: "",
           start_date: app.professional_info?.start_date || "",
           skills: Array.isArray(app.professional_info?.skills)
@@ -408,9 +410,11 @@ export const listWithFilters = authedQuery({
         personal_info: {
           firstname,
           lastname,
+          location: (app.custom_fields as any)?.location || "",
         },
         professional_info: {
           experience: String(app.professional_info?.experience_years || ""),
+          experience_years: app.professional_info?.experience_years,
           salary_range: "",
           start_date: app.professional_info?.start_date || "",
           skills: Array.isArray(app.professional_info?.skills)
@@ -472,6 +476,7 @@ export const get = authedQuery({
         lastname,
         email: application.email,
         phone: application.phone || "",
+        location: (application.custom_fields as any)?.location || "",
       },
       professional_info: {
         experience_years: application.professional_info?.experience_years,

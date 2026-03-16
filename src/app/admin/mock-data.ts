@@ -2,7 +2,7 @@
  * Mock data for Admin Dashboard (frontend-only, no Convex).
  */
 
-export type RecruiterStatus = "active" | "pending" | "suspended";
+export type RecruiterStatus = "active" | "pending" | "suspended" | "inactive";
 
 export interface MockRecruiter {
   id: string;
@@ -150,14 +150,16 @@ export const MOCK_EMAIL_TEMPLATES: MockEmailTemplate[] = [
     id: "e1",
     name: "Application Received",
     subject: "We received your application for {{job_title}}",
-    bodyPreview: "Hi {{candidate_name}}, Thank you for applying to {{company_name}}. We have received your application and will review it shortly.",
+    bodyPreview:
+      "Hi {{candidate_name}}, Thank you for applying to {{company_name}}. We have received your application and will review it shortly.",
     variables: ["{{candidate_name}}", "{{job_title}}", "{{company_name}}"],
   },
   {
     id: "e2",
     name: "Interview Invite",
     subject: "Interview Invitation: {{job_title}}",
-    bodyPreview: "Hi {{candidate_name}}, We'd like to invite you for an interview for the {{job_title}} position at {{company_name}}.",
+    bodyPreview:
+      "Hi {{candidate_name}}, We'd like to invite you for an interview for the {{job_title}} position at {{company_name}}.",
     variables: ["{{candidate_name}}", "{{job_title}}", "{{company_name}}"],
   },
 ];
@@ -176,16 +178,66 @@ export const MOCK_RECRUITER_DASHBOARD_SNAPSHOT = {
 };
 
 export const MOCK_AUDIT_LOG: MockAuditEntry[] = [
-  { id: "1", action: "Deleted Job", details: "Job #402 - Senior Frontend Developer", timestamp: "2025-02-25T10:30:00Z", user: "Jane Smith" },
-  { id: "2", action: "Invited User", details: "Sarah Chen (sarah@techflow.io)", timestamp: "2025-02-24T14:00:00Z", user: "Jane Smith" },
-  { id: "3", action: "Created Job", details: "Backend Engineer - Remote", timestamp: "2025-02-23T09:15:00Z", user: "Jane Smith" },
-  { id: "4", action: "Archived Candidate", details: "John Doe - Backend Engineer", timestamp: "2025-02-22T16:45:00Z", user: "Jane Smith" },
+  {
+    id: "1",
+    action: "Deleted Job",
+    details: "Job #402 - Senior Frontend Developer",
+    timestamp: "2025-02-25T10:30:00Z",
+    user: "Jane Smith",
+  },
+  {
+    id: "2",
+    action: "Invited User",
+    details: "Sarah Chen (sarah@techflow.io)",
+    timestamp: "2025-02-24T14:00:00Z",
+    user: "Jane Smith",
+  },
+  {
+    id: "3",
+    action: "Created Job",
+    details: "Backend Engineer - Remote",
+    timestamp: "2025-02-23T09:15:00Z",
+    user: "Jane Smith",
+  },
+  {
+    id: "4",
+    action: "Archived Candidate",
+    details: "John Doe - Backend Engineer",
+    timestamp: "2025-02-22T16:45:00Z",
+    user: "Jane Smith",
+  },
 ];
 
 export const MOCK_CANDIDATES: MockCandidate[] = [
-  { id: "c1", name: "Alex Rivera", email: "alex.r@email.com", phone: "+1 555-0101", jobTitle: "Senior Frontend Developer", stage: "interviews", assessmentScore: 85, appliedAt: "2025-02-20" },
-  { id: "c2", name: "Jordan Lee", email: "jordan.lee@email.com", phone: "+1 555-0102", jobTitle: "Senior Frontend Developer", stage: "skill_assessment", assessmentScore: 72, appliedAt: "2025-02-21" },
-  { id: "c3", name: "Sam Taylor", email: "sam.t@email.com", phone: "+1 555-0103", jobTitle: "Backend Engineer", stage: "new", appliedAt: "2025-02-24" },
+  {
+    id: "c1",
+    name: "Alex Rivera",
+    email: "alex.r@email.com",
+    phone: "+1 555-0101",
+    jobTitle: "Senior Frontend Developer",
+    stage: "interviews",
+    assessmentScore: 85,
+    appliedAt: "2025-02-20",
+  },
+  {
+    id: "c2",
+    name: "Jordan Lee",
+    email: "jordan.lee@email.com",
+    phone: "+1 555-0102",
+    jobTitle: "Senior Frontend Developer",
+    stage: "skill_assessment",
+    assessmentScore: 72,
+    appliedAt: "2025-02-21",
+  },
+  {
+    id: "c3",
+    name: "Sam Taylor",
+    email: "sam.t@email.com",
+    phone: "+1 555-0103",
+    jobTitle: "Backend Engineer",
+    stage: "new",
+    appliedAt: "2025-02-24",
+  },
 ];
 
 export const MOCK_JOBS: MockJobRow[] = [

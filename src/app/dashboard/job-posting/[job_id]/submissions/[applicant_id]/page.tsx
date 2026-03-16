@@ -16,7 +16,6 @@ import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 
-
 // Icons
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -68,7 +67,12 @@ export default function ApplicantDetails() {
   // Derive loading and error states
   const detailsLoading = applicantData === undefined || jobData === undefined;
   const loading = applicationsData === undefined;
-  const error = applicantData === null ? "Failed to fetch applicant details" : jobData === null ? "Failed to fetch job details" : null;
+  const error =
+    applicantData === null
+      ? "Failed to fetch applicant details"
+      : jobData === null
+        ? "Failed to fetch job details"
+        : null;
 
   // Transform applicant data
   const applicant = useMemo(() => {
@@ -159,8 +163,12 @@ export default function ApplicantDetails() {
   if (error) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>
-        <Button onClick={handleBack} startIcon={<ArrowBackIcon />}>Go Back</Button>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+        <Button onClick={handleBack} startIcon={<ArrowBackIcon />}>
+          Go Back
+        </Button>
       </Container>
     );
   }
@@ -168,8 +176,12 @@ export default function ApplicantDetails() {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
-        <IconButton onClick={handleBack}><ArrowBackIcon /></IconButton>
-        <Typography variant="h6" sx={{ color: "grey.100" }}>{applicant?.job_title || "Job Title"}</Typography>
+        <IconButton onClick={handleBack}>
+          <ArrowBackIcon />
+        </IconButton>
+        <Typography variant="h6" sx={{ color: "grey.100" }}>
+          {applicant?.job_title || "Job Title"}
+        </Typography>
       </Stack>
       <Box sx={{ display: "flex", gap: 3, minHeight: "100vh" }}>
         <Sidebar
@@ -183,7 +195,9 @@ export default function ApplicantDetails() {
               <DetailsSkeleton />
             ) : !applicant ? (
               <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", py: 8 }}>
-                <Typography variant="h6" color="text.secondary">Select an applicant to view details</Typography>
+                <Typography variant="h6" color="text.secondary">
+                  Select an applicant to view details
+                </Typography>
               </Box>
             ) : (
               <Fragment>
@@ -201,7 +215,7 @@ export default function ApplicantDetails() {
                     bgcolor: "rgba(17, 17, 17, 0.04)",
                     borderRadius: "8px !important",
                     mb: 2,
-                    '&:before': { display: 'none' }
+                    "&:before": { display: "none" },
                   }}
                 >
                   <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -222,7 +236,7 @@ export default function ApplicantDetails() {
                 </Accordion>
 
                 {Object.entries(applicant.assessments_results || {}).some(
-                  ([_, result]: [string, any]) => result && result.assessment_id
+                  ([_, result]: [string, any]) => result && result.assessment_id,
                 ) && (
                   <Accordion
                     elevation={0}
@@ -230,7 +244,7 @@ export default function ApplicantDetails() {
                       bgcolor: "rgba(17, 17, 17, 0.04)",
                       borderRadius: "8px !important",
                       mb: 4,
-                      '&:before': { display: 'none' }
+                      "&:before": { display: "none" },
                     }}
                   >
                     <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -245,10 +259,7 @@ export default function ApplicantDetails() {
                   </Accordion>
                 )}
 
-                <ActionButtons
-                  onReject={handleReject}
-                  onMoveToAssessment={handleMoveToAssessment}
-                />
+                <ActionButtons onReject={handleReject} onMoveToAssessment={handleMoveToAssessment} />
               </Fragment>
             )}
           </Paper>
