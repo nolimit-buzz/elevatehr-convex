@@ -24,6 +24,7 @@ interface TechnicalAssessmentEditorProps {
   isGeneratingContent: boolean;
   handleGenerateTechnicalContent: () => void;
   handleSaveTechnicalAssessment: () => void;
+  backUrl?: string;
 }
 
 export default function TechnicalAssessmentEditor({
@@ -36,6 +37,7 @@ export default function TechnicalAssessmentEditor({
   isGeneratingContent,
   handleGenerateTechnicalContent,
   handleSaveTechnicalAssessment,
+  backUrl = "/dashboard/assessments",
 }: TechnicalAssessmentEditorProps) {
   const modules = useMemo(
     () => ({
@@ -61,7 +63,7 @@ export default function TechnicalAssessmentEditor({
     <Box sx={{ maxWidth: 800, mx: "auto", mt: 4, mb: 4 }}>
       <Button
         component="a"
-        href="/dashboard/assessments"
+        href={backUrl}
         startIcon={
           <svg
             width="20"

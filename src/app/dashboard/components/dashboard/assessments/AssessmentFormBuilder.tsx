@@ -31,6 +31,7 @@ interface AssessmentFormBuilderProps {
   saveLoading: boolean;
   handleSaveAssessment: () => void;
   id: string | null;
+  backUrl?: string;
 }
 
 export default function AssessmentFormBuilder({
@@ -51,12 +52,13 @@ export default function AssessmentFormBuilder({
   saveLoading,
   handleSaveAssessment,
   id,
+  backUrl = "/dashboard/assessments",
 }: AssessmentFormBuilderProps) {
   return (
     <Box sx={{ maxWidth: 900, mx: "auto", mt: 4, mb: 4 }}>
       <Button
         component="a"
-        href="/dashboard/assessments"
+        href={backUrl}
         startIcon={
           <svg
             width="20"

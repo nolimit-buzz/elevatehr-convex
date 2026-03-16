@@ -18,6 +18,7 @@ interface AssessmentSuccessModalProps {
   savedAssessmentId: string | null;
   router: AppRouterInstance;
   isSimulation?: boolean;
+  backUrl?: string;
 }
 
 export default function AssessmentSuccessModal({
@@ -26,6 +27,7 @@ export default function AssessmentSuccessModal({
   savedAssessmentId,
   router,
   isSimulation = false,
+  backUrl = "/dashboard/assessments",
 }: AssessmentSuccessModalProps) {
   return (
     <Dialog
@@ -111,7 +113,7 @@ export default function AssessmentSuccessModal({
           <Button
             fullWidth
             variant="outlined"
-            onClick={isSimulation ? undefined : () => router.push("/dashboard/assessments")}
+            onClick={() => router.push(backUrl)}
             sx={{
               borderColor: "#4444E2",
               color: "#4444E2",
@@ -120,10 +122,10 @@ export default function AssessmentSuccessModal({
               borderRadius: "12px",
               py: 1.5,
               textTransform: "none",
-              cursor: isSimulation ? "default" : "pointer",
+              cursor: "pointer",
               "&:hover": {
-                borderColor: isSimulation ? "#4444E2" : "#5656E6",
-                bgcolor: isSimulation ? "transparent" : "rgba(68, 68, 226, 0.04)",
+                borderColor: "#5656E6",
+                bgcolor: "rgba(68, 68, 226, 0.04)",
               },
             }}
           >
