@@ -5,7 +5,7 @@ import { Box, Snackbar, Alert } from "@mui/material";
 import { usePathname, useRouter } from "next/navigation";
 import AdminSidebar, { SIDEBAR_WIDTH } from "./components/AdminSidebar";
 import AdminHeader from "./components/AdminHeader";
-import ImpersonationBanner from "./components/ImpersonationBanner";
+import ImpersonationBanner from "@/app/components/ImpersonationBanner";
 import { ImpersonationProvider, useImpersonation } from "./context/ImpersonationContext";
 import { DefaultConstants } from "@/app/constants/defaults";
 

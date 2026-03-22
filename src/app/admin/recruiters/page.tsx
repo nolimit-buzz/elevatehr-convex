@@ -259,7 +259,20 @@ export default function RecruiterDirectoryPage() {
   };
   const handleLoginAs = () => {
     if (selectedRecruiter) {
-      startImpersonation(selectedRecruiter.companyName);
+      // Open dashboard in a new tab with the recruiter ID and name
+      window.open(
+        `/dashboard?arrow_id=${selectedRecruiter.id}&name=${encodeURIComponent(
+          selectedRecruiter.companyName
+        )}`,
+        "_blank"
+      );
+      
+      // Also update local state for consistency
+      startImpersonation(
+        selectedRecruiter.companyName,
+        selectedRecruiter.id,
+        selectedRecruiter.primaryAdmin
+      );
       handleCloseMenu();
     }
   };
