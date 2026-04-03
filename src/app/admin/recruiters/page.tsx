@@ -45,7 +45,6 @@ import {
 } from "@heroicons/react/24/outline";
 
 import { useRouter } from "next/navigation";
-import { useImpersonation } from "../context/ImpersonationContext";
 import { type MockRecruiter, type RecruiterStatus } from "../mock-data";
 import { ADMIN_CARD_SX } from "../styles";
 import NewRecruiterModal from "../components/NewRecruiterModal";
@@ -229,7 +228,6 @@ function RecruiterMobileCard({ row, onMenuOpen, tagConfig }: { row: any; onMenuO
 
 export default function RecruiterDirectoryPage() {
   const router = useRouter();
-  const { startImpersonation } = useImpersonation();
   const { recruiters, isLoading } = useAdminRecruiters();
   const [search, setSearch] = useState("");
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -265,13 +263,6 @@ export default function RecruiterDirectoryPage() {
           selectedRecruiter.companyName
         )}`,
         "_blank"
-      );
-      
-      // Also update local state for consistency
-      startImpersonation(
-        selectedRecruiter.companyName,
-        selectedRecruiter.id,
-        selectedRecruiter.primaryAdmin
       );
       handleCloseMenu();
     }

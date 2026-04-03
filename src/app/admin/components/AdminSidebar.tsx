@@ -61,7 +61,7 @@ const navItems = [
   { href: "/admin/recruiters", label: "Recruiters", icon: <UserGroupIcon style={iconSx} /> },
   { href: "/admin/activity", label: "Activity", icon: <ClockIcon style={iconSx} /> },
   { href: "/admin/assessments", label: "Assessments", icon: <BookOpenIcon style={iconSx} /> },
-  { href: "/admin/templates", label: "Templates", icon: <EnvelopeIcon style={iconSx} /> },
+  // { href: "/admin/templates", label: "Templates", icon: <EnvelopeIcon style={iconSx} /> },
   { href: "/admin/settings", label: "Settings", icon: <Cog6ToothIcon style={iconSx} /> },
 ];
 
