@@ -5,7 +5,7 @@ import { Box, Container, Typography, Button, Paper, Stack, Divider, TextField, I
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useApplication } from "@/queries/applications.queries";
 import { useAssessment, AssessmentQueries } from "@/queries/assessment.queries";
-import { Id } from "../../../../../../../../../convex/_generated/dataModel";
+import { Id } from "../../../../../../../../../../convex/_generated/dataModel";
 
 export default function GradingPage() {
   const params = useParams();

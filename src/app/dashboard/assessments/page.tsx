@@ -57,7 +57,7 @@ export default function AssessmentsPage() {
 
   // ─── List & delete state ───────────────────────────────────────────────────
   const assessmentsData = useAssessmentsList();
-  const assessments = assessmentsData ?? [];
+  const assessments: Assessment[] = assessmentsData ?? [];
   const loading = assessmentsData === undefined;
 
   const {
