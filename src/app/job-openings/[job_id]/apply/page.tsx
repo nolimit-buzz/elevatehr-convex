@@ -317,7 +317,7 @@ export default function Typeform({ params }: { params: { job_id: string } }) {
         console.error("Error submitting application:", error);
         const errorMsg =
           error instanceof Error ? error.message : "Error submitting the application. Please try again later.";
-        toast.error(errorMsg);
+        toast.error(errorMsg, { id: "error-submitting-application" });
         setIsSubmitting(false);
         handleError(errorMsg);
       }
