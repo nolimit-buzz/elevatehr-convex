@@ -725,6 +725,10 @@ export default function Typeform({ params }: { params: { job_id: string } }) {
                                 />
                               ))
                             }
+                            renderOption={(props, option) => {
+                              const { key, ...optionProps } = props as { key: React.Key } & React.HTMLAttributes<HTMLLIElement>;
+                              return <li key={key} {...optionProps}>{option}</li>;
+                            }}
                             renderInput={(params) => (
                               <StyledTextField
                                 {...params}
