@@ -425,7 +425,7 @@ export default function RecruiterDeepDivePage() {
                         </DetailTableCell>
                       </TableRow>
                     ) : (
-                      recruiter.recentActivity.map((entry) => (
+                      recruiter.recentActivity.slice(0, 3).map((entry) => (
                         <TableRow key={entry.id} sx={{ height: 72 }}>
                           <DetailTableCell>{new Date(entry.date).toLocaleString()}</DetailTableCell>
                           <DetailTableCell>{entry.action}</DetailTableCell>

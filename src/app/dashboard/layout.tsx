@@ -1,8 +1,9 @@
 "use client";
 import { styled, Container, Box } from "@mui/material";
 import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import Header from "@/app/dashboard/layout/header/Header";
+import ImpersonationBanner from "@/app/components/ImpersonationBanner";
 import { DefaultConstants } from "@/app/constants/defaults";
 import { getWithExpiry } from "@/app/utils/authStorage";
 
@@ -29,6 +30,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [authorized, setAuthorized] = useState(false);
 
   useEffect(() => {
@@ -40,11 +42,29 @@ export default function RootLayout({
     }
   }, [router]);
 
+  const searchParams = useSearchParams();
+  const arrowId = searchParams.get("arrow_id");
+  const name = searchParams.get("name");
+
+  const handleExitImpersonation = () => {
+    // Remove arrow_id and name from URL
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("arrow_id");
+    params.delete("name");
+    router.replace(`${pathname}?${params.toString()}`);
+  };
+
   // Render nothing while checking — prevents dashboard flash for unauthed users
   if (!authorized) return null;
 
   return (
     <main>
+      {arrowId && (
+        <ImpersonationBanner
+          companyName={name || `Recruiter ID: ${arrowId}`}
+          onExit={handleExitImpersonation}
+        />
+      )}
       <Header />
       <MainWrapper className="mainwrapper">
         <PageWrapper className="page-wrapper">
