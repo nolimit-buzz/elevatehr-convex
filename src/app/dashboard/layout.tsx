@@ -5,7 +5,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import Header from "@/app/dashboard/layout/header/Header";
 import ImpersonationBanner from "@/app/components/ImpersonationBanner";
 import { DefaultConstants } from "@/app/constants/defaults";
-import { getWithExpiry } from "@/app/utils/authStorage";
+import { getWithExpiry, setCompanyOverride, clearCompanyOverride } from "@/app/utils/authStorage";
 
 const MainWrapper = styled("div")(() => ({
   display: "flex",
@@ -24,11 +24,7 @@ const PageWrapper = styled("div")(() => ({
   width: "100%",
 }));
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [authorized, setAuthorized] = useState(false);
@@ -46,7 +42,17 @@ export default function RootLayout({
   const arrowId = searchParams.get("arrow_id");
   const name = searchParams.get("name");
 
+  // Sync arrow_id to sessionStorage so useAuthedQuery can inject it as companyIdOverride
+  useEffect(() => {
+    if (arrowId) {
+      setCompanyOverride(arrowId);
+    } else {
+      clearCompanyOverride();
+    }
+  }, [arrowId]);
+
   const handleExitImpersonation = () => {
+    clearCompanyOverride();
     // Remove arrow_id and name from URL
     const params = new URLSearchParams(searchParams.toString());
     params.delete("arrow_id");
@@ -60,10 +66,7 @@ export default function RootLayout({
   return (
     <main>
       {arrowId && (
-        <ImpersonationBanner
-          companyName={name || `Recruiter ID: ${arrowId}`}
-          onExit={handleExitImpersonation}
-        />
+        <ImpersonationBanner companyName={name || `Recruiter ID: ${arrowId}`} onExit={handleExitImpersonation} />
       )}
       <Header />
       <MainWrapper className="mainwrapper">
@@ -76,9 +79,7 @@ export default function RootLayout({
               width: "100% !important",
             }}
           >
-            <Box sx={{ width: "100%", minHeight: "calc(100vh - 170px)" }}>
-              {children}
-            </Box>
+            <Box sx={{ width: "100%", minHeight: "calc(100vh - 170px)" }}>{children}</Box>
           </Container>
         </PageWrapper>
       </MainWrapper>

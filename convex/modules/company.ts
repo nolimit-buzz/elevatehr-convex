@@ -3,7 +3,7 @@ import { Constants } from "../utils/constants";
 import { ConvexError, v } from "convex/values";
 import { mutation, internalMutation } from "../_generated/server";
 import { hashPassword } from "../utils/validation";
-import { authedMutation } from "../utils/permission";
+import { flexibleMutation } from "../utils/permission";
 import { getMe } from "../utils/helpers";
 import { Id } from "../_generated/dataModel";
 
@@ -113,18 +113,22 @@ export const seedEmailTemplates = internalMutation({
 });
 
 // Authed mutation to seed email templates for existing companies (can be called from client)
-export const seedEmailTemplatesForCompany = authedMutation({
+export const seedEmailTemplatesForCompany = flexibleMutation({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx, args) => {
     const user = ctx.user;
-    if (!user?.company_id) {
+    if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
+
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+    if (!targetCompanyId) {
       throw new ConvexError({ message: "Company not found", code: 404 });
     }
 
     // Check if templates already exist
     const existingTemplates = await ctx.db
       .query("email_templates")
-      .withIndex("by_company", (q) => q.eq("company_id", user.company_id!))
+      .withIndex("by_company", (q) => q.eq("company_id", targetCompanyId))
       .collect();
 
     if (existingTemplates.length > 0) {
@@ -134,7 +138,7 @@ export const seedEmailTemplatesForCompany = authedMutation({
     // Seed templates
     for (const type of TEMPLATE_TYPES) {
       await ctx.db.insert("email_templates", {
-        company_id: user.company_id!,
+        company_id: targetCompanyId,
         type,
         subject: getDefaultTemplateSubject(type),
         content: getDefaultTemplateContent(type),
@@ -218,38 +222,46 @@ export const create = mutation({
   },
 });
 
-export const get = authedMutation({
+export const get = flexibleMutation({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx, args) => {
     const user = ctx.user;
-    if (!user?.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
+    if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
+
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+
     const company = await ctx.db
       .query("companies")
-      .filter((q) => q.eq(q.field("_id"), user.company_id))
+      .filter((q) => q.eq(q.field("_id"), targetCompanyId))
       .first();
     if (!company) throw new ConvexError({ message: "Company not found", code: 404 });
     return company;
   },
 });
 
-export const update = authedMutation({
+export const update = flexibleMutation({
   args: {
     company: v.optional(CompanySchema.partial()),
     personal: v.optional(UserSchema.partial()),
   },
   handler: async (ctx, args) => {
     const user = ctx.user;
-    if (!user?.role || user.role !== "admin") {
+    if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
+
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+
+    // Only admins can update company settings
+    if (!isAdmin) {
       throw new ConvexError({
         message: Constants.ERROR.UNAUTHORIZED,
         code: 403,
       });
     }
 
-    if (!user.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
-
     if (args.company) {
-      await ctx.db.patch(user.company_id, args.company);
+      await ctx.db.patch(targetCompanyId, args.company);
     }
     if (args.personal) {
       await ctx.db.patch(user.id as any, args.personal);
@@ -265,11 +277,16 @@ export const update = authedMutation({
 });
 
 // Generate a short-lived upload URL for file storage
-export const generateUploadUrl = authedMutation({
+export const generateUploadUrl = flexibleMutation({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx, args) => {
     const user = ctx.user;
-    if (!user?.role || user.role !== "admin") {
+    if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
+
+    const isAdmin = ctx._isAdmin === true;
+
+    // Only admins can generate upload URLs
+    if (!isAdmin) {
       throw new ConvexError({
         message: Constants.ERROR.UNAUTHORIZED,
         code: 403,
@@ -280,27 +297,31 @@ export const generateUploadUrl = authedMutation({
 });
 
 // Update company logo with storage ID
-export const updateLogo = authedMutation({
+export const updateLogo = flexibleMutation({
   args: {
     storageId: v.id("_storage"),
   },
   handler: async (ctx, args) => {
     const user = ctx.user;
-    if (!user?.role || user.role !== "admin") {
+    if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
+
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+
+    // Only admins can update logo
+    if (!isAdmin) {
       throw new ConvexError({
         message: Constants.ERROR.UNAUTHORIZED,
         code: 403,
       });
     }
 
-    if (!user.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
-
     // Get the URL for the uploaded file
     const logoUrl = await ctx.storage.getUrl(args.storageId);
     if (!logoUrl) throw new ConvexError({ message: "Failed to get logo URL", code: 500 });
 
     // Update the company with the new logo URL
-    await ctx.db.patch(user.company_id, { company_logo: logoUrl });
+    await ctx.db.patch(targetCompanyId, { company_logo: logoUrl });
 
     const updatedProfile = await getMe(ctx, user.id as any);
 

@@ -1,5 +1,5 @@
 import { ConvexError } from "convex/values";
-import { authedQuery } from "../utils/permission";
+import { flexibleQuery } from "../utils/permission";
 import { Constants } from "../utils/constants";
 
 // ============================================
@@ -10,17 +10,29 @@ import { Constants } from "../utils/constants";
  * Get dashboard statistics for the current user's company
  * Returns: active_jobs, total_applicants, assessments counts
  */
-export const getDashboardStats = authedQuery({
+export const getDashboardStats = flexibleQuery({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx, args) => {
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
-    if (!user.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
+
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+
+    console.log("User in getDashboardStats:", { user, targetCompanyId });
+
+    if (!targetCompanyId) {
+      // If user is not an admin and has no company, they shouldn't access this
+      if (!isAdmin) {
+        throw new ConvexError({ message: "User not associated with a company", code: 403 });
+      }
+      throw new ConvexError({ message: "Company not found", code: 404 });
+    }
 
     // Get active jobs count
     const allJobs = await ctx.db
       .query("jobs")
-      .withIndex("by_company", (q) => q.eq("company_id", user.company_id!))
+      .withIndex("by_company", (q) => q.eq("company_id", targetCompanyId))
       .collect();
 
     const activeJobs = allJobs.filter((job) => job.status === "active" || job.status === undefined);
@@ -28,13 +40,13 @@ export const getDashboardStats = authedQuery({
     // Get assessments count
     const assessments = await ctx.db
       .query("assessments")
-      .withIndex("by_company", (q) => q.eq("company_id", user.company_id!))
+      .withIndex("by_company", (q) => q.eq("company_id", targetCompanyId))
       .collect();
 
     // Get total applicants count from applications table
     const applications = await ctx.db
       .query("applications")
-      .withIndex("by_company", (q) => q.eq("company_id", user.company_id!))
+      .withIndex("by_company", (q) => q.eq("company_id", targetCompanyId))
       .collect();
     const totalApplicants = applications.length;
 
@@ -53,16 +65,19 @@ export const getDashboardStats = authedQuery({
 /**
  * Get detailed job statistics
  */
-export const getJobStats = authedQuery({
+export const getJobStats = flexibleQuery({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx, args) => {
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
-    if (!user.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
+
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+    if (!targetCompanyId) throw new ConvexError({ message: "Company not found", code: 404 });
 
     const jobs = await ctx.db
       .query("jobs")
-      .withIndex("by_company", (q) => q.eq("company_id", user.company_id!))
+      .withIndex("by_company", (q) => q.eq("company_id", targetCompanyId))
       .collect();
 
     const byStatus = {
@@ -94,16 +109,19 @@ export const getJobStats = authedQuery({
 /**
  * Get assessment statistics
  */
-export const getAssessmentStats = authedQuery({
+export const getAssessmentStats = flexibleQuery({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx, args) => {
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
-    if (!user.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
+
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+    if (!targetCompanyId) throw new ConvexError({ message: "Company not found", code: 404 });
 
     const assessments = await ctx.db
       .query("assessments")
-      .withIndex("by_company", (q) => q.eq("company_id", user.company_id!))
+      .withIndex("by_company", (q) => q.eq("company_id", targetCompanyId))
       .collect();
 
     const byType = {

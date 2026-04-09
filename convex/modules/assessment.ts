@@ -3,7 +3,7 @@ import { internal } from "../_generated/api";
 import { Constants } from "../utils/constants";
 import { ConvexError, v } from "convex/values";
 import { action, internalMutation, internalQuery, internalAction, query } from "../_generated/server";
-import { authedMutation, authedQuery, authedAction } from "../utils/permission";
+import { flexibleMutation, flexibleQuery, flexibleAction } from "../utils/permission";
 import {
   generateQuizQuestions,
   generateSkillsForRole,
@@ -96,16 +96,18 @@ function getLevelColors(level?: string): { color: string; textColor: string } {
 // ============================================
 
 // List all assessments for the company
-export const list = authedQuery({
+export const list = flexibleQuery({
   args: {
     type: v.optional(ASSESSMENT_TYPES),
   },
   handler: async (ctx, args) => {
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
-    if (!user.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
 
-    let query = ctx.db.query("assessments").withIndex("by_company", (q) => q.eq("company_id", user.company_id!));
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+
+    let query = ctx.db.query("assessments").withIndex("by_company", (q) => q.eq("company_id", targetCompanyId));
 
     const assessments = await query.collect();
 
@@ -130,7 +132,7 @@ export const list = authedQuery({
 });
 
 // Get a single assessment by ID
-export const get = authedQuery({
+export const get = flexibleQuery({
   args: {
     assessmentId: v.id("assessments"),
   },
@@ -138,11 +140,14 @@ export const get = authedQuery({
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
 
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+
     const assessment = await ctx.db.get(args.assessmentId);
     if (!assessment) throw new ConvexError({ message: "Assessment not found", code: 404 });
 
-    // Ensure user can only access assessments from their company
-    if (assessment.company_id !== user.company_id) {
+    // Ensure user can only access assessments from their company (or admin impersonating)
+    if (!isAdmin && assessment.company_id !== targetCompanyId) {
       throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 403 });
     }
 
@@ -216,7 +221,7 @@ export const createInternal = internalMutation({
 });
 
 // Update an assessment
-export const update = authedMutation({
+export const update = flexibleMutation({
   args: {
     assessmentId: v.id("assessments"),
     data: v.object({
@@ -234,13 +239,16 @@ export const update = authedMutation({
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
 
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+
     const { assessmentId, data } = args;
     const assessment = await ctx.db.get(assessmentId);
 
     if (!assessment) throw new ConvexError({ message: "Assessment not found", code: 404 });
 
-    // Ensure user can only update assessments from their company
-    if (assessment.company_id !== user.company_id) {
+    // Ensure user can only update assessments from their company (or admin impersonating)
+    if (!isAdmin && assessment.company_id !== targetCompanyId) {
       throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 403 });
     }
 
@@ -262,7 +270,7 @@ export const update = authedMutation({
 });
 
 // Delete an assessment
-export const remove = authedMutation({
+export const remove = flexibleMutation({
   args: {
     assessmentId: v.id("assessments"),
   },
@@ -270,12 +278,15 @@ export const remove = authedMutation({
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
 
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+
     const assessment = await ctx.db.get(args.assessmentId);
 
     if (!assessment) throw new ConvexError({ message: "Assessment not found", code: 404 });
 
-    // Ensure user can only delete assessments from their company
-    if (assessment.company_id !== user.company_id) {
+    // Ensure user can only delete assessments from their company (or admin impersonating)
+    if (!isAdmin && assessment.company_id !== targetCompanyId) {
       throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 403 });
     }
 
@@ -290,7 +301,7 @@ export const remove = authedMutation({
 // ============================================
 
 // Generate quiz questions using AI (returns questions without saving)
-export const generateQuestions = authedAction({
+export const generateQuestions = flexibleAction({
   args: {
     jobTitle: v.string(),
     level: v.optional(v.string()),
@@ -334,7 +345,7 @@ export const generateQuestions = authedAction({
 });
 
 // Create assessment with questions (after questions are generated)
-export const create = authedAction({
+export const create = flexibleAction({
   args: {
     title: v.string(),
     description: v.string(),
@@ -346,7 +357,9 @@ export const create = authedAction({
   handler: async (ctx, args) => {
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
-    if (!user.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
+
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
 
     // Create the assessment
     const assessmentId: Id<"assessments"> = await ctx.runMutation(internal.modules.assessment.createInternal, {
@@ -355,7 +368,7 @@ export const create = authedAction({
       type: args.type,
       level: args.level,
       skills: args.skills,
-      company_id: user.company_id,
+      company_id: targetCompanyId,
       created_by: user.id,
       questions: args.questions,
     });
@@ -365,7 +378,7 @@ export const create = authedAction({
 });
 
 // Create technical assessment (no AI questions, just content)
-export const createTechnical = authedAction({
+export const createTechnical = flexibleAction({
   args: {
     title: v.string(),
     level: v.optional(v.string()),
@@ -376,7 +389,9 @@ export const createTechnical = authedAction({
   handler: async (ctx, args) => {
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
-    if (!user.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
+
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
 
     // Generate description
     const description = `${args.title} (${args.level || "All levels"}) assessment covering the following skills: ${args.skills.join(", ")}.`;
@@ -388,7 +403,7 @@ export const createTechnical = authedAction({
       type: "technical_assessment",
       level: args.level,
       skills: args.skills,
-      company_id: user.company_id,
+      company_id: targetCompanyId,
       created_by: user.id,
       technical_content: args.technicalContent,
       assessment_options: args.assessmentOptions || 2,
@@ -399,7 +414,7 @@ export const createTechnical = authedAction({
 });
 
 // Generate skills for a role using AI
-export const generateSkills = authedAction({
+export const generateSkills = flexibleAction({
   args: {
     jobTitle: v.string(),
     jobDescription: v.optional(v.string()),
@@ -408,11 +423,13 @@ export const generateSkills = authedAction({
     const user = ctx.user;
 
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
-    if (!user.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
+
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
 
     // Fetch company to get AI API key
     const company = await ctx.runQuery(internal.modules.assessment.getCompanyInternal, {
-      companyId: user.company_id,
+      companyId: targetCompanyId,
     });
     if (!company) throw new ConvexError({ message: "Company not found", code: 404 });
     if (!company.ai_api_key) throw new ConvexError({ message: "AI API key not configured for company", code: 400 });
@@ -426,7 +443,7 @@ export const generateSkills = authedAction({
 });
 
 // Generate technical assessment content using AI
-export const generateTechnicalAssessmentContent = authedAction({
+export const generateTechnicalAssessmentContent = flexibleAction({
   args: {
     jobTitle: v.string(),
     level: v.optional(v.string()),
@@ -436,11 +453,13 @@ export const generateTechnicalAssessmentContent = authedAction({
   handler: async (ctx, args) => {
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
-    if (!user.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
+
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
 
     // Fetch company to get AI API key
     const company = await ctx.runQuery(internal.modules.assessment.getCompanyInternal, {
-      companyId: user.company_id,
+      companyId: targetCompanyId,
     });
     if (!company) throw new ConvexError({ message: "Company not found", code: 404 });
     if (!company.ai_api_key) throw new ConvexError({ message: "AI API key not configured for company", code: 400 });
@@ -465,16 +484,18 @@ export const generateTechnicalAssessmentContent = authedAction({
 });
 
 // Get assessment statistics
-export const getStatistics = authedQuery({
+export const getStatistics = flexibleQuery({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx, args) => {
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
-    if (!user.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
+
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
 
     const assessments = await ctx.db
       .query("assessments")
-      .withIndex("by_company", (q) => q.eq("company_id", user.company_id!))
+      .withIndex("by_company", (q) => q.eq("company_id", targetCompanyId))
       .collect();
 
     const technicalAssessments = assessments.filter((a) => a.type === "technical_assessment").length;

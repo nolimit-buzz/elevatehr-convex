@@ -1,7 +1,7 @@
 import { Constants } from "../utils/constants";
 import { ConvexError, v } from "convex/values";
 import { Id, Doc } from "../_generated/dataModel";
-import { authedMutation, authedQuery } from "../utils/permission";
+import { flexibleMutation, flexibleQuery } from "../utils/permission";
 import { internalMutation, internalQuery, mutation, query, DatabaseReader, DatabaseWriter } from "../_generated/server";
 import { internal } from "../_generated/api";
 
@@ -169,7 +169,7 @@ export const ApplicationSchema = v.object({
 // ============================================
 
 // List applications for a job with optional stage filter and pagination
-export const listByJob = authedQuery({
+export const listByJob = flexibleQuery({
   args: {
     jobId: v.id("jobs"),
     stage: v.optional(APPLICATION_STAGES),
@@ -181,8 +181,14 @@ export const listByJob = authedQuery({
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
 
-    // Verify job belongs to user's company
-    await verifyJobOwnership(ctx.db, args.jobId, user.company_id!);
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+
+    // Admins viewing their own company skip verification
+    // Only verify when impersonating (companyIdOverride set)
+    if (!isAdmin || args.companyIdOverride) {
+      await verifyJobOwnership(ctx.db, args.jobId, targetCompanyId!);
+    }
 
     // Get all applications for the job
     let applications = await ctx.db
@@ -264,7 +270,7 @@ export const listByJob = authedQuery({
 });
 
 // List applications with filters
-export const listWithFilters = authedQuery({
+export const listWithFilters = flexibleQuery({
   args: {
     jobId: v.id("jobs"),
     stage: v.optional(APPLICATION_STAGES),
@@ -282,8 +288,14 @@ export const listWithFilters = authedQuery({
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
 
-    // Verify job belongs to user's company
-    await verifyJobOwnership(ctx.db, args.jobId, user.company_id!);
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+
+    // Admins viewing their own company skip verification
+    // Only verify when impersonating (companyIdOverride set)
+    if (!isAdmin || args.companyIdOverride) {
+      await verifyJobOwnership(ctx.db, args.jobId, targetCompanyId!);
+    }
 
     // Get all applications for the job
     let applications = await ctx.db
@@ -443,7 +455,7 @@ export const listWithFilters = authedQuery({
 });
 
 // Get a single application with full details
-export const get = authedQuery({
+export const get = flexibleQuery({
   args: {
     applicationId: v.id("applications"),
   },
@@ -451,11 +463,14 @@ export const get = authedQuery({
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
 
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+
     const application = await ctx.db.get(args.applicationId);
     if (!application) throw new ConvexError({ message: "Application not found", code: 404 });
 
-    // Verify application belongs to user's company
-    if (application.company_id !== user.company_id) {
+    // Verify application belongs to target company
+    if (!isAdmin && application.company_id !== targetCompanyId) {
       throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 403 });
     }
 
@@ -504,7 +519,7 @@ export const get = authedQuery({
 });
 
 // List all applications for a company with optional stage filter and pagination
-export const listByCompany = authedQuery({
+export const listByCompany = flexibleQuery({
   args: {
     stage: v.optional(APPLICATION_STAGES),
     page: v.optional(v.number()),
@@ -521,14 +536,19 @@ export const listByCompany = authedQuery({
   handler: async (ctx, args) => {
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
-    if (!user.company_id) throw new ConvexError({ message: "User not associated with a company", code: 403 });
 
-    const companyId = user.company_id;
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
 
-    // Get all applications for the company
+    // Admin without company and without override can't access company data
+    if (!targetCompanyId) {
+      throw new ConvexError({ message: "Company not found", code: 404 });
+    }
+
+    // Get all applications for the target company
     let applications = await ctx.db
       .query("applications")
-      .withIndex("by_company", (q) => q.eq("company_id", companyId))
+      .withIndex("by_company", (q) => q.eq("company_id", targetCompanyId!))
       .collect();
 
     // Filter by stage if provided
@@ -808,7 +828,7 @@ export const createPublicApplicationInternal = internalMutation({
 // ============================================
 
 // Update application stage
-export const updateStage = authedMutation({
+export const updateStage = flexibleMutation({
   args: {
     applicationIds: v.array(v.id("applications")),
     stage: APPLICATION_STAGES,
@@ -817,6 +837,9 @@ export const updateStage = authedMutation({
   handler: async (ctx, args) => {
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
+
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
 
     const results = [];
 
@@ -827,8 +850,8 @@ export const updateStage = authedMutation({
         continue;
       }
 
-      // Verify application belongs to user's company
-      if (application.company_id !== user.company_id) {
+      // Verify application belongs to target company
+      if (!isAdmin && application.company_id !== targetCompanyId) {
         results.push({ id: applicationId, success: false, error: "Unauthorized" });
         continue;
       }
@@ -875,7 +898,7 @@ export const updateStage = authedMutation({
 });
 
 // Send assessment to applications
-export const sendAssessment = authedMutation({
+export const sendAssessment = flexibleMutation({
   args: {
     applicationIds: v.array(v.id("applications")),
     assessmentId: v.id("assessments"),
@@ -885,6 +908,9 @@ export const sendAssessment = authedMutation({
   handler: async (ctx, args) => {
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
+
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
 
     // Determine email template type from the assessment type
     const assessment = await ctx.db.get(args.assessmentId);
@@ -899,8 +925,8 @@ export const sendAssessment = authedMutation({
         continue;
       }
 
-      // Verify application belongs to user's company
-      if (application.company_id !== user.company_id) {
+      // Verify application belongs to target company
+      if (!isAdmin && application.company_id !== targetCompanyId) {
         results.push({ id: applicationId, success: false, error: "Unauthorized" });
         continue;
       }
@@ -934,7 +960,7 @@ export const sendAssessment = authedMutation({
 });
 
 // Move applications to stage with custom email
-export const moveToStageWithEmail = authedMutation({
+export const moveToStageWithEmail = flexibleMutation({
   args: {
     applicationIds: v.array(v.id("applications")),
     stage: APPLICATION_STAGES,
@@ -945,6 +971,9 @@ export const moveToStageWithEmail = authedMutation({
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
 
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+
     const results = [];
 
     for (const applicationId of args.applicationIds) {
@@ -954,8 +983,8 @@ export const moveToStageWithEmail = authedMutation({
         continue;
       }
 
-      // Verify application belongs to user's company
-      if (application.company_id !== user.company_id) {
+      // Verify application belongs to target company
+      if (!isAdmin && application.company_id !== targetCompanyId) {
         results.push({ id: applicationId, success: false, error: "Unauthorized" });
         continue;
       }
@@ -1006,7 +1035,7 @@ export const moveToStageWithEmail = authedMutation({
 });
 
 // Delete an application
-export const remove = authedMutation({
+export const remove = flexibleMutation({
   args: {
     applicationId: v.id("applications"),
   },
@@ -1014,11 +1043,14 @@ export const remove = authedMutation({
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
 
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+
     const application = await ctx.db.get(args.applicationId);
     if (!application) throw new ConvexError({ message: "Application not found", code: 404 });
 
-    // Verify application belongs to user's company
-    if (application.company_id !== user.company_id) {
+    // Verify application belongs to target company
+    if (!isAdmin && application.company_id !== targetCompanyId) {
       throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 403 });
     }
 

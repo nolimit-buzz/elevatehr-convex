@@ -1,7 +1,7 @@
 import { Constants } from "../utils/constants";
 import { ConvexError, v } from "convex/values";
 import { internalQuery } from "../_generated/server";
-import { authedMutation, authedQuery } from "../utils/permission";
+import { flexibleMutation, flexibleQuery } from "../utils/permission";
 
 // Template type enum
 const TEMPLATE_TYPES = v.union(
@@ -48,16 +48,18 @@ export const getByTypeInternal = internalQuery({
 // ============================================
 
 // List all email templates for the company
-export const list = authedQuery({
+export const list = flexibleQuery({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx, args) => {
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
-    if (!user.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
+
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
 
     const templates = await ctx.db
       .query("email_templates")
-      .withIndex("by_company", (q) => q.eq("company_id", user.company_id!))
+      .withIndex("by_company", (q) => q.eq("company_id", targetCompanyId))
       .collect();
 
     // Transform to the expected format with templates object
@@ -76,18 +78,20 @@ export const list = authedQuery({
 });
 
 // Get a single template by type
-export const getByType = authedQuery({
+export const getByType = flexibleQuery({
   args: {
     type: TEMPLATE_TYPES,
   },
   handler: async (ctx, args) => {
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
-    if (!user.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
+
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
 
     const templates = await ctx.db
       .query("email_templates")
-      .withIndex("by_company_type", (q) => q.eq("company_id", user.company_id!).eq("type", args.type))
+      .withIndex("by_company_type", (q) => q.eq("company_id", targetCompanyId).eq("type", args.type))
       .collect();
 
     if (templates.length === 0) {
@@ -112,7 +116,7 @@ export const getByType = authedQuery({
 // ============================================
 
 // Create or update an email template
-export const upsert = authedMutation({
+export const upsert = flexibleMutation({
   args: {
     type: TEMPLATE_TYPES,
     subject: v.optional(v.string()),
@@ -121,12 +125,14 @@ export const upsert = authedMutation({
   handler: async (ctx, args) => {
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
-    if (!user.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
+
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
 
     // Check if template exists
     const existingTemplates = await ctx.db
       .query("email_templates")
-      .withIndex("by_company_type", (q) => q.eq("company_id", user.company_id!).eq("type", args.type))
+      .withIndex("by_company_type", (q) => q.eq("company_id", targetCompanyId).eq("type", args.type))
       .collect();
 
     if (existingTemplates.length > 0) {
@@ -139,7 +145,7 @@ export const upsert = authedMutation({
     } else {
       // Create new
       const templateId = await ctx.db.insert("email_templates", {
-        company_id: user.company_id,
+        company_id: targetCompanyId,
         type: args.type,
         subject: args.subject,
         content: args.content,
@@ -150,18 +156,20 @@ export const upsert = authedMutation({
 });
 
 // Delete an email template
-export const remove = authedMutation({
+export const remove = flexibleMutation({
   args: {
     type: TEMPLATE_TYPES,
   },
   handler: async (ctx, args) => {
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
-    if (!user.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
+
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
 
     const templates = await ctx.db
       .query("email_templates")
-      .withIndex("by_company_type", (q) => q.eq("company_id", user.company_id!).eq("type", args.type))
+      .withIndex("by_company_type", (q) => q.eq("company_id", targetCompanyId).eq("type", args.type))
       .collect();
 
     if (templates.length === 0) {

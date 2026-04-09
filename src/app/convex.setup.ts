@@ -2,22 +2,28 @@ import { FunctionReference } from "convex/server";
 import { useQuery as useBaseQuery, useMutation as useBaseMutation, useAction as useBaseAction } from "convex/react";
 import { DefaultConstants } from "./constants/defaults";
 import { ConvexError } from "convex/values";
-import { getWithExpiry } from "./utils/authStorage";
+import { getWithExpiry, getCompanyOverride } from "./utils/authStorage";
 
 export function useAuthedQuery<Query extends FunctionReference<"query">>(
   query: Query,
   args?: Parameters<typeof useBaseQuery<Query>>[1],
 ) {
   const token = getWithExpiry(DefaultConstants.tokenName);
+  const companyIdOverride = getCompanyOverride();
 
-  // Build the final args - skip if no token, otherwise inject token
-  const finalArgs = !token ? "skip" : args === "skip" ? "skip" : { ...(args || {}), token };
+  // Build the final args - skip if no token, inject token + optionally companyIdOverride
+  if (!token) return "skip" as any;
+  if (args === "skip") return "skip" as any;
+
+  const finalArgs = {
+    ...(args || {}),
+    token,
+    ...(companyIdOverride ? { companyIdOverride } : {}),
+  };
 
   // @ts-expect-error - Token injection modifies the args type
   return useBaseQuery(query, finalArgs);
 }
-
-
 
 export function useAuthedMutation<Mutation extends FunctionReference<"mutation">>(mutation: Mutation) {
   const baseMutation = useBaseMutation(mutation);

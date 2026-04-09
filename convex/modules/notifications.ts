@@ -1,7 +1,7 @@
 import { Constants } from "../utils/constants";
 import { ConvexError, v } from "convex/values";
 import { internalMutation } from "../_generated/server";
-import { authedMutation, authedQuery } from "../utils/permission";
+import { flexibleMutation, flexibleQuery } from "../utils/permission";
 
 // Notification schema for database
 export const NotificationSchema = v.object({
@@ -19,18 +19,20 @@ export const NotificationSchema = v.object({
 // ============================================
 
 // List all notifications for the company/user
-export const list = authedQuery({
+export const list = flexibleQuery({
   args: {
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
-    if (!user.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
+
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
 
     let query = ctx.db
       .query("notifications")
-      .withIndex("by_company", (q) => q.eq("company_id", user.company_id!))
+      .withIndex("by_company", (q) => q.eq("company_id", targetCompanyId))
       .order("desc");
 
     const notifications = await query.collect();
@@ -51,16 +53,19 @@ export const list = authedQuery({
 });
 
 // Get unread notifications count
-export const getUnreadCount = authedQuery({
+export const getUnreadCount = flexibleQuery({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx, args) => {
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
-    if (!user.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
+
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+    if (!targetCompanyId) throw new ConvexError({ message: "Company not found", code: 404 });
 
     const notifications = await ctx.db
       .query("notifications")
-      .withIndex("by_company", (q) => q.eq("company_id", user.company_id!))
+      .withIndex("by_company", (q) => q.eq("company_id", targetCompanyId))
       .filter((q) => q.eq(q.field("read"), false))
       .collect();
 
@@ -73,7 +78,7 @@ export const getUnreadCount = authedQuery({
 // ============================================
 
 // Create a notification
-export const create = authedMutation({
+export const create = flexibleMutation({
   args: {
     title: v.string(),
     content: v.string(),
@@ -82,10 +87,13 @@ export const create = authedMutation({
   handler: async (ctx, args) => {
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
-    if (!user.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
+
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+    if (!targetCompanyId) throw new ConvexError({ message: "Company not found", code: 404 });
 
     const notificationId = await ctx.db.insert("notifications", {
-      company_id: user.company_id,
+      company_id: targetCompanyId,
       user_id: user.id as any,
       title: args.title,
       content: args.content,
@@ -99,7 +107,7 @@ export const create = authedMutation({
 });
 
 // Mark notification as read
-export const markAsRead = authedMutation({
+export const markAsRead = flexibleMutation({
   args: {
     notificationId: v.id("notifications"),
   },
@@ -107,11 +115,14 @@ export const markAsRead = authedMutation({
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
 
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+
     const notification = await ctx.db.get(args.notificationId);
     if (!notification) throw new ConvexError({ message: "Notification not found", code: 404 });
 
-    // Ensure user can only update notifications from their company
-    if (notification.company_id !== user.company_id) {
+    // Ensure user can only update notifications from their company (or admin impersonating)
+    if (!isAdmin && notification.company_id !== targetCompanyId) {
       throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 403 });
     }
 
@@ -122,16 +133,19 @@ export const markAsRead = authedMutation({
 });
 
 // Mark all notifications as read
-export const markAllAsRead = authedMutation({
+export const markAllAsRead = flexibleMutation({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx, args) => {
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
-    if (!user.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
+
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+    if (!targetCompanyId) throw new ConvexError({ message: "Company not found", code: 404 });
 
     const notifications = await ctx.db
       .query("notifications")
-      .withIndex("by_company", (q) => q.eq("company_id", user.company_id!))
+      .withIndex("by_company", (q) => q.eq("company_id", targetCompanyId))
       .filter((q) => q.eq(q.field("read"), false))
       .collect();
 
@@ -164,7 +178,7 @@ export const createInternal = internalMutation({
 });
 
 // Delete a notification
-export const remove = authedMutation({
+export const remove = flexibleMutation({
   args: {
     notificationId: v.id("notifications"),
   },
@@ -172,11 +186,14 @@ export const remove = authedMutation({
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
 
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+
     const notification = await ctx.db.get(args.notificationId);
     if (!notification) throw new ConvexError({ message: "Notification not found", code: 404 });
 
-    // Ensure user can only delete notifications from their company
-    if (notification.company_id !== user.company_id) {
+    // Ensure user can only delete notifications from their company (or admin impersonating)
+    if (!isAdmin && notification.company_id !== targetCompanyId) {
       throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 403 });
     }
 
