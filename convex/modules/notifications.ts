@@ -94,7 +94,7 @@ export const create = flexibleMutation({
 
     const notificationId = await ctx.db.insert("notifications", {
       company_id: targetCompanyId,
-      user_id: user.id as any,
+      user_id: user._id,
       title: args.title,
       content: args.content,
       type: args.type || "default",

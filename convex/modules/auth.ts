@@ -13,7 +13,7 @@ export const Me = authedMutation({
     const userPayload = ctx.user;
     if (!userPayload) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
 
-    return await getMe(ctx, userPayload.id as Id<"users">);
+    return await getMe(ctx, userPayload._id as Id<"users">);
   },
 });
 

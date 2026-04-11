@@ -261,13 +261,16 @@ export const update = flexibleMutation({
     }
 
     if (args.company) {
+      if (!targetCompanyId) {
+        throw new ConvexError({ message: "Company ID not found for user", code: 400 });
+      }
       await ctx.db.patch(targetCompanyId, args.company);
     }
     if (args.personal) {
-      await ctx.db.patch(user.id as any, args.personal);
+      await ctx.db.patch(user._id, args.personal as any);
     }
 
-    const updatedProfile = await getMe(ctx, user.id as any);
+    const updatedProfile = await getMe(ctx, user._id as any);
 
     return {
       ...updatedProfile,
@@ -323,7 +326,7 @@ export const updateLogo = flexibleMutation({
     // Update the company with the new logo URL
     await ctx.db.patch(targetCompanyId, { company_logo: logoUrl });
 
-    const updatedProfile = await getMe(ctx, user.id as any);
+    const updatedProfile = await getMe(ctx, user._id as any);
 
     return {
       ...updatedProfile,

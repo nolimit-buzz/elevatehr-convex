@@ -19,8 +19,6 @@ export const getDashboardStats = flexibleQuery({
     const isAdmin = ctx._isAdmin === true;
     const targetCompanyId = args.companyIdOverride ?? user.company_id;
 
-    console.log("User in getDashboardStats:", { user, targetCompanyId });
-
     if (!targetCompanyId) {
       // If user is not an admin and has no company, they shouldn't access this
       if (!isAdmin) {
