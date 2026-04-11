@@ -99,7 +99,7 @@ export const ChangePassword = authedMutation({
     if (!userPayload) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
 
     // Fetch full user document from database
-    const userId = userPayload.id as Id<"users">;
+    const userId = userPayload._id as Id<"users">;
     const user = await ctx.db.get(userId);
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
 
@@ -124,7 +124,7 @@ export const UpdateProfile = authedMutation({
     if (!userPayload) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
 
     // Fetch full user document from database
-    const userId = userPayload.id as Id<"users">;
+    const userId = userPayload._id as Id<"users">;
     const user = await ctx.db.get(userId);
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
 

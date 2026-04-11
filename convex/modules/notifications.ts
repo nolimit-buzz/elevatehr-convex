@@ -29,6 +29,7 @@ export const list = flexibleQuery({
 
     const isAdmin = ctx._isAdmin === true;
     const targetCompanyId = args.companyIdOverride ?? user.company_id;
+    if (!targetCompanyId) throw new ConvexError({ message: "Company ID not found for user", code: 400 });
 
     let query = ctx.db
       .query("notifications")

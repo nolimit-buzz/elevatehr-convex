@@ -78,6 +78,7 @@ export const AssessmentQueries = () => {
   const CreateTechnicalAction = useAuthedAction(api.modules.assessment.createTechnical);
   const UpdateMutation = useAuthedMutation(api.modules.assessment.update);
   const RemoveMutation = useAuthedMutation(api.modules.assessment.remove);
+  const GradeTechnicalMutation = useAuthedMutation(api.modules.assessment.gradeTechnicalSubmission);
 
   /**
    * Generate skills for a job role using AI (Groq)
@@ -90,7 +91,7 @@ export const AssessmentQueries = () => {
       GenerateSkillsAction({
         jobTitle: args.jobTitle,
         jobDescription: args.jobDescription,
-      })
+      }),
     );
     return { result, error };
   };
@@ -105,7 +106,7 @@ export const AssessmentQueries = () => {
         skills: args.skills,
         numberOfOpenTextQuestions: args.numberOfOpenTextQuestions,
         numberOfMultiChoiceQuestions: args.numberOfMultiChoiceQuestions,
-      })
+      }),
     );
     return { result, error };
   };
@@ -123,7 +124,7 @@ export const AssessmentQueries = () => {
         level: args.level,
         skills: args.skills,
         assessmentOptions: args.assessmentOptions,
-      })
+      }),
     );
     return { result, error };
   };
@@ -143,7 +144,7 @@ export const AssessmentQueries = () => {
         level: args.level,
         skills: args.skills,
         questions: args.questions,
-      })
+      }),
     );
     return { result, error };
   };
@@ -162,7 +163,7 @@ export const AssessmentQueries = () => {
         skills: args.skills,
         technicalContent: args.technicalContent,
         assessmentOptions: args.assessmentOptions,
-      })
+      }),
     );
     return { result, error };
   };
@@ -178,7 +179,7 @@ export const AssessmentQueries = () => {
       UpdateMutation({
         assessmentId: args.assessmentId,
         data: args.data,
-      })
+      }),
     );
     return { result, error };
   };
@@ -194,6 +195,26 @@ export const AssessmentQueries = () => {
     return { result, error };
   };
 
+  const GradeTechnicalSubmission = async (args: {
+    applicationId: Id<"applications">;
+    assessmentId: Id<"assessments">;
+    score: number;
+    feedback?: string;
+  }) => {
+    if (!GradeTechnicalMutation) {
+      return { result: null, error: "Mutation not ready" };
+    }
+    const { result, error } = await useConvexResponse(
+      GradeTechnicalMutation({
+        applicationId: args.applicationId,
+        assessmentId: args.assessmentId,
+        score: args.score,
+        feedback: args.feedback,
+      }),
+    );
+    return { result, error };
+  };
+
   return {
     GenerateSkills,
     GenerateQuestions,
@@ -202,6 +223,7 @@ export const AssessmentQueries = () => {
     CreateTechnicalAssessment,
     UpdateAssessment,
     RemoveAssessment,
+    GradeTechnicalSubmission,
   };
 };
 

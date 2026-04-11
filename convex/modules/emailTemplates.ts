@@ -56,6 +56,7 @@ export const list = flexibleQuery({
 
     const isAdmin = ctx._isAdmin === true;
     const targetCompanyId = args.companyIdOverride ?? user.company_id;
+    if (!targetCompanyId) throw new ConvexError({ message: "Company ID not found for user", code: 400 });
 
     const templates = await ctx.db
       .query("email_templates")
@@ -88,6 +89,7 @@ export const getByType = flexibleQuery({
 
     const isAdmin = ctx._isAdmin === true;
     const targetCompanyId = args.companyIdOverride ?? user.company_id;
+    if (!targetCompanyId) throw new ConvexError({ message: "Company ID not found for user", code: 400 });
 
     const templates = await ctx.db
       .query("email_templates")
@@ -128,6 +130,7 @@ export const upsert = flexibleMutation({
 
     const isAdmin = ctx._isAdmin === true;
     const targetCompanyId = args.companyIdOverride ?? user.company_id;
+    if (!targetCompanyId) throw new ConvexError({ message: "Company ID not found for user", code: 400 });
 
     // Check if template exists
     const existingTemplates = await ctx.db
@@ -166,6 +169,7 @@ export const remove = flexibleMutation({
 
     const isAdmin = ctx._isAdmin === true;
     const targetCompanyId = args.companyIdOverride ?? user.company_id;
+    if (!targetCompanyId) throw new ConvexError({ message: "Company ID not found for user", code: 400 });
 
     const templates = await ctx.db
       .query("email_templates")

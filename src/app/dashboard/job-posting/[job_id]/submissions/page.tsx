@@ -48,7 +48,6 @@ import ApplicationsTab from "./components/ApplicationsTab";
 import JobDescriptionTab from "./components/JobDescriptionTab";
 import CVRepositoryTab from "./components/CVRepositoryTab";
 
-
 // Remove unused styled components
 const PrimaryButton = styled(Button)(({ theme }) => ({
   backgroundColor: theme.palette.primary.main,
@@ -185,12 +184,12 @@ export default function Home() {
   const convexApplications = useApplications(
     jobId && !isApplyingFilters
       ? {
-        jobId,
-        stage: currentStage as ConvexStageType | undefined,
-        assessmentType: currentAssessmentType,
-        page,
-        perPage,
-      }
+          jobId,
+          stage: currentStage as ConvexStageType | undefined,
+          assessmentType: currentAssessmentType,
+          page,
+          perPage,
+        }
       : null,
   );
 
@@ -252,11 +251,11 @@ export default function Home() {
       // Transform Convex job data to match JobDetails interface
       const transformedJob = convexJobDetails
         ? ({
-          ...convexJobDetails,
-          id: (convexJobDetails as any)._id || (convexJobDetails as any).id,
-          // Map description to about_role for compatibility
-          about_role: (convexJobDetails as any).description || "",
-        } as unknown as JobDetails)
+            ...convexJobDetails,
+            id: (convexJobDetails as any)._id || (convexJobDetails as any).id,
+            // Map description to about_role for compatibility
+            about_role: (convexJobDetails as any).description || "",
+          } as unknown as JobDetails)
         : null;
       setJobDetails(transformedJob);
       setLoading(false);
@@ -296,12 +295,13 @@ export default function Home() {
 
       // Update dynamic phase options with assessment options
       const assessmentOptions = fetchedAssessments.map((assessment: any) => ({
-        label: `Send ${assessment.title ||
+        label: `Send ${
+          assessment.title ||
           assessment.type
             .split("_")
             .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
             .join(" ")
-          }`,
+        }`,
         icon: AssessmentIcon,
         action: assessment.id,
         id: assessment.id,
@@ -385,6 +385,7 @@ export default function Home() {
   // Apply filters - sets flag to use filtered query
   const applyFilters = () => {
     setLoading(true);
+    setPage(1);
     // Explicitly set active filters only when button is clicked
     setActiveFilters({ ...filters });
     setIsApplyingFilters(true);
@@ -402,6 +403,7 @@ export default function Home() {
     setFilters(defaultFilters);
     setActiveFilters(null);
     setIsApplyingFilters(false);
+    setPage(1);
     // Convex will auto-refetch with the new parameters
   };
 
@@ -413,6 +415,7 @@ export default function Home() {
     setSelectedEntries([]);
     setSubTabValue(newValue);
     setSelectedAssessmentType(0);
+    setPage(1);
   };
 
   const handleQuickActionsOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -492,7 +495,8 @@ export default function Home() {
       const assessmentName = matchedAssessment ? matchedAssessment.title : assessment_id.replace("_", " ");
 
       handleNotification(
-        `Successfully sent ${application_ids.length} candidate${application_ids.length > 1 ? "s" : ""
+        `Successfully sent ${application_ids.length} candidate${
+          application_ids.length > 1 ? "s" : ""
         } to ${assessmentName}`,
         "success",
       );
@@ -656,9 +660,7 @@ export default function Home() {
     if (!selectedEntries.length) return;
 
     let count = 0;
-    const selectedApps = candidates.applications.filter((app: any) =>
-      selectedEntries.includes(String(app.id)),
-    );
+    const selectedApps = candidates.applications.filter((app: any) => selectedEntries.includes(String(app.id)));
 
     for (const app of selectedApps) {
       if (app.attachments?.cv) {
@@ -667,12 +669,8 @@ export default function Home() {
       }
     }
 
-    handleNotification(
-      `Successfully opened ${count} CV${count !== 1 ? "s" : ""} in new tabs.`,
-      "success",
-    );
+    handleNotification(`Successfully opened ${count} CV${count !== 1 ? "s" : ""} in new tabs.`, "success");
   }, [selectedEntries, candidates.applications, handleNotification]);
-
 
   const handleCloseResponses = async () => {
     try {
@@ -752,7 +750,6 @@ export default function Home() {
   const handleBulkActionsClose = () => {
     setBulkActionsAnchor(null);
   };
-
 
   return (
     <Box

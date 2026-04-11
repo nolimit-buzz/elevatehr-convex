@@ -1318,7 +1318,7 @@ export default function Home() {
                 }}
               >
                 <Grid container spacing={3}>
-                  {filteredCandidates?.applications?.map((candidate) => (
+                  {filteredCandidates?.applications?.map((candidate: any) => (
                     <Grid item xs={12} sm={6} lg={4} key={candidate.id}>
                       <Paper
                         elevation={0}
@@ -1479,7 +1479,7 @@ export default function Home() {
                         </Box>
 
                         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                          {candidate.professional_info.skills?.split(",").map((skill, index) => (
+                          {candidate.professional_info.skills?.split(",").map((skill: string, index: number) => (
                             <Chip
                               key={index}
                               label={skill}
@@ -1595,7 +1595,7 @@ export default function Home() {
                   },
                 }}
               >
-                {filteredCandidates?.applications?.map((candidate) => (
+                {filteredCandidates?.applications?.map((candidate: any) => (
                   <Box
                     key={candidate.id}
                     sx={{

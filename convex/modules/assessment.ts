@@ -106,6 +106,7 @@ export const list = flexibleQuery({
 
     const isAdmin = ctx._isAdmin === true;
     const targetCompanyId = args.companyIdOverride ?? user.company_id;
+    if (!targetCompanyId) throw new ConvexError({ message: "Company ID not found for user", code: 400 });
 
     let query = ctx.db.query("assessments").withIndex("by_company", (q) => q.eq("company_id", targetCompanyId));
 
@@ -492,6 +493,7 @@ export const getStatistics = flexibleQuery({
 
     const isAdmin = ctx._isAdmin === true;
     const targetCompanyId = args.companyIdOverride ?? user.company_id;
+    if (!targetCompanyId) throw new ConvexError({ message: "Company ID not found for user", code: 400 });
 
     const assessments = await ctx.db
       .query("assessments")
@@ -589,5 +591,60 @@ export const getAssessmentForGradingInternal = internalQuery({
   args: { assessmentId: v.id("assessments") },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.assessmentId);
+  },
+});
+
+// Grade a technical assessment submission manually (recruiter provides score + feedback)
+export const gradeTechnicalSubmission = flexibleMutation({
+  args: {
+    applicationId: v.id("applications"),
+    assessmentId: v.id("assessments"),
+    score: v.number(),
+    feedback: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = ctx.user;
+    if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
+
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+    if (!targetCompanyId) throw new ConvexError({ message: "Company ID not found for user", code: 400 });
+
+    // Validate score range
+    if (args.score < 0 || args.score > 100) {
+      throw new ConvexError({ message: "Score must be between 0 and 100", code: 400 });
+    }
+
+    // Validate assessment exists and belongs to company
+    const assessment = await ctx.db.get(args.assessmentId);
+    if (!assessment) throw new ConvexError({ message: "Assessment not found", code: 404 });
+    if (!isAdmin && assessment.company_id !== targetCompanyId) {
+      throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 403 });
+    }
+
+    // Validate application exists and belongs to company
+    const application = await ctx.db.get(args.applicationId);
+    if (!application) throw new ConvexError({ message: "Application not found", code: 404 });
+    if (!isAdmin && application.company_id !== targetCompanyId) {
+      throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 403 });
+    }
+
+    // Update the assessment result with the score and feedback
+    const currentResults = application.assessments_results || {};
+    const assessmentKey = args.assessmentId as string;
+    const existingResult = currentResults[assessmentKey] || {};
+
+    await ctx.db.patch(args.applicationId, {
+      assessments_results: {
+        ...currentResults,
+        [assessmentKey]: {
+          ...existingResult,
+          assessment_score: args.score,
+          assessment_feedback: args.feedback,
+        },
+      },
+    });
+
+    return { message: "Technical assessment graded successfully" };
   },
 });

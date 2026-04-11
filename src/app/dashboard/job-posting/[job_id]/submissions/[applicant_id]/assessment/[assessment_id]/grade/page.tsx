@@ -1,21 +1,11 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import {
-  Box,
-  Container,
-  Typography,
-  Button,
-  Paper,
-  Stack,
-  Divider,
-  TextField,
-  IconButton,
-  Link,
-} from "@mui/material";
+import { Box, Container, Typography, Button, Paper, Stack, Divider, TextField, IconButton, Link } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useApplication } from "@/queries/applications.queries";
-import { useAssessment } from "@/queries/assessment.queries";
+import { useAssessment, AssessmentQueries } from "@/queries/assessment.queries";
+import { Id } from "../../../../../../../../../convex/_generated/dataModel";
 
 export default function GradingPage() {
   const params = useParams();
@@ -24,6 +14,11 @@ export default function GradingPage() {
 
   const applicant = useApplication(applicant_id as string);
   const assessment = useAssessment(assessment_id as any);
+  const { GradeTechnicalSubmission } = AssessmentQueries();
+
+  const [score, setScore] = useState<string>("");
+  const [feedback, setFeedback] = useState<string>("");
+  const [saving, setSaving] = useState(false);
 
   const handleBack = () => {
     router.back();
@@ -65,10 +60,11 @@ export default function GradingPage() {
 
             {/* coming back to chang this to !submissionLink  */}
             {(() => {
-              const submissionLink = applicant.assessments_results?.[assessment_id as string]?.assessment_submission_link;
+              const submissionLink =
+                applicant.assessments_results?.[assessment_id as string]?.assessment_submission_link;
               if (submissionLink) return null;
               return (
-                <Button 
+                <Button
                   component="a"
                   variant="outlined"
                   href={submissionLink}
@@ -90,6 +86,8 @@ export default function GradingPage() {
               fullWidth
               type="number"
               placeholder="Enter score (0-100)"
+              value={score}
+              onChange={(e) => setScore(e.target.value)}
               InputProps={{ inputProps: { min: 0, max: 100 } }}
               sx={{ maxWidth: 200 }}
             />
@@ -104,6 +102,8 @@ export default function GradingPage() {
               multiline
               rows={4}
               placeholder="Add your evaluation notes here..."
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
             />
           </Box>
 
@@ -111,12 +111,30 @@ export default function GradingPage() {
             <Button
               variant="contained"
               size="large"
+              disabled={saving || !score}
               sx={{ borderRadius: "24px", px: 4, textTransform: "none" }}
-              onClick={() => {
-                alert("Grading functionality is coming soon!");
+              onClick={async () => {
+                const numScore = Number(score);
+                if (isNaN(numScore) || numScore < 0 || numScore > 100) {
+                  alert("Please enter a valid score between 0 and 100");
+                  return;
+                }
+                setSaving(true);
+                const { error } = await GradeTechnicalSubmission({
+                  applicationId: applicant_id as Id<"applications">,
+                  assessmentId: assessment_id as Id<"assessments">,
+                  score: numScore,
+                  feedback: feedback || undefined,
+                });
+                setSaving(false);
+                if (error) {
+                  alert(error);
+                } else {
+                  router.back();
+                }
               }}
             >
-              Save Grade
+              {saving ? "Saving..." : "Save Grade"}
             </Button>
           </Box>
         </Stack>
