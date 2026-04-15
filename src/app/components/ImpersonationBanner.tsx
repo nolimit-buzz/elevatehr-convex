@@ -21,8 +21,9 @@ export default function ImpersonationBanner({ companyName, onExit }: Impersonati
         alignItems: "center",
         justifyContent: "center",
         gap: 2,
+        position: "sticky",
+        top: 0,
         zIndex: 9999,
-        position: "relative",
       }}
     >
       <Typography variant="body2" fontWeight={600}>

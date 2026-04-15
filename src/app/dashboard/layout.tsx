@@ -5,7 +5,15 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import Header from "@/app/dashboard/layout/header/Header";
 import ImpersonationBanner from "@/app/components/ImpersonationBanner";
 import { DefaultConstants } from "@/app/constants/defaults";
-import { getWithExpiry, setCompanyOverride, clearCompanyOverride } from "@/app/utils/authStorage";
+import {
+  getWithExpiry,
+  setCompanyOverride,
+  clearCompanyOverride,
+  setImpersonationName,
+  getImpersonationName,
+  clearImpersonationName,
+  getCompanyOverride,
+} from "@/app/utils/authStorage";
 
 const MainWrapper = styled("div")(() => ({
   display: "flex",
@@ -39,25 +47,50 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   }, [router]);
 
   const searchParams = useSearchParams();
-  const arrowId = searchParams.get("arrow_id");
-  const name = searchParams.get("name");
+  const arrowIdFromUrl = searchParams.get("arrow_id");
+  const nameFromUrl = searchParams.get("name");
 
-  // Sync arrow_id to sessionStorage so useAuthedQuery can inject it as companyIdOverride
+  const [activeImpersonationId, setActiveImpersonationId] = useState<string | null>(null);
+  const [activeImpersonationName, setActiveImpersonationName] = useState<string | null>(null);
+
+  // On every pathname change, either save params to sessionStorage or restore them from it
   useEffect(() => {
-    if (arrowId) {
-      setCompanyOverride(arrowId);
+    if (arrowIdFromUrl) {
+      // URL has params — persist to sessionStorage and update local state
+      setCompanyOverride(arrowIdFromUrl);
+      setImpersonationName(nameFromUrl ?? "");
+      setActiveImpersonationId(arrowIdFromUrl);
+      setActiveImpersonationName(nameFromUrl);
     } else {
-      clearCompanyOverride();
+      // URL lost params — check sessionStorage and re-attach if present
+      const storedId = getCompanyOverride();
+      const storedName = getImpersonationName();
+      if (storedId) {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("arrow_id", storedId);
+        if (storedName) params.set("name", storedName);
+        router.replace(`${pathname}?${params.toString()}`);
+        setActiveImpersonationId(storedId);
+        setActiveImpersonationName(storedName);
+      } else {
+        setActiveImpersonationId(null);
+        setActiveImpersonationName(null);
+      }
     }
-  }, [arrowId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, arrowIdFromUrl]);
 
   const handleExitImpersonation = () => {
     clearCompanyOverride();
+    clearImpersonationName();
+    setActiveImpersonationId(null);
+    setActiveImpersonationName(null);
     // Remove arrow_id and name from URL
     const params = new URLSearchParams(searchParams.toString());
     params.delete("arrow_id");
     params.delete("name");
-    router.replace(`${pathname}?${params.toString()}`);
+    const queryString = params.toString();
+    router.replace(queryString ? `${pathname}?${queryString}` : pathname);
   };
 
   // Render nothing while checking — prevents dashboard flash for unauthed users
@@ -65,8 +98,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <main>
-      {arrowId && (
-        <ImpersonationBanner companyName={name || `Recruiter ID: ${arrowId}`} onExit={handleExitImpersonation} />
+      {activeImpersonationId && (
+        <ImpersonationBanner
+          companyName={activeImpersonationName || `Recruiter ID: ${activeImpersonationId}`}
+          onExit={handleExitImpersonation}
+        />
       )}
       <Header />
       <MainWrapper className="mainwrapper">
