@@ -1,5 +1,6 @@
 import { api } from "../../convex/_generated/api";
 import { useQuery, useMutation, useAction } from "convex/react";
+import { ConvexError } from "convex/values";
 import { Id } from "../../convex/_generated/dataModel";
 import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import { useAuthedMutation, useAuthedQuery, useConvexResponse } from "@/app/convex.setup";
@@ -317,7 +318,12 @@ export const usePublicApplicationMutations = () => {
       });
       return { result, error: null };
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to submit application";
+      const message =
+        error instanceof ConvexError
+          ? (error.data as { message: string }).message
+          : error instanceof Error
+            ? error.message
+            : "Failed to submit application";
       return { result: null, error: message };
     }
   };

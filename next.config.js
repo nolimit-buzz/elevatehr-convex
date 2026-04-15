@@ -2,13 +2,12 @@
 const nextConfig = {
   output: "standalone",
   reactStrictMode: true,
+  dangerouslyAllowSVG: true,
   images: {
-    domains: [
-      "localhost",
-      "127.0.0.1",
-      "app.elevatehr.ai",
-      "api-convexy.codesordinatestudio.net.ng",
-    ],
+    domains: ["localhost", "127.0.0.1", "app.elevatehr.ai", "api-convexy.codesordinatestudio.net.ng"],
+    dangerouslyAllowSVG: true,
+    contentDispositionType: "attachment",
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   webpack: (config, { isServer }) => {
     // Fixes npm packages that depend on `fs` module
