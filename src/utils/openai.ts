@@ -3,10 +3,23 @@ const OPENAI_API_KEY = process.env.NEXT_PUBLIC_OPENAI_KEY
 // import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-    apiKey: OPENAI_API_KEY,
-    dangerouslyAllowBrowser: true
-});
+let openaiInstance: OpenAI | null = null;
+
+function getOpenAIClient() {
+    if (openaiInstance) return openaiInstance;
+    
+    if (!OPENAI_API_KEY) {
+        console.warn('OpenAI API key is missing. AI features will not work.');
+        return null;
+    }
+
+    openaiInstance = new OpenAI({
+        apiKey: OPENAI_API_KEY,
+        dangerouslyAllowBrowser: true
+    });
+    return openaiInstance;
+}
+
 
 const jobDescriptionGenerator = `You are a professional job description writer. Create a JSON object with the following structure for the job title: "\${jobTitle}".
 
@@ -33,8 +46,11 @@ export async function generateInput(request: { jobTitle: string, jobLevel: strin
         const fullJobTitle = jobLevel ? `${jobLevel} ${jobTitle}` : jobTitle;
         const prompt = jobDescriptionGenerator.replace(/\${jobTitle}/g, fullJobTitle);
 
+        const client = getOpenAIClient();
+        if (!client) throw new Error("OpenAI client not initialized (missing API key)");
+
         // Call the OpenAI API
-        const response = await openai.chat.completions.create({
+        const response = await client.chat.completions.create({
             model: "gpt-4o",
             messages: [
                 {
@@ -102,7 +118,10 @@ export async function generateSkillsForRole(jobTitle: string, jobDescription: st
     Each skill should be a single word or space-separated phrase (do not use hyphens).
     Ensure skills are specific and relevant to the role.`;
 
-    const response = await openai.chat.completions.create({
+    const client = getOpenAIClient();
+    if (!client) throw new Error("OpenAI client not initialized (missing API key)");
+
+    const response = await client.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
         {

@@ -1,4 +1,5 @@
 import CryptoJS from "crypto-js";
+import { DefaultConstants } from "@/app/constants/defaults";
 
 const EXPIRY_SUFFIX = "_expiry";
 const EXPIRY_DAYS = 20;
@@ -81,3 +82,40 @@ export function removeProfile() {
   sessionStorage.removeItem(PROFILE_KEY);
 }
 
+// ─── Company Override (sessionStorage — for admin impersonation) ─────────────
+
+/** Save company override ID to sessionStorage. */
+export function setCompanyOverride(companyId: string) {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(DefaultConstants.companyIdOverrideKey, companyId);
+}
+
+/** Read company override ID from sessionStorage. */
+export function getCompanyOverride(): string | null {
+  if (typeof window === "undefined") return null;
+  return sessionStorage.getItem(DefaultConstants.companyIdOverrideKey);
+}
+
+/** Clear company override from sessionStorage. */
+export function clearCompanyOverride() {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(DefaultConstants.companyIdOverrideKey);
+}
+
+/** Save impersonated company name to sessionStorage. */
+export function setImpersonationName(name: string) {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(DefaultConstants.companyNameOverrideKey, name);
+}
+
+/** Read impersonated company name from sessionStorage. */
+export function getImpersonationName(): string | null {
+  if (typeof window === "undefined") return null;
+  return sessionStorage.getItem(DefaultConstants.companyNameOverrideKey);
+}
+
+/** Clear impersonated company name from sessionStorage. */
+export function clearImpersonationName() {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(DefaultConstants.companyNameOverrideKey);
+}

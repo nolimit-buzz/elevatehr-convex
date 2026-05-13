@@ -105,7 +105,8 @@ export default function ApplicantDetails() {
   // Transform applications list for sidebar
   const applicants = useMemo(() => {
     if (!applicationsData?.applications) return [];
-    return applicationsData.applications.map((app) => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return applicationsData.applications.map((app: any) => ({
       id: app.id,
       personal_info: {
         firstname: app.personal_info?.firstname || "",

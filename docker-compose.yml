@@ -1,0 +1,52 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_DB: convex
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d convex"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  convex:
+    image: ghcr.io/get-convex/convex-backend:latest
+    environment:
+      DATABASE_URL: postgres://postgres:postgres_password@db:5432/
+      CONVEX_URL: http://localhost:3210
+      CONVEX_SITE_URL: http://localhost:3211
+    ports:
+      - "3210:3210"
+      - "3211:3211"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_CONVEX_URL=http://localhost:3210
+        - NEXT_PUBLIC_CONVEX_SITE_URL=http://localhost:3211
+        - OPENAI_API_KEY=${OPENAI_API_KEY}
+    ports:
+      - "3001:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - NEXT_PUBLIC_CONVEX_URL=http://localhost:3210
+      - NEXT_PUBLIC_CONVEX_SITE_URL=http://localhost:3211
+      - CONVEX_SELF_HOSTED_URL=http://convex:3210
+    depends_on:
+      - convex
+
+volumes:
+  pgdata:

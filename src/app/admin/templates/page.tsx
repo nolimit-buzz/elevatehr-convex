@@ -7,24 +7,22 @@ import { ADMIN_CARD_SX } from "../styles";
 import { useAdminEmailTemplatesList } from "@/queries/adminEmailTemplates.queries";
 
 const DEFAULT_TEMPLATES = [
-  { id: "blank", title: "Blank document", subtitle: "", previewType: "blank" },
-  { id: "software", title: "Software develop...", subtitle: "by PandaDoc", previewType: "software" },
-  { id: "resume-serif", title: "Resume", subtitle: "Serif", previewType: "resume-serif" },
-  { id: "privacy", title: "Privacy policy", subtitle: "by UpCounsel", previewType: "privacy" },
-  { id: "resume-coral", title: "Resume", subtitle: "Coral", previewType: "resume-coral" },
-  { id: "letter", title: "Letter", subtitle: "Spearmint", previewType: "letter" },
-  { id: "project", title: "Project proposal", subtitle: "Tropic", previewType: "project" },
+  { id: "blank", title: "UI/UX Designer" },
+  { id: "software", title: "Software develop..." },
+  { id: "resume-serif", title: "Frontend" },
+  { id: "privacy", title: "Quality Assurence" },
+  { id: "privacy", title: "Mobile Developer" },
+
 ];
 
 function TemplateCard({ template }: { template: (typeof DEFAULT_TEMPLATES)[0] }) {
   return (
-    <Box sx={{ width: 140, cursor: "pointer", "&:hover .preview": { borderColor: "primary.main" } }}>
+    <Box sx={{ width: "100%", cursor: "pointer", "&:hover .preview": { borderColor: "primary.main" } }}>
       <Paper
         className="preview"
         elevation={0}
         sx={{
-          width: 140,
-          height: 180,
+          aspectRatio: "140 / 180",
           borderRadius: "4px",
           border: "1px solid",
           borderColor: "rgba(0,0,0,0.08)",
@@ -36,32 +34,23 @@ function TemplateCard({ template }: { template: (typeof DEFAULT_TEMPLATES)[0] })
           transition: "border-color 0.2s",
         }}
       >
-        {template.previewType === "blank" ? (
-          <Box sx={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <PlusIcon style={{ width: 48, height: 48, color: "rgba(0,0,0,0.12)" }} />
+
+        <Box sx={{ flex: 1, p: 1.5 }}>
+          <Box sx={{ width: "100%", height: "100%", bgcolor: "rgba(0,0,0,0.02)", borderRadius: "2px", p: 1 }}>
+            <Box sx={{ width: "60%", height: 4, bgcolor: "rgba(0,0,0,0.06)", mb: 1 }} />
+            <Box sx={{ width: "100%", height: 2, bgcolor: "rgba(0,0,0,0.04)", mb: 0.5 }} />
+            <Box sx={{ width: "100%", height: 2, bgcolor: "rgba(0,0,0,0.04)", mb: 0.5 }} />
+            <Box sx={{ width: "80%", height: 2, bgcolor: "rgba(0,0,0,0.04)", mb: 2 }} />
+            <Box sx={{ width: "40%", height: 4, bgcolor: "rgba(0,0,0,0.06)", mb: 1 }} />
+            <Box sx={{ width: "100%", height: 2, bgcolor: "rgba(0,0,0,0.04)", mb: 0.5 }} />
+            <Box sx={{ width: "90%", height: 2, bgcolor: "rgba(0,0,0,0.04)" }} />
           </Box>
-        ) : (
-          <Box sx={{ flex: 1, p: 1.5 }}>
-            <Box sx={{ width: "100%", height: "100%", bgcolor: "rgba(0,0,0,0.02)", borderRadius: "2px", p: 1 }}>
-              <Box sx={{ width: "60%", height: 4, bgcolor: "rgba(0,0,0,0.06)", mb: 1 }} />
-              <Box sx={{ width: "100%", height: 2, bgcolor: "rgba(0,0,0,0.04)", mb: 0.5 }} />
-              <Box sx={{ width: "100%", height: 2, bgcolor: "rgba(0,0,0,0.04)", mb: 0.5 }} />
-              <Box sx={{ width: "80%", height: 2, bgcolor: "rgba(0,0,0,0.04)", mb: 2 }} />
-              <Box sx={{ width: "40%", height: 4, bgcolor: "rgba(0,0,0,0.06)", mb: 1 }} />
-              <Box sx={{ width: "100%", height: 2, bgcolor: "rgba(0,0,0,0.04)", mb: 0.5 }} />
-              <Box sx={{ width: "90%", height: 2, bgcolor: "rgba(0,0,0,0.04)" }} />
-            </Box>
-          </Box>
-        )}
+        </Box>
+
       </Paper>
       <Typography variant="body2" fontWeight={500} noWrap sx={{ color: "text.primary", fontSize: "0.875rem" }}>
         {template.title}
       </Typography>
-      {template.subtitle && (
-        <Typography variant="caption" color="text.secondary" noWrap sx={{ display: "block" }}>
-          {template.subtitle}
-        </Typography>
-      )}
     </Box>
   );
 }
@@ -73,16 +62,16 @@ export default function GlobalCommunicationTemplatesPage() {
     <Box sx={{ width: "100%", pb: 4 }}>
       {/* ─── Header ───────────────────────────────────────────────────────────── */}
       <Box
-        sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2, mb: 4 }}
+        sx={{ display: "flex", justifyContent: "flex-end", alignItems: "center", flexWrap: "wrap", gap: 2, mb: 4 }}
       >
-        <Box>
+        {/* <Box>
           <Typography variant="h4" fontWeight={700} color="text.primary" sx={{ letterSpacing: "-0.02em" }}>
             Global Communication Templates
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Set the standard for recruiter-to-candidate communication.
           </Typography>
-        </Box>
+        </Box> */}
         <Button
           variant="contained"
           startIcon={<PlusIcon style={{ width: 24, height: 24 }} />}
@@ -93,7 +82,7 @@ export default function GlobalCommunicationTemplatesPage() {
             px: 2,
           }}
         >
-          + New Template
+          New Template
         </Button>
       </Box>
 
@@ -104,12 +93,10 @@ export default function GlobalCommunicationTemplatesPage() {
         </Typography>
         <Box
           sx={{
-            display: "flex",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
             gap: 3,
-            overflowX: "auto",
             pb: 2,
-            "&::-webkit-scrollbar": { height: 6 },
-            "&::-webkit-scrollbar-thumb": { bgcolor: "rgba(0,0,0,0.05)", borderRadius: 3 },
           }}
         >
           {DEFAULT_TEMPLATES.map((template) => (

@@ -20,7 +20,10 @@ import AssessmentSuccessModal from "@/app/dashboard/components/dashboard/assessm
  * For creating new assessments, users are redirected to the main /assessments page
  * which now has the full creation flow built in as modals over the list.
  */
-export default function EditAssessmentPage() {
+import { Suspense } from "react";
+
+// Wrap the component logic in a separate function to use with Suspense
+function EditAssessmentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const type = searchParams?.get("type");
@@ -394,3 +397,12 @@ export default function EditAssessmentPage() {
     </Box>
   );
 }
+
+export default function EditAssessmentPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <EditAssessmentContent />
+    </Suspense>
+  );
+}
+

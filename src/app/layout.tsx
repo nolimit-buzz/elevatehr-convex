@@ -7,6 +7,7 @@ import "@fontsource-variable/outfit";
 import Header from "./dashboard/layout/header/Header";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { ConvexClient } from "convex/browser";
+import { Toaster } from "sonner";
 
 const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ThemeProvider theme={baselightTheme}>
             {/* CssBaseline kickstart an elegant, consistent, and simple baseline to build upon. */}
             <CssBaseline />
+            <Toaster richColors position="top-right" />
             {children}
           </ThemeProvider>
         </ConvexProvider>

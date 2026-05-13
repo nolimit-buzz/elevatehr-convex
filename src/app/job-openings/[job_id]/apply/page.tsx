@@ -317,7 +317,7 @@ export default function Typeform({ params }: { params: { job_id: string } }) {
         console.error("Error submitting application:", error);
         const errorMsg =
           error instanceof Error ? error.message : "Error submitting the application. Please try again later.";
-        toast.error(errorMsg);
+        toast.error(errorMsg, { id: "error-submitting-application" });
         setIsSubmitting(false);
         handleError(errorMsg);
       }
@@ -725,6 +725,10 @@ export default function Typeform({ params }: { params: { job_id: string } }) {
                                 />
                               ))
                             }
+                            renderOption={(props, option) => {
+                              const { key, ...optionProps } = props as { key: React.Key } & React.HTMLAttributes<HTMLLIElement>;
+                              return <li key={key} {...optionProps}>{option}</li>;
+                            }}
                             renderInput={(params) => (
                               <StyledTextField
                                 {...params}

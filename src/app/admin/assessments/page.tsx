@@ -70,16 +70,9 @@ export default function MasterAssessmentLibraryPage() {
   return (
     <Box sx={{ width: "100%", pb: 4 }}>
       <Box
-        sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 2, mb: 4 }}
+        sx={{ display: "flex", justifyContent: "flex-end", alignItems: "center", flexWrap: "wrap", gap: 2, mb: 4 }}
       >
-        <Box>
-          <Typography variant="h4" fontWeight={700} color="text.primary" sx={{ letterSpacing: "-0.02em" }}>
-            Master Assessment Library
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Create and distribute test templates to your recruiters.
-          </Typography>
-        </Box>
+
         <Button
           variant="contained"
           startIcon={<PlusIcon style={{ width: 24, height: 24 }} />}
@@ -91,7 +84,7 @@ export default function MasterAssessmentLibraryPage() {
           }}
           onClick={() => setSelectTypeOpen(true)}
         >
-          + New Master Template
+          New Master Template
         </Button>
       </Box>
 

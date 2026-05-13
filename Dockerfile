@@ -24,8 +24,10 @@ COPY .env.local .env.local
 # never leak into the production bundle
 ARG NEXT_PUBLIC_CONVEX_URL=https://api-convexy.codesordinatestudio.net.ng
 ARG NEXT_PUBLIC_CONVEX_SITE_URL=https://http-convexy.codesordinatestudio.net.ng
+ARG OPENAI_API_KEY
 ENV NEXT_PUBLIC_CONVEX_URL=$NEXT_PUBLIC_CONVEX_URL
 ENV NEXT_PUBLIC_CONVEX_SITE_URL=$NEXT_PUBLIC_CONVEX_SITE_URL
+ENV OPENAI_API_KEY=$OPENAI_API_KEY
 
 RUN bun run build
 

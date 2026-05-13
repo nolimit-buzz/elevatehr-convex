@@ -1,6 +1,6 @@
 import { Constants } from "../utils/constants";
 import { ConvexError, v } from "convex/values";
-import { authedMutation, authedQuery } from "../utils/permission";
+import { flexibleMutation, flexibleQuery } from "../utils/permission";
 import { Id } from "../_generated/dataModel";
 import { action, internalMutation, internalQuery, query } from "../_generated/server";
 import { internal } from "../_generated/api";
@@ -142,7 +142,7 @@ export const create = action({
 });
 
 // Get a single job by ID
-export const get = authedQuery({
+export const get = flexibleQuery({
   args: {
     jobId: v.id("jobs"),
   },
@@ -150,11 +150,14 @@ export const get = authedQuery({
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
 
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+
     const job = await ctx.db.get(args.jobId);
     if (!job) throw new ConvexError({ message: "Job not found", code: 404 });
 
-    // Ensure user can only access jobs from their company
-    if (job.company_id !== user.company_id) {
+    // Ensure user can only access jobs from their company (or admin impersonating)
+    if (!isAdmin && job.company_id !== targetCompanyId) {
       throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 403 });
     }
 
@@ -186,17 +189,16 @@ export const get = authedQuery({
 });
 
 // List all jobs for the company with optional status filter
-export const list = authedQuery({
+export const list = flexibleQuery({
   args: {
     status: v.optional(JOB_STATUS),
   },
   handler: async (ctx, args) => {
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
-    if (!user.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
 
-    let query = ctx.db.query("jobs").withIndex("by_company", (q) => q.eq("company_id", user.company_id!));
-
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+    let query = ctx.db.query("jobs").withIndex("by_company", (q) => q.eq("company_id", targetCompanyId!));
     const jobs = await query.collect();
 
     // Get all applications for the company to compute real-time counts
@@ -247,7 +249,7 @@ export const list = authedQuery({
 });
 
 // Update a job posting
-export const update = authedMutation({
+export const update = flexibleMutation({
   args: {
     jobId: v.id("jobs"),
     data: JobSchema.partial(),
@@ -256,13 +258,16 @@ export const update = authedMutation({
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
 
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+
     const { jobId, data } = args;
     const job = await ctx.db.get(jobId);
 
     if (!job) throw new ConvexError({ message: "Job not found", code: 404 });
 
-    // Ensure user can only update jobs from their company
-    if (job.company_id !== user.company_id) {
+    // Ensure user can only update jobs from their company (or admin impersonating)
+    if (!isAdmin && job.company_id !== targetCompanyId) {
       throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 403 });
     }
 
@@ -276,7 +281,7 @@ export const update = authedMutation({
 });
 
 // Delete a job posting
-export const remove = authedMutation({
+export const remove = flexibleMutation({
   args: {
     jobId: v.id("jobs"),
   },
@@ -284,12 +289,15 @@ export const remove = authedMutation({
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
 
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+
     const job = await ctx.db.get(args.jobId);
 
     if (!job) throw new ConvexError({ message: "Job not found", code: 404 });
 
-    // Ensure user can only delete jobs from their company
-    if (job.company_id !== user.company_id) {
+    // Ensure user can only delete jobs from their company (or admin impersonating)
+    if (!isAdmin && job.company_id !== targetCompanyId) {
       throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 403 });
     }
 
@@ -300,16 +308,19 @@ export const remove = authedMutation({
 });
 
 // Get job statistics for the company
-export const getStatistics = authedQuery({
+export const getStatistics = flexibleQuery({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx, args) => {
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
-    if (!user.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
+
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+    if (!targetCompanyId) throw new ConvexError({ message: "Company not found", code: 404 });
 
     const jobs = await ctx.db
       .query("jobs")
-      .withIndex("by_company", (q) => q.eq("company_id", user.company_id!))
+      .withIndex("by_company", (q) => q.eq("company_id", targetCompanyId))
       .collect();
 
     const activeJobs = jobs.filter((job) => job.status === "active").length;
@@ -360,7 +371,7 @@ export const createJobInternal = internalMutation({
 });
 
 // Get assessments linked to a specific job
-export const getJobAssessments = authedQuery({
+export const getJobAssessments = flexibleQuery({
   args: {
     jobId: v.id("jobs"),
   },
@@ -368,11 +379,14 @@ export const getJobAssessments = authedQuery({
     const user = ctx.user;
     if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
 
+    const isAdmin = ctx._isAdmin === true;
+    const targetCompanyId = args.companyIdOverride ?? user.company_id;
+
     const job = await ctx.db.get(args.jobId);
     if (!job) throw new ConvexError({ message: "Job not found", code: 404 });
 
-    // Ensure user can only access assessments for jobs from their company
-    if (job.company_id !== user.company_id) {
+    // Ensure user can only access assessments for jobs from their company (or admin impersonating)
+    if (!isAdmin && job.company_id !== targetCompanyId) {
       throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 403 });
     }
 

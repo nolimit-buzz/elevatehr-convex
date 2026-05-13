@@ -580,7 +580,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (convexEmailTemplates !== undefined && convexEmailTemplates?.templates) {
       // Transform Convex templates to match the Template interface
-      const transformedTemplates = Object.entries(convexEmailTemplates.templates).map(([type, template]) => ({
+      const transformedTemplates = Object.entries(convexEmailTemplates.templates).map(([type, template]: [string, any]) => ({
         id: type.toLowerCase().replace(/\s+/g, "-"),
         name: type.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase()),
         title: template.subject || type.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase()),
