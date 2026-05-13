@@ -16,9 +16,9 @@ services:
   convex:
     image: ghcr.io/get-convex/convex-backend:latest
     environment:
-      DATABASE_URL: postgres://postgres:postgres_password@db:5432/
-      CONVEX_URL: http://localhost:3210
-      CONVEX_SITE_URL: http://localhost:3211
+      POSTGRES_URL: postgres://postgres:postgres_password@db:5432/convex?sslmode=disable
+      CONVEX_URL: https://api-convexy.codesordinatestudio.net.ng
+      CONVEX_SITE_URL: https://http-convexy.codesordinatestudio.net.ng
     ports:
       - "3210:3210"
       - "3211:3211"
@@ -31,8 +31,8 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_CONVEX_URL=http://localhost:3210
-        - NEXT_PUBLIC_CONVEX_SITE_URL=http://localhost:3211
+        - NEXT_PUBLIC_CONVEX_URL=https://api-convexy.codesordinatestudio.net.ng
+        - NEXT_PUBLIC_CONVEX_SITE_URL=https://http-convexy.codesordinatestudio.net.ng
         - OPENAI_API_KEY=${OPENAI_API_KEY}
     ports:
       - "3001:3000"
@@ -42,8 +42,8 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - HOSTNAME=0.0.0.0
-      - NEXT_PUBLIC_CONVEX_URL=http://localhost:3210
-      - NEXT_PUBLIC_CONVEX_SITE_URL=http://localhost:3211
+      - NEXT_PUBLIC_CONVEX_URL=https://api-convexy.codesordinatestudio.net.ng
+      - NEXT_PUBLIC_CONVEX_SITE_URL=https://http-convexy.codesordinatestudio.net.ng
       - CONVEX_SELF_HOSTED_URL=http://convex:3210
     depends_on:
       - convex
