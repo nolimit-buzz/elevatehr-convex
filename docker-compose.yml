@@ -3,7 +3,7 @@ services:
     image: postgres:16
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: convex
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -13,40 +13,46 @@ services:
       timeout: 5s
       retries: 5
 
-  convex:
+  backend:
     image: ghcr.io/get-convex/convex-backend:latest
-    environment:
-      POSTGRES_URL: postgres://postgres:postgres_password@db:5432/convex?sslmode=disable
-      CONVEX_URL: https://api-convexy.codesordinatestudio.net.ng
-      CONVEX_SITE_URL: https://http-convexy.codesordinatestudio.net.ng
+    stop_grace_period: 10s
+    stop_signal: SIGINT
     ports:
       - "3210:3210"
       - "3211:3211"
+    volumes:
+      - convex_data:/convex/data
+    environment:
+      - CONVEX_CLOUD_ORIGIN=https://elevate-convex-db.nolimitcrm.com.ng
+      - CONVEX_SITE_ORIGIN=https://elevate-convex-db-http.nolimitcrm.com.ng
+      - POSTGRES_URL=postgres://postgres:${POSTGRES_PASSWORD:-postgres_password}@db:5432
+      - INSTANCE_NAME=${INSTANCE_NAME}
+      - INSTANCE_SECRET=${INSTANCE_SECRET}
+      - RUST_LOG=info
+      - DISABLE_BEACON=true
+      - DOCUMENT_RETENTION_DELAY=172800
+      - DISABLE_METRICS_ENDPOINT=true
+      - DO_NOT_REQUIRE_SSL=true
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: curl -f http://localhost:3210/version
+      interval: 5s
+      start_period: 10s
 
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        - NEXT_PUBLIC_CONVEX_URL=https://api-convexy.codesordinatestudio.net.ng
-        - NEXT_PUBLIC_CONVEX_SITE_URL=https://http-convexy.codesordinatestudio.net.ng
-        - OPENAI_API_KEY=${OPENAI_API_KEY}
+  dashboard:
+    image: ghcr.io/get-convex/convex-dashboard:latest
+    stop_grace_period: 10s
+    stop_signal: SIGINT
     ports:
-      - "3001:3000"
-    env_file:
-      - .env
+      - "6791:6791"
     environment:
-      - NODE_ENV=production
-      - PORT=3000
-      - HOSTNAME=0.0.0.0
-      - NEXT_PUBLIC_CONVEX_URL=https://api-convexy.codesordinatestudio.net.ng
-      - NEXT_PUBLIC_CONVEX_SITE_URL=https://http-convexy.codesordinatestudio.net.ng
-      - CONVEX_SELF_HOSTED_URL=http://convex:3210
+      - NEXT_PUBLIC_DEPLOYMENT_URL=https://elevate-convex-db.nolimitcrm.com.ng
     depends_on:
-      - convex
+      backend:
+        condition: service_healthy
 
 volumes:
   pgdata:
+  convex_data:
