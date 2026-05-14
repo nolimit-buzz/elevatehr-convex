@@ -23,9 +23,9 @@ services:
     volumes:
       - convex_data:/convex/data
     environment:
-      - CONVEX_CLOUD_ORIGIN=https://elevate-convex-db.nolimitcrm.com.ng
-      - CONVEX_SITE_ORIGIN=https://elevate-convex-db-http.nolimitcrm.com.ng
-      - POSTGRES_URL=postgres://postgres:${POSTGRES_PASSWORD:-postgres_password}@db:5432
+      - CONVEX_CLOUD_ORIGIN=${CONVEX_CLOUD_ORIGIN}
+      - CONVEX_SITE_ORIGIN=${CONVEX_SITE_ORIGIN}
+      - POSTGRES_URL=postgres://postgres:${POSTGRES_PASSWORD}@db:5432/convex?sslmode=disable
       - INSTANCE_NAME=${INSTANCE_NAME}
       - INSTANCE_SECRET=${INSTANCE_SECRET}
       - RUST_LOG=info
@@ -48,7 +48,7 @@ services:
     ports:
       - "6791:6791"
     environment:
-      - NEXT_PUBLIC_DEPLOYMENT_URL=https://elevate-convex-db.nolimitcrm.com.ng
+      - NEXT_PUBLIC_DEPLOYMENT_URL=${CONVEX_CLOUD_ORIGIN}
     depends_on:
       backend:
         condition: service_healthy
