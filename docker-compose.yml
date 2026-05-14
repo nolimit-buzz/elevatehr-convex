@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: convex
+      POSTGRES_DB: elevatehr_instance
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
