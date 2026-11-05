@@ -19,7 +19,7 @@ const OnboardingStep1: React.FC<OnboardingStep1Props> = ({ data, onUpdate }) => 
     <Stack spacing={2}>
       <Typography variant="h4" fontWeight="bold">Company Website</Typography>
       <Typography color="grey.200" maxWidth="600px">
-        Please provide your company's website URL. This will help candidates learn more about your organization.
+        Please provide your company&apos;s website URL. This will help candidates learn more about your organization.
       </Typography>
       <TextField
         fullWidth

@@ -1,4 +1,4 @@
-import { useAuthedMutation, useAuthedQuery, useAuthedAction, useConvexResponse } from "@/app/convex.setup";
+import { useAuthedMutation, useAuthedQuery, useAuthedAction, resolveConvexResponse } from "@/app/convex.setup";
 import { FunctionArgs } from "convex/server";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -30,7 +30,7 @@ export const JobQueries = () => {
       return { result: null, error: "Action not ready" };
     }
     // @ts-expect-error - token is injected by useAuthedAction
-    const { result, error } = await useConvexResponse(CreateAction(args));
+    const { result, error } = await resolveConvexResponse(CreateAction(args));
     return { result, error };
   };
 
@@ -39,7 +39,7 @@ export const JobQueries = () => {
       return { result: null, error: "Action not ready" };
     }
     // @ts-expect-error - token is injected by useAuthedAction
-    const { result, error } = await useConvexResponse(RegenerateAction({ jobId, field }));
+    const { result, error } = await resolveConvexResponse(RegenerateAction({ jobId, field }));
     return { result, error };
   };
 
@@ -47,7 +47,7 @@ export const JobQueries = () => {
     if (!UpdateMutation) {
       return { result: null, error: "Mutations not ready" };
     }
-    const { result, error } = await useConvexResponse(UpdateMutation(args));
+    const { result, error } = await resolveConvexResponse(UpdateMutation(args));
     return { result, error };
   };
 
@@ -55,7 +55,7 @@ export const JobQueries = () => {
     if (!RemoveMutation) {
       return { result: null, error: "Mutations not ready" };
     }
-    const { result, error } = await useConvexResponse(RemoveMutation({ jobId }));
+    const { result, error } = await resolveConvexResponse(RemoveMutation({ jobId }));
     return { result, error };
   };
 
@@ -91,7 +91,7 @@ export const useJobMutations = () => {
     if (!UpdateMutation) {
       return { result: null, error: "Mutation not ready" };
     }
-    const { result, error } = await useConvexResponse(UpdateMutation({ jobId: jobId as Id<"jobs">, data }));
+    const { result, error } = await resolveConvexResponse(UpdateMutation({ jobId: jobId as Id<"jobs">, data }));
     return { result, error };
   };
 
@@ -99,7 +99,7 @@ export const useJobMutations = () => {
     if (!RemoveMutation) {
       return { result: null, error: "Mutation not ready" };
     }
-    const { result, error } = await useConvexResponse(RemoveMutation({ jobId: jobId as Id<"jobs"> }));
+    const { result, error } = await resolveConvexResponse(RemoveMutation({ jobId: jobId as Id<"jobs"> }));
     return { result, error };
   };
 

@@ -81,7 +81,7 @@ export default function AuthLogin({ subtext, subtitle, onSuccess }: AuthLoginPro
         notifications: result?.notifications,
       });
       onSuccess && onSuccess(result);
-      router.push("/dashboard");
+      router.push(result?.companyInfo?.onboarding_completed ? "/dashboard" : "/onboarding");
     }
   };
 

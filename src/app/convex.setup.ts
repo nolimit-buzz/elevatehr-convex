@@ -12,14 +12,14 @@ export function useAuthedQuery<Query extends FunctionReference<"query">>(
   const companyIdOverride = getCompanyOverride();
 
   // Build the final args - skip if no token, inject token + optionally companyIdOverride
-  if (!token) return "skip" as any;
-  if (args === "skip") return "skip" as any;
-
-  const finalArgs = {
-    ...(args || {}),
-    token,
-    ...(companyIdOverride ? { companyIdOverride } : {}),
-  };
+  const shouldSkip = !token || args === "skip";
+  const finalArgs = shouldSkip
+    ? "skip"
+    : {
+        ...(args || {}),
+        token,
+        ...(companyIdOverride ? { companyIdOverride } : {}),
+      };
 
   // @ts-expect-error - Token injection modifies the args type
   return useBaseQuery(query, finalArgs);
@@ -92,7 +92,7 @@ export type ConvexResponse<T> = { result: T; error: null } | { result: T | null;
  * Unified response handler for Convex queries and mutations.
  * Always returns { result, error } for both sync queries and async mutations.
  */
-export async function useConvexResponse<T>(input: T | Promise<T> | undefined): Promise<ConvexResponse<Awaited<T>>> {
+export async function resolveConvexResponse<T>(input: T | Promise<T> | undefined): Promise<ConvexResponse<Awaited<T>>> {
   try {
     // Handle undefined (loading state for queries)
     if (input === undefined) {

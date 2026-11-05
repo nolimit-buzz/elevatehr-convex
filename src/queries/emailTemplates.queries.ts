@@ -1,4 +1,4 @@
-import { useAuthedMutation, useAuthedQuery, useConvexResponse } from "@/app/convex.setup";
+import { useAuthedMutation, useAuthedQuery, resolveConvexResponse } from "@/app/convex.setup";
 import { api } from "../../convex/_generated/api";
 
 // ============================================
@@ -63,7 +63,7 @@ export const useEmailTemplateMutations = () => {
     if (!upsertMutation) {
       return { result: null, error: "Mutation not ready" };
     }
-    const { result, error } = await useConvexResponse(
+    const { result, error } = await resolveConvexResponse(
       upsertMutation({
         type,
         content,
@@ -80,7 +80,7 @@ export const useEmailTemplateMutations = () => {
     if (!removeMutation) {
       return { result: null, error: "Mutation not ready" };
     }
-    const { result, error } = await useConvexResponse(removeMutation({ type }));
+    const { result, error } = await resolveConvexResponse(removeMutation({ type }));
     return { result, error };
   };
 

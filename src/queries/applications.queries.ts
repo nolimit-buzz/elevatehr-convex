@@ -3,7 +3,7 @@ import { useQuery, useMutation, useAction } from "convex/react";
 import { ConvexError } from "convex/values";
 import { Id } from "../../convex/_generated/dataModel";
 import type { FunctionArgs, FunctionReturnType } from "convex/server";
-import { useAuthedMutation, useAuthedQuery, useConvexResponse } from "@/app/convex.setup";
+import { useAuthedMutation, useAuthedQuery, resolveConvexResponse } from "@/app/convex.setup";
 
 // Re-export Id type for use in components
 export type ApplicationId = Id<"applications">;
@@ -127,7 +127,7 @@ export const useApplicationMutations = () => {
     if (!updateStageMutation) {
       return { result: null, error: "Mutation not ready" };
     }
-    const { result, error } = await useConvexResponse(
+    const { result, error } = await resolveConvexResponse(
       updateStageMutation({
         applicationIds: applicationIds as Id<"applications">[],
         stage,
@@ -144,7 +144,7 @@ export const useApplicationMutations = () => {
     if (!sendAssessmentMutation) {
       return { result: null, error: "Mutation not ready" };
     }
-    const { result, error } = await useConvexResponse(
+    const { result, error } = await resolveConvexResponse(
       sendAssessmentMutation({
         applicationIds: applicationIds as Id<"applications">[],
         assessmentId: assessmentId as Id<"assessments">,
@@ -162,7 +162,7 @@ export const useApplicationMutations = () => {
     if (!moveToStageWithEmailMutation) {
       return { result: null, error: "Mutation not ready" };
     }
-    const { result, error } = await useConvexResponse(
+    const { result, error } = await resolveConvexResponse(
       moveToStageWithEmailMutation({
         applicationIds: applicationIds as Id<"applications">[],
         stage,
@@ -180,7 +180,7 @@ export const useApplicationMutations = () => {
     if (!removeMutation) {
       return { result: null, error: "Mutation not ready" };
     }
-    const { result, error } = await useConvexResponse(
+    const { result, error } = await resolveConvexResponse(
       removeMutation({
         applicationId: applicationId as Id<"applications">,
       }),

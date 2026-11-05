@@ -237,7 +237,7 @@ export default function AssessmentPage() {
                 fontSize: "17px",
               }}
             >
-              We're sorry, but this job posting has been closed and is no longer accepting submissions.
+              We&apos;re sorry, but this job posting has been closed and is no longer accepting submissions.
             </Typography>
           </Box>
         </Container>
