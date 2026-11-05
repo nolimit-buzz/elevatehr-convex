@@ -4,7 +4,7 @@ import { Box, Stack, Button, CircularProgress, Alert } from "@mui/material";
 import CustomTextField from "@/app/dashboard/components/forms/theme-elements/CustomTextField";
 import { useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
-import { useConvexResponse } from "@/app/convex.setup";
+import { resolveConvexResponse } from "@/app/convex.setup";
 import { DefaultConstants } from "@/app/constants/defaults";
 import { setProfile, setWithExpiry } from "@/app/utils/authStorage";
 
@@ -55,7 +55,7 @@ export default function AdminAuthLogin({ onSuccess }: AdminAuthLoginProps) {
 
     setLoading(true);
 
-    const { result, error } = await useConvexResponse(
+    const { result, error } = await resolveConvexResponse(
       adminLoginMutation({ email: formData.email, password: formData.password }),
     ).finally(() => setLoading(false));
 
