@@ -1,27 +1,21 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Box,
   Container,
   Typography,
-  IconButton,
-  Paper,
-  CircularProgress,
   Alert,
   Chip,
   Button,
   Stack,
-  TextField,
   Grid,
-  FormControl,
-  Select,
-  MenuItem,
   Skeleton,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useTheme } from "@mui/material/styles";
 import { Banner } from '@/app/components/Banner';
+import { usePublicAssessment, type Id } from "@/queries/assessment.queries";
 
 export default function AssessmentInstructionsPage() {
   const theme = useTheme();
@@ -31,79 +25,12 @@ export default function AssessmentInstructionsPage() {
   const assessmentId = searchParams.get('assessment_id');
   const applicationId = searchParams.get('application_id');
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [assessment, setAssessment] = useState<any>(null);
-  const [submissionUrl, setSubmissionUrl] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [selectedOption, setSelectedOption] = useState('');
-  const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-
-  useEffect(() => {
-    if (!jobId || !assessmentId) return;
-    setLoading(true);
-    setError(null);
-    fetch(`https://app.elevatehr.ai/wp-json/elevatehr/v1/get-assessment-public?assessment_id=${assessmentId}`)
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch assessment details');
-        return res.json();
-      })
-      .then(data => {
-        if (data.status === 'success' && Array.isArray(data.assessments) && data.assessments.length > 0) {
-          setAssessment(data.assessments[0]);
-          if (data.assessments[0].options) {
-            setSelectedOption('1');
-          }
-        } else {
-          setError('Assessment not found.');
-        }
-        setLoading(false);
-      })
-      .catch(err => {
-        setError(err.message || 'An error occurred');
-        setLoading(false);
-      });
-  }, [jobId, assessmentId]);
+  const assessment = usePublicAssessment(assessmentId ? (assessmentId as Id<"assessments">) : null);
+  const loading = assessment === undefined;
+  const error = assessmentId && assessment === null ? 'Assessment not found.' : null;
 
   const handleBack = () => {
     router.push(`/assessment?job_id=${jobId}&assessment_id=${assessmentId}&application_id=${applicationId}`);
-  };
-
-  const handleSubmit = () => {
-    setSubmitting(true);
-    const submissionData = {
-      application_id: parseInt(applicationId || '0'),
-      job_id: parseInt(jobId || '0'),
-      assessment_id: parseInt(assessmentId || '0'),
-      assessment_submission_link: submissionUrl,
-      select_assessment_option: parseInt(selectedOption)
-    };
-
-    fetch('https://app.elevatehr.ai/wp-json/elevatehr/v1/applications/submit-technical-assessment', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(submissionData)
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Failed to submit assessment');
-      }
-      setSnackbarMessage('Assessment submitted successfully!');
-      setSnackbarSeverity('success');
-      setSnackbarOpen(true);
-    })
-    .catch(error => {
-      setSnackbarMessage(error.message || 'An error occurred while submitting the assessment.');
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
-    })
-    .finally(() => {
-      setSubmitting(false);
-    });
   };
 
   return (
@@ -197,10 +124,10 @@ export default function AssessmentInstructionsPage() {
                       {assessment.description}
                     </Typography>
                     <Box mb={2} sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                      {assessment.skills && assessment.skills.split(',').map((skill: string, idx: number) => (
-                        <Chip 
-                          key={idx} 
-                          label={skill.trim()} 
+                      {assessment.skills && assessment.skills.map((skill: string, idx: number) => (
+                        <Chip
+                          key={idx}
+                          label={skill}
                           sx={{ 
                             fontWeight: 500,
                             bgcolor: '#F9E8F3',
@@ -384,11 +311,6 @@ export default function AssessmentInstructionsPage() {
                   <Typography sx={{ color: "rgba(17, 17, 17, 0.84)" }}>
                     • You can only submit once
                   </Typography>
-                  {assessment?.review_time && (
-                    <Typography sx={{ color: "rgba(17, 17, 17, 0.84)" }}>
-                      • We will review your submission within {assessment.review_time}
-                    </Typography>
-                  )}
                 </Stack>
 
                 <Box sx={{ mt: 2 }}>

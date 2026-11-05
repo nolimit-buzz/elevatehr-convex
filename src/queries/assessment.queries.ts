@@ -263,3 +263,18 @@ export const usePublicAssessment = (assessmentId: Id<"assessments"> | null) => {
   const assessment = useQuery(api.modules.assessment.getPublic, assessmentId ? { assessmentId } : "skip");
   return assessment;
 };
+
+/**
+ * Hook to get the submission status of an assessment for an application (no authentication required)
+ * Used to determine server-side whether a candidate has already submitted this assessment
+ */
+export const usePublicAssessmentSubmissionStatus = (
+  applicationId: Id<"applications"> | null,
+  assessmentId: Id<"assessments"> | null,
+) => {
+  const status = useQuery(
+    api.modules.assessment.getPublicSubmissionStatus,
+    applicationId && assessmentId ? { applicationId, assessmentId } : "skip",
+  );
+  return status;
+};

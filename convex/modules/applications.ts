@@ -1165,6 +1165,12 @@ export const submitAssessment = mutation({
       throw new ConvexError({ message: "Assessment not found", code: 404 });
     }
 
+    // Prevent resubmission once already submitted
+    const existingResult = application.assessments_results?.[assessment.type];
+    if (existingResult?.assessment_submission_status === "submitted") {
+      throw new ConvexError({ message: "This assessment has already been submitted", code: 400 });
+    }
+
     // Update application with assessment results
     const assessmentKey = assessment.type;
     const now = new Date().toISOString();
