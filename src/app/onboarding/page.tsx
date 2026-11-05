@@ -64,9 +64,10 @@ const OnboardingPage = () => {
         setError("");
 
         try {
-            const company: Record<string, string> = {
+            const company: Record<string, string | boolean> = {
                 company_website: onboardingData.website,
                 about_company: onboardingData.about,
+                onboarding_completed: true,
             };
 
             if (!skipped[2] && onboardingData.booking_link) {
