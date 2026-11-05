@@ -20,14 +20,16 @@ import {
   Skeleton,
 } from "@mui/material";
 import { useSearchParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import CloseIcon from "@mui/icons-material/Close";
 import IconButton from "@mui/material/IconButton";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { Banner } from "@/app/components/Banner";
 import { RadioGroup, FormControlLabel, Radio } from "@mui/material";
-import { usePublicAssessment, type Id } from "@/queries/assessment.queries";
+import { usePublicAssessment, usePublicAssessmentSubmissionStatus, type Id } from "@/queries/assessment.queries";
 import { usePublicApplicationMutations } from "@/queries/applications.queries";
+import { usePublicJob } from "@/queries/jobs.queries";
+import { useAssessmentStore } from "./store/useAssessmentStore";
 
 const StyledButton = styled(Button)(({ theme }) => ({
   borderRadius: "8px",
@@ -68,14 +70,30 @@ export default function AssessmentPage() {
 
   const { submitAssessment } = usePublicApplicationMutations();
 
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [submissionUrl, setSubmissionUrl] = useState("");
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [selectedOption, setSelectedOption] = useState("");
-  const [isJobClosed, setIsJobClosed] = useState(false);
-  const [answers, setAnswers] = useState<{ [key: number]: string }>({});
+  const job = usePublicJob(jobId);
+  const submissionStatus = usePublicAssessmentSubmissionStatus(
+    applicationId ? (applicationId as Id<"applications">) : null,
+    assessmentId ? (assessmentId as Id<"assessments">) : null,
+  );
+
+  const {
+    submitting,
+    error,
+    success,
+    submissionUrl,
+    isSubmitted,
+    selectedOption,
+    isJobClosed,
+    answers,
+    setSubmitting,
+    setError,
+    setSuccess,
+    setSubmissionUrl,
+    setIsSubmitted,
+    setSelectedOption,
+    setIsJobClosed,
+    setAnswer,
+  } = useAssessmentStore();
 
   const handleCloseAlert = () => {
     setError(null);
@@ -83,68 +101,18 @@ export default function AssessmentPage() {
   };
 
   useEffect(() => {
-    if (!jobId) return;
-
-    fetch(`https://app.elevatehr.ai/wp-json/elevatehr/v1/active-jobs/${jobId}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch job details");
-        return res.json();
-      })
-      .then((data) => {
-        // Handle both "close" (legacy) and "closed" (new) status values
-        if (data.success && data.jobs && (data.jobs.status === "closed" || data.jobs.status === "close")) {
-          setIsJobClosed(true);
-        }
-      })
-      .catch((error) => {
-        console.error("Error fetching job status:", error);
-      });
-  }, [jobId]);
-
-  // useEffect(() => {
-  //   if (!jobId || !assessmentId || !applicationId) return;
-
-  //   // Format current date to "YYYY-MM-DD HH:MMam/pm"
-  //   const now = new Date();
-  //   const hours = now.getHours();
-  //   const minutes = now.getMinutes();
-  //   const ampm = hours >= 12 ? 'pm' : 'am';
-  //   const formattedHours = hours % 12 || 12;
-  //   const formattedMinutes = minutes.toString().padStart(2, '0');
-  //   const formattedDate = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')} ${formattedHours}:${formattedMinutes}${ampm}`;
-
-  //   // Make the POST request
-  //   fetch('https://app.elevatehr.ai/wp-json/elevatehr/v1/applications/submit-technical-assessment', {
-  //     method: 'POST',
-  //     headers: {
-  //       'Content-Type': 'application/json'
-  //     },
-  //     body: JSON.stringify({
-  //       application_id: parseInt(applicationId),
-  //       job_id: parseInt(jobId),
-  //       assessment_id: parseInt(assessmentId),
-  //       is_assessment_clicked_date: formattedDate,
-  //       is_assessment_clicked: "yes"
-  //     })
-  //   }).catch(error => {
-  //     console.error('Error submitting assessment click:', error);
-  //   });
-  // }, [jobId, assessmentId, applicationId]);
+    if (job === undefined) return;
+    setIsJobClosed(job === null);
+  }, [job, setIsJobClosed]);
 
   useEffect(() => {
-    // Check if already submitted
-    const submissionKey = `assessment_submission_${jobId}_${assessmentId}_${applicationId}`;
-    const hasSubmitted = localStorage.getItem(submissionKey);
-    if (hasSubmitted) {
+    if (submissionStatus === "submitted") {
       setIsSubmitted(true);
     }
-  }, [jobId, assessmentId, applicationId]);
+  }, [submissionStatus, setIsSubmitted]);
 
   const handleAnswerChange = (questionIndex: number, value: string) => {
-    setAnswers((prev) => ({
-      ...prev,
-      [questionIndex]: value,
-    }));
+    setAnswer(questionIndex, value);
   };
 
   const handleOnlineAssessmentSubmit = async () => {
@@ -178,9 +146,6 @@ export default function AssessmentPage() {
 
       setSuccess("Assessment submitted successfully!");
       setIsSubmitted(true);
-      // Store submission in localStorage
-      const submissionKey = `assessment_submission_${jobId}_${assessmentId}_${applicationId}`;
-      localStorage.setItem(submissionKey, "true");
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred while submitting");
     } finally {

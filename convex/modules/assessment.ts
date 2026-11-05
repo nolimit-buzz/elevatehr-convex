@@ -188,6 +188,23 @@ export const getPublic = query({
   },
 });
 
+// Get submission status of an assessment for a given application (public - for candidates taking assessments)
+export const getPublicSubmissionStatus = query({
+  args: {
+    applicationId: v.id("applications"),
+    assessmentId: v.id("assessments"),
+  },
+  handler: async (ctx, args) => {
+    const application = await ctx.db.get(args.applicationId);
+    if (!application) return null;
+
+    const assessment = await ctx.db.get(args.assessmentId);
+    if (!assessment) return null;
+
+    return application.assessments_results?.[assessment.type]?.assessment_submission_status ?? null;
+  },
+});
+
 // ============================================
 // MUTATIONS
 // ============================================
