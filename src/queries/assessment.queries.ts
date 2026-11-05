@@ -1,4 +1,4 @@
-import { useAuthedMutation, useAuthedQuery, useAuthedAction, useConvexResponse } from "@/app/convex.setup";
+import { useAuthedMutation, useAuthedQuery, useAuthedAction, resolveConvexResponse } from "@/app/convex.setup";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
@@ -87,7 +87,7 @@ export const AssessmentQueries = () => {
     if (!GenerateSkillsAction) {
       return { result: null, error: "Action not ready" };
     }
-    const { result, error } = await useConvexResponse(
+    const { result, error } = await resolveConvexResponse(
       GenerateSkillsAction({
         jobTitle: args.jobTitle,
         jobDescription: args.jobDescription,
@@ -99,7 +99,7 @@ export const AssessmentQueries = () => {
     if (!GenerateQuestionsAction) {
       return { result: null, error: "Action not ready" };
     }
-    const { result, error } = await useConvexResponse(
+    const { result, error } = await resolveConvexResponse(
       GenerateQuestionsAction({
         jobTitle: args.jobTitle,
         level: args.level,
@@ -118,7 +118,7 @@ export const AssessmentQueries = () => {
     if (!GenerateTechnicalContentAction) {
       return { result: null, error: "Action not ready" };
     }
-    const { result, error } = await useConvexResponse(
+    const { result, error } = await resolveConvexResponse(
       GenerateTechnicalContentAction({
         jobTitle: args.jobTitle,
         level: args.level,
@@ -136,7 +136,7 @@ export const AssessmentQueries = () => {
     if (!CreateAction) {
       return { result: null, error: "Action not ready" };
     }
-    const { result, error } = await useConvexResponse(
+    const { result, error } = await resolveConvexResponse(
       CreateAction({
         title: args.title,
         description: args.description,
@@ -156,7 +156,7 @@ export const AssessmentQueries = () => {
     if (!CreateTechnicalAction) {
       return { result: null, error: "Action not ready" };
     }
-    const { result, error } = await useConvexResponse(
+    const { result, error } = await resolveConvexResponse(
       CreateTechnicalAction({
         title: args.title,
         level: args.level,
@@ -175,7 +175,7 @@ export const AssessmentQueries = () => {
     if (!UpdateMutation) {
       return { result: null, error: "Mutation not ready" };
     }
-    const { result, error } = await useConvexResponse(
+    const { result, error } = await resolveConvexResponse(
       UpdateMutation({
         assessmentId: args.assessmentId,
         data: args.data,
@@ -191,7 +191,7 @@ export const AssessmentQueries = () => {
     if (!RemoveMutation) {
       return { result: null, error: "Mutation not ready" };
     }
-    const { result, error } = await useConvexResponse(RemoveMutation({ assessmentId }));
+    const { result, error } = await resolveConvexResponse(RemoveMutation({ assessmentId }));
     return { result, error };
   };
 
@@ -204,7 +204,7 @@ export const AssessmentQueries = () => {
     if (!GradeTechnicalMutation) {
       return { result: null, error: "Mutation not ready" };
     }
-    const { result, error } = await useConvexResponse(
+    const { result, error } = await resolveConvexResponse(
       GradeTechnicalMutation({
         applicationId: args.applicationId,
         assessmentId: args.assessmentId,
