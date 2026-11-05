@@ -65,7 +65,7 @@ export async function generateJobDescription(args: {
     const prompt = jobDescriptionPrompt.replace(/\${jobTitle}/g, fullJobTitle);
 
     const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-120b",
       messages: [
         {
           role: "system",
@@ -118,7 +118,7 @@ export async function generateSkillsForRole(args: {
     Ensure skills are specific and relevant to the role.`;
 
     const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-120b",
       messages: [
         {
           role: "system",

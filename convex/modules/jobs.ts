@@ -17,6 +17,14 @@ export const getCompanyInternal = internalQuery({
   },
 });
 
+// Internal query to get a job by ID (used by actions)
+export const getJobInternal = internalQuery({
+  args: { jobId: v.id("jobs") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.jobId);
+  },
+});
+
 // Job type enum values
 const JOB_TYPES = v.union(v.literal("fulltime"), v.literal("contract"));
 const WORK_MODELS = v.union(v.literal("onsite"), v.literal("remote"), v.literal("hybrid"));
@@ -138,6 +146,46 @@ export const create = action({
     });
 
     return { id: jobId, message: "Job posting created successfully" };
+  },
+});
+
+// Regenerate a single section of a job posting using AI
+export const regenerateField = action({
+  args: {
+    token: v.string(),
+    jobId: v.id("jobs"),
+    field: v.union(v.literal("aboutTheRole"), v.literal("jobResponsibilities"), v.literal("expectations")),
+  },
+  handler: async (ctx, args): Promise<{ value: string | string[] }> => {
+    const user = await verifyToken(args.token);
+    if (!user) throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 401 });
+    if (!user.company_id) throw new ConvexError({ message: "Company not found", code: 404 });
+
+    const company = await ctx.runQuery(internal.modules.jobs.getCompanyInternal, {
+      companyId: user.company_id,
+    });
+    if (!company) throw new ConvexError({ message: "Company not found", code: 404 });
+    if (!company.ai_api_key) throw new ConvexError({ message: "AI API key not configured for company", code: 400 });
+
+    const job = await ctx.runQuery(internal.modules.jobs.getJobInternal, { jobId: args.jobId });
+    if (!job) throw new ConvexError({ message: "Job not found", code: 404 });
+    if (job.company_id !== user.company_id) {
+      throw new ConvexError({ message: Constants.ERROR.UNAUTHORIZED, code: 403 });
+    }
+
+    const aiResult = await generateJobDescription({
+      jobTitle: job.title,
+      jobLevel: job.experience_level,
+      aiApiKey: company.ai_api_key,
+    });
+
+    if (!aiResult.success || !aiResult.data) {
+      throw new ConvexError({ message: aiResult.error || "Failed to generate content", code: 500 });
+    }
+
+    if (args.field === "aboutTheRole") return { value: aiResult.data.aboutTheRole || "" };
+    if (args.field === "jobResponsibilities") return { value: aiResult.data.jobResponsibilities || [] };
+    return { value: aiResult.data.expectations || [] };
   },
 });
 

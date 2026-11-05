@@ -4,8 +4,8 @@ import { useRouter } from "next/navigation";
 import { Typography, Button, Stack, Alert, CircularProgress } from "@mui/material";
 import Link from "next/link";
 import CustomTextField from "@/app/dashboard/components/forms/theme-elements/CustomTextField";
-import axios from "axios";
 import { motion, Variants } from "framer-motion";
+import { AuthQueries } from "@/queries/auth.queries";
 
 interface RegisterProps {
   title?: string;
@@ -89,6 +89,7 @@ const buttonVariants: Variants = {
 
 const Register: React.FC<RegisterProps> = ({ title, subtitle, subtext }) => {
   const router = useRouter();
+  const { Register: RegisterCompany } = AuthQueries();
   const [formData, setFormData] = useState<FormData>({
     first_name: '',
     last_name: '',
@@ -189,26 +190,24 @@ const Register: React.FC<RegisterProps> = ({ title, subtitle, subtext }) => {
     setErrorMessage("");
     if (!validateForm()) return;
     setLoading(true);
-    try {
-      const response = await axios.post("https://app.elevatehr.ai/wp-json/elevatehr/v1/register", {
+    const { error } = await RegisterCompany({
+      company: {
+        company_name: formData.companyName,
+        number_of_employees: formData.numberOfEmployees || undefined,
+      },
+      user: {
         first_name: formData.first_name,
         last_name: formData.last_name,
         email: formData.email,
         password: formData.password,
-        company_name: formData.companyName,
-        number_of_employees: formData.numberOfEmployees,
-        job_title: formData.job_title,
+        job_title: formData.job_title || undefined,
         phone_number: formData.phone_number,
-      });
-      const token = response.data.token;
-      localStorage.setItem("jwt", token); 
-      setLoading(false);
-      router.push("/onboarding"); 
+      },
+    });
+    setLoading(false);
 
-    } catch (error) {
-      setErrorMessage((error as any).response?.data?.message || "Registration failed. Please try again.");
-      setLoading(false);
-    }
+    if (error) return setErrorMessage(error || "Registration failed. Please try again.");
+    router.push("/");
   };
 
   return (

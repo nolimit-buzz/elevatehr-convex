@@ -132,7 +132,7 @@ export async function generateQuizQuestions(args: {
       .replace(/\${multiChoiceCount}/g, String(numberOfMultiChoiceQuestions));
 
     const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-120b",
       messages: [
         {
           role: "system",
@@ -181,7 +181,7 @@ export async function generateSkillsForRole(args: {
     const prompt = skillsPrompt.replace(/\${jobTitle}/g, jobTitle).replace(/\${jobDescription}/g, jobDescription);
 
     const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-120b",
       messages: [
         {
           role: "system",
@@ -227,7 +227,7 @@ export async function generateTechnicalContent(args: {
       .replace(/\${optionsCount}/g, String(assessmentOptions));
 
     const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-120b",
       messages: [
         {
           role: "system",
@@ -287,7 +287,7 @@ export async function gradeAssessmentAnswers(args: {
       .replace(/\${questionsAndAnswers}/g, questionsAndAnswers);
 
     const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-120b",
       messages: [
         {
           role: "system",

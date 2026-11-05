@@ -23,6 +23,7 @@ import {
   Typography,
   IconButton,
   Checkbox,
+  CircularProgress,
 } from "@mui/material";
 import Stepper from "@mui/material/Stepper";
 import Step from "@mui/material/Step";
@@ -255,6 +256,7 @@ interface TextEditorProps {
   value: string | undefined;
   onChange: (value: string) => void;
   onRegenerate?: () => void;
+  regenerating?: boolean;
 }
 
 interface FieldProps {
@@ -363,6 +365,7 @@ const TextEditor: React.FC<TextEditorProps> = ({
   value,
   onChange,
   onRegenerate,
+  regenerating,
 }) => {
   const theme = useTheme();
   return (
@@ -396,9 +399,10 @@ const TextEditor: React.FC<TextEditorProps> = ({
             <IconButton
               size="small"
               onClick={onRegenerate}
+              disabled={regenerating}
               sx={{ mt: { xs: 1, sm: 0 } }}
             >
-              <RefreshIcon />
+              {regenerating ? <CircularProgress size={18} /> : <RefreshIcon />}
             </IconButton>
           </Stack>
           <Typography
@@ -1177,7 +1181,7 @@ const AboutTheJob = () => {
   // Convex hooks
   const convexJobId = jobId ? (jobId as Id<"jobs">) : null;
   const convexJob = useJob(convexJobId);
-  const { UpdateJob } = JobQueries();
+  const { UpdateJob, RegenerateJobField } = JobQueries();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -1370,14 +1374,43 @@ const AboutTheJob = () => {
     | "jobResponsibilities"
     | "expectations";
 
+  const [regeneratingField, setRegeneratingField] = useState<RegenerateField | null>(null);
+
   const handleRegenerate = (field: RegenerateField) => async () => {
-    // AI regeneration is handled on the backend during job creation
-    // For editing, we don't support regeneration - user can manually edit
+    if (!convexJobId) return;
+    setRegeneratingField(field);
+    const { result, error } = await RegenerateJobField(convexJobId, field);
+    setRegeneratingField(null);
+
+    if (error || !result) {
+      setNotification({
+        open: true,
+        message: error || "Failed to regenerate content. Please try again.",
+        severity: "error",
+      });
+      return;
+    }
+
+    if (field === "aboutTheRole") {
+      setFormData((prev) => ({ ...prev, about_role: result.value as string, description: result.value as string }));
+    } else if (field === "jobResponsibilities") {
+      const value = result.value;
+      setFormData((prev) => ({
+        ...prev,
+        responsibilities: Array.isArray(value) ? value.join("\n") : (value as string),
+      }));
+    } else {
+      const value = result.value;
+      setFormData((prev) => ({
+        ...prev,
+        expectations: Array.isArray(value) ? value : [value as string],
+      }));
+    }
+
     setNotification({
       open: true,
-      message:
-        "AI regeneration is only available during job creation. Please edit manually.",
-      severity: "info",
+      message: "Content regenerated successfully.",
+      severity: "success",
     });
   };
 
@@ -1844,6 +1877,7 @@ const AboutTheJob = () => {
               value={formData.about_role}
               onChange={(value) => handleChange("about_role", value)}
               onRegenerate={handleRegenerate("aboutTheRole")}
+              regenerating={regeneratingField === "aboutTheRole"}
             />
             <TextEditor
               label="Job Responsibilities"
@@ -1851,6 +1885,7 @@ const AboutTheJob = () => {
               value={formData.responsibilities}
               onChange={(value) => handleChange("responsibilities", value)}
               onRegenerate={handleRegenerate("jobResponsibilities")}
+              regenerating={regeneratingField === "jobResponsibilities"}
             />
             <Stack
               spacing={1}
@@ -1889,8 +1924,9 @@ const AboutTheJob = () => {
                 <IconButton
                   size="small"
                   onClick={handleRegenerate("expectations")}
+                  disabled={regeneratingField === "expectations"}
                 >
-                  <RefreshIcon />
+                  {regeneratingField === "expectations" ? <CircularProgress size={18} /> : <RefreshIcon />}
                 </IconButton>
               </Stack>
               <Stack gap={"12px"} width={"100%"}>

@@ -23,6 +23,7 @@ import {
   InputLabel,
   CircularProgress,
   Skeleton,
+  Alert,
 } from "@mui/material";
 import { Avatar } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
@@ -450,6 +451,7 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [jobError, setJobError] = useState("");
   const [jobPostings, setJobPostings] = useState([]);
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "closed">("all");
   const [isTabLoading, setIsTabLoading] = useState(false);
@@ -662,10 +664,12 @@ const Dashboard = () => {
   // Note: Assessments are now fetched via Convex useAssessmentsList hook
 
   const handleOpen = () => {
+    setJobError("");
     setOpen(true);
   };
 
   const handleClose = () => {
+    setJobError("");
     setOpen(false);
   };
 
@@ -680,6 +684,7 @@ const Dashboard = () => {
   const router = useRouter();
   const handleSubmit = async () => {
     setIsSubmitting(true);
+    setJobError("");
     try {
       const { result, error } = await CreateJob({
         title: formData.title,
@@ -690,6 +695,7 @@ const Dashboard = () => {
 
       if (error) {
         console.error("Error creating job posting:", error);
+        setJobError(error);
         setIsSubmitting(false);
         return;
       }
@@ -699,9 +705,11 @@ const Dashboard = () => {
         handleClose();
       } else {
         console.error("Job ID not found in response:", result);
+        setJobError("Something went wrong creating the job posting. Please try again.");
       }
     } catch (error) {
       console.error("Error creating job posting:", error);
+      setJobError(error instanceof Error ? error.message : "Something went wrong creating the job posting.");
     } finally {
       setIsSubmitting(false);
     }
@@ -1179,6 +1187,7 @@ const Dashboard = () => {
                 }}
               />
             </Stack>
+            {jobError && <Alert severity="error">{jobError}</Alert>}
             <Button
               variant="contained"
               fullWidth

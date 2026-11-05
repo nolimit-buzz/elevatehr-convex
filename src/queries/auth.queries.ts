@@ -6,9 +6,11 @@ import { useMutation } from "convex/react";
 export type LoginInput = FunctionArgs<typeof api.modules.auth.Login>;
 export type ChangePasswordInput = FunctionArgs<typeof api.modules.auth.ChangePassword>;
 export type UpdateProfileInput = FunctionArgs<typeof api.modules.auth.UpdateProfile>;
+export type RegisterInput = FunctionArgs<typeof api.modules.company.create>;
 
 export const AuthQueries = () => {
   const loginMutation = useMutation(api.modules.auth.Login);
+  const registerMutation = useMutation(api.modules.company.create);
   const meMutation = useAuthedMutation(api.modules.auth.Me);
   const changePasswordMutation = useAuthedMutation(api.modules.auth.ChangePassword);
   const updateProfileMutation = useAuthedMutation(api.modules.auth.UpdateProfile);
@@ -20,7 +22,9 @@ export const AuthQueries = () => {
     return useConvexResponse(loginMutation(args));
   };
 
-  const Register = async (args: any) => {};
+  const Register = async (args: RegisterInput) => {
+    return useConvexResponse(registerMutation(args));
+  };
 
   const ChangePassword = async (args: ChangePasswordInput) => {
     console.log("Changing password with args:", args);

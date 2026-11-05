@@ -17,8 +17,11 @@ export type JobCreateInput = {
 export type JobUpdateInput = FunctionArgs<typeof api.modules.jobs.update>;
 export type JobListInput = FunctionArgs<typeof api.modules.jobs.list>;
 
+export type RegenerateField = "aboutTheRole" | "jobResponsibilities" | "expectations";
+
 export const JobQueries = () => {
   const CreateAction = useAuthedAction(api.modules.jobs.create);
+  const RegenerateAction = useAuthedAction(api.modules.jobs.regenerateField);
   const UpdateMutation = useAuthedMutation(api.modules.jobs.update);
   const RemoveMutation = useAuthedMutation(api.modules.jobs.remove);
 
@@ -28,6 +31,15 @@ export const JobQueries = () => {
     }
     // @ts-expect-error - token is injected by useAuthedAction
     const { result, error } = await useConvexResponse(CreateAction(args));
+    return { result, error };
+  };
+
+  const RegenerateJobField = async (jobId: Id<"jobs">, field: RegenerateField) => {
+    if (!RegenerateAction) {
+      return { result: null, error: "Action not ready" };
+    }
+    // @ts-expect-error - token is injected by useAuthedAction
+    const { result, error } = await useConvexResponse(RegenerateAction({ jobId, field }));
     return { result, error };
   };
 
@@ -47,7 +59,7 @@ export const JobQueries = () => {
     return { result, error };
   };
 
-  return { CreateJob, UpdateJob, RemoveJob };
+  return { CreateJob, RegenerateJobField, UpdateJob, RemoveJob };
 };
 
 // Hook to get a single job by ID (accepts string or Id<"jobs">)
