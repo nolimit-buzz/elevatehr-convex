@@ -1,11 +1,13 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Box, Button, Stack, Typography, Alert, Link } from "@mui/material";
 import Image from "next/image";
-import axios from 'axios';
 import metadata from "@/utils/metadata";
-import { setProfile } from "@/app/utils/authStorage";
+import { getWithExpiry } from "@/app/utils/authStorage";
+import { DefaultConstants } from "@/app/constants/defaults";
+import { CompanyQueries } from "@/queries/company.queries";
+import { useOnboardingStore } from "./store/useOnboardingStore";
 
 // Import steps
 import OnboardingStep1 from "./components/OnboardingStep1";
@@ -23,83 +25,82 @@ const steps = [
     { label: "About", description: "Tell us about your company" },
 ];
 
+// Steps the user may skip instead of filling in (indexes into `steps`)
+const SKIPPABLE_STEPS = new Set([1, 2]);
+
 const OnboardingPage = () => {
     const router = useRouter();
-    const [activeStep, setActiveStep] = useState(0);
-    const [onboardingData, setOnboardingData] = useState({
-        website: "",
-        company_logo: null as File | null,
-        booking_link: "",
-        about: "",
-    });
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+    const { GenerateUploadUrl, UpdateLogo, UpdateCompany } = CompanyQueries();
+    const {
+        activeStep,
+        data: onboardingData,
+        skipped,
+        loading,
+        error,
+        next,
+        back,
+        skip,
+        updateData,
+        setLoading,
+        setError,
+        reset,
+    } = useOnboardingStore();
 
     useEffect(() => {
-        const token = localStorage.getItem("jwt");
+        const token = getWithExpiry(DefaultConstants.tokenName);
         if (!token) {
             router.push("/");
             return;
         }
     }, [router]);
 
-    const handleNext = () => {
-        setActiveStep((prev) => Math.min(prev + 1, steps.length - 1));
-    };
-
-    const handleBack = () => {
-        setActiveStep((prev) => Math.max(prev - 1, 0));
-    };
-
-    const handleDataUpdate = (data: Partial<typeof onboardingData>) => {
-        setOnboardingData(prev => ({ ...prev, ...data }));
-    };
+    const handleNext = () => next(steps.length - 1);
+    const handleBack = () => back();
+    const handleSkip = () => skip(steps.length - 1);
+    const handleDataUpdate = (data: Partial<typeof onboardingData>) => updateData(data);
 
     const handleComplete = async () => {
         setLoading(true);
-        setError('');
-
-        const formData = new FormData();
-        formData.append('website', onboardingData.website);
-        if (onboardingData.company_logo) {
-            formData.append('company_logo', onboardingData.company_logo);
-        }
-        formData.append('booking_link', onboardingData.booking_link);
-        formData.append('about', onboardingData.about);
-        formData.append('onboarding_completed', 'true');
+        setError("");
 
         try {
-            const token = localStorage.getItem('jwt');
-            const response = await axios.post(
-                'https://app.elevatehr.ai/wp-json/elevatehr/v1/company/profile',
-                {...formData,
-                new_stage_notification:"yes",
-                skill_assessment_notification:"yes",
-                interviews_notification:"yes",
-                archived_notification:"yes",
-                rejection_notification:"yes",
-                acceptance_notification:"yes",
-                },
-                {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                        Authorization: `Bearer ${token}`
-                    },
+            const company: Record<string, string> = {
+                company_website: onboardingData.website,
+                about_company: onboardingData.about,
+            };
+
+            if (!skipped[2] && onboardingData.booking_link) {
+                company.booking_link = onboardingData.booking_link;
+            }
+
+            if (!skipped[1] && onboardingData.company_logo) {
+                const { result: uploadUrl, error: uploadError } = await GenerateUploadUrl();
+                if (uploadError || !uploadUrl) {
+                    throw new Error(uploadError || "Failed to prepare logo upload.");
                 }
-            );
 
-            console.log(response.data);
-            setProfile({
-                personalInfo: response.data.personal_info,
-                companyInfo: response.data.company_info,
-                notifications: response.data.notifications,
-            });
-        
+                const uploadResponse = await fetch(uploadUrl as string, {
+                    method: "POST",
+                    headers: { "Content-Type": onboardingData.company_logo.type },
+                    body: onboardingData.company_logo,
+                });
+                const { storageId } = await uploadResponse.json();
 
+                const { error: logoError } = await UpdateLogo(storageId);
+                if (logoError) {
+                    throw new Error(logoError);
+                }
+            }
+
+            const { error: updateError } = await UpdateCompany({ company });
+            if (updateError) {
+                throw new Error(updateError);
+            }
+
+            reset();
             router.push("/dashboard");
-
         } catch (err: any) {
-            setError(err.response?.data?.message || 'An error occurred during profile update.');
+            setError(err.message || "An error occurred during profile update.");
             console.error(err);
         } finally {
             setLoading(false);
@@ -198,13 +199,19 @@ const OnboardingPage = () => {
                         <div />
                     )}
 
-                    {activeStep < steps.length - 1 ? (
-                        <Button variant="contained" onClick={handleNext}  sx={{ borderRadius: '8px', px: 4, py: 1.2 }}>Next →</Button>
-                    ) : (
-                        <Button variant="contained" onClick={handleComplete} disabled={loading} sx={{ borderRadius: '8px', px: 4, py: 1.2 }}>
-                            {loading ? 'Finishing up...' : 'Complete Setup'}
-                        </Button>
-                    )}
+                    <Stack direction="row" spacing={2} alignItems="center">
+                        {SKIPPABLE_STEPS.has(activeStep) && (
+                            <Button variant="text" onClick={handleSkip} sx={{ color: 'grey.600', textTransform: 'uppercase' }}>Skip</Button>
+                        )}
+
+                        {activeStep < steps.length - 1 ? (
+                            <Button variant="contained" onClick={handleNext} disabled={!isStepValid(activeStep)} sx={{ borderRadius: '8px', px: 4, py: 1.2 }}>Next →</Button>
+                        ) : (
+                            <Button variant="contained" onClick={handleComplete} disabled={loading || !isStepValid(activeStep)} sx={{ borderRadius: '8px', px: 4, py: 1.2 }}>
+                                {loading ? 'Finishing up...' : 'Complete Setup'}
+                            </Button>
+                        )}
+                    </Stack>
                 </Stack>
             </Box>
         </Stack>
