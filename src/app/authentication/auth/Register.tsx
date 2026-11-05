@@ -1,11 +1,12 @@
 "use client";
 import React, { useState, ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Typography, Button, Stack, Alert, CircularProgress } from "@mui/material";
+import { Typography, Button, Stack, CircularProgress } from "@mui/material";
 import Link from "next/link";
 import CustomTextField from "@/app/dashboard/components/forms/theme-elements/CustomTextField";
 import { motion, Variants } from "framer-motion";
 import { AuthQueries } from "@/queries/auth.queries";
+import { toast } from "sonner";
 
 interface RegisterProps {
   title?: string;
@@ -111,7 +112,6 @@ const Register: React.FC<RegisterProps> = ({ title, subtitle, subtext }) => {
     phone_number: "",
   });
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
 
   // Handle text input change
   const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -187,7 +187,6 @@ const Register: React.FC<RegisterProps> = ({ title, subtitle, subtext }) => {
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setErrorMessage("");
     if (!validateForm()) return;
     setLoading(true);
     const { error } = await RegisterCompany({
@@ -206,7 +205,7 @@ const Register: React.FC<RegisterProps> = ({ title, subtitle, subtext }) => {
     });
     setLoading(false);
 
-    if (error) return setErrorMessage(error || "Registration failed. Please try again.");
+    if (error) return toast.error(error || "Registration failed. Please try again.");
     router.push("/");
   };
 
@@ -331,17 +330,6 @@ const Register: React.FC<RegisterProps> = ({ title, subtitle, subtext }) => {
             helperText={errors.phone_number}
           />
         </motion.div>
-
-        {errorMessage && (
-          <motion.div 
-            variants={itemVariants}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Alert severity="error">{errorMessage}</Alert>
-          </motion.div>
-        )}
 
         <motion.div variants={buttonVariants}>
           <Button

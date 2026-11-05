@@ -8,7 +8,7 @@ Priority order: 🔴 blocking bugs first, then 🟡 degraded features, then ⚪ 
 - [x] Registration form calling dead WP API → now calls `company.create`
 - [x] Job posting AI "regenerate" buttons were stubs → now call `jobs.regenerateField`
 - [x] Groq model `llama-3.3-70b-versatile` retired → swapped to `openai/gpt-oss-120b` everywhere
-- [ ] **Onboarding wizard** (`src/app/onboarding/page.tsx`) — rewrite to call `company.update`, remove dead WP POST + raw localStorage JWT read
+- [x] **Onboarding wizard** (`src/app/onboarding/page.tsx`) — rewrite to call `company.update`, remove dead WP POST + raw localStorage JWT read
 - [ ] **Public assessment-taking page** (`src/app/assessment/page.tsx`) — fetch job via `jobs.getPublicJob` instead of dead WP endpoint; implement a real Convex submit mutation (currently only sets a localStorage flag, nothing persists)
 - [ ] **Public assessment instructions page** (`src/app/assessment/instructions/page.tsx`) — fetch assessment via real Convex query instead of dead WP endpoint; wire submit to the same new submit mutation above
 - [ ] **Internal "apply as logged-in user" flow** (`src/app/dashboard/job-openings/[job_id]/apply/page.tsx`) — fetch job via `jobs.getPublicJob`/`jobs.get`, submit via `applications.generatePublicUploadUrl` + `applicationsNode.submitPublicApplication`

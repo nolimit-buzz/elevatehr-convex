@@ -158,6 +158,7 @@ export const CompanySchema = v.object({
   booking_link: v.optional(v.string()),
   company_website: v.optional(v.string()),
   ai_api_key: v.optional(v.string()),
+  onboarding_completed: v.optional(v.boolean()),
 });
 
 export const create = mutation({

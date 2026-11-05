@@ -1,4 +1,4 @@
-import { useAuthedMutation, useConvexResponse } from "@/app/convex.setup";
+import { useAuthedMutation, resolveConvexResponse } from "@/app/convex.setup";
 import { FunctionArgs } from "convex/server";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
@@ -24,7 +24,7 @@ export const CompanyQueries = () => {
     if (!GetMutation) {
       return { result: null, error: "Mutations not ready" };
     }
-    const { result, error } = await useConvexResponse(GetMutation());
+    const { result, error } = await resolveConvexResponse(GetMutation());
     return { result, error };
   };
 
@@ -32,7 +32,7 @@ export const CompanyQueries = () => {
     if (!CreateMutation) {
       return { result: null, error: "Mutations not ready" };
     }
-    const { result, error } = await useConvexResponse(CreateMutation(args));
+    const { result, error } = await resolveConvexResponse(CreateMutation(args));
     return { result, error };
   };
 
@@ -42,7 +42,7 @@ export const CompanyQueries = () => {
     }
 
     console.log("Updating company with args:", args);
-    const { result, error } = await useConvexResponse(UpdateMutation(args));
+    const { result, error } = await resolveConvexResponse(UpdateMutation(args));
     return { result, error };
   };
 
@@ -50,7 +50,7 @@ export const CompanyQueries = () => {
     if (!GenerateUploadUrlMutation) {
       return { result: null, error: "Mutations not ready" };
     }
-    const { result, error } = await useConvexResponse(
+    const { result, error } = await resolveConvexResponse(
       GenerateUploadUrlMutation(),
     );
     return { result, error };
@@ -60,7 +60,7 @@ export const CompanyQueries = () => {
     if (!UpdateLogoMutation) {
       return { result: null, error: "Mutations not ready" };
     }
-    const { result, error } = await useConvexResponse(
+    const { result, error } = await resolveConvexResponse(
       UpdateLogoMutation({ storageId }),
     );
     return { result, error };
@@ -70,7 +70,7 @@ export const CompanyQueries = () => {
     if (!SeedEmailTemplatesMutation) {
       return { result: null, error: "Mutations not ready" };
     }
-    const { result, error } = await useConvexResponse(
+    const { result, error } = await resolveConvexResponse(
       SeedEmailTemplatesMutation(),
     );
     return { result, error };

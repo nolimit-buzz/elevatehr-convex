@@ -1597,7 +1597,7 @@ const ProfilePage = () => {
                                 <InfoOutlined sx={{ fontSize: 18, color: "rgba(17, 17, 17, 0.6)" }} />
                                 <Typography variant="body2" sx={{ color: "rgba(17, 17, 17, 0.6)" }}>
                                   <>
-                                    Don't have a key yet? Follow the guide to create one on the Groq dashboard and paste
+                                    Don&apos;t have a key yet? Follow the guide to create one on the Groq dashboard and paste
                                     it here.{" "}
                                     <Link
                                       target="_blank"

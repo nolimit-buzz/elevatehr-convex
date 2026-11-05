@@ -1,4 +1,4 @@
-import { useAuthedMutation, useAuthedQuery, useConvexResponse } from "@/app/convex.setup";
+import { useAuthedMutation, useAuthedQuery, resolveConvexResponse } from "@/app/convex.setup";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 
@@ -55,7 +55,7 @@ export const useNotificationMutations = () => {
     if (!createMutation) {
       return { result: null, error: "Mutation not ready" };
     }
-    const { result, error } = await useConvexResponse(createMutation({ title, content, type }));
+    const { result, error } = await resolveConvexResponse(createMutation({ title, content, type }));
     return { result, error };
   };
 
@@ -66,7 +66,7 @@ export const useNotificationMutations = () => {
     if (!markAsReadMutation) {
       return { result: null, error: "Mutation not ready" };
     }
-    const { result, error } = await useConvexResponse(
+    const { result, error } = await resolveConvexResponse(
       markAsReadMutation({ notificationId: notificationId as Id<"notifications"> })
     );
     return { result, error };
@@ -79,7 +79,7 @@ export const useNotificationMutations = () => {
     if (!markAllAsReadMutation) {
       return { result: null, error: "Mutation not ready" };
     }
-    const { result, error } = await useConvexResponse(markAllAsReadMutation({}));
+    const { result, error } = await resolveConvexResponse(markAllAsReadMutation({}));
     return { result, error };
   };
 
@@ -90,7 +90,7 @@ export const useNotificationMutations = () => {
     if (!removeMutation) {
       return { result: null, error: "Mutation not ready" };
     }
-    const { result, error } = await useConvexResponse(
+    const { result, error } = await resolveConvexResponse(
       removeMutation({ notificationId: notificationId as Id<"notifications"> })
     );
     return { result, error };

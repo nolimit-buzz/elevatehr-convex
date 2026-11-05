@@ -21,7 +21,7 @@ const OnboardingStep4: React.FC<OnboardingStep4Props> = ({ data, onUpdate }) => 
     <Stack spacing={2}>
       <Typography variant="h4" fontWeight="bold">About Your Company</Typography>
       <Typography color="grey.200" maxWidth="600px">
-        Tell candidates about your company's mission, values, and culture.
+        Tell candidates about your company&apos;s mission, values, and culture.
       </Typography>
       <TextField
         fullWidth

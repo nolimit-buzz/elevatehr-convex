@@ -1,6 +1,6 @@
 import { FunctionArgs } from "convex/server";
 import { api } from "../../convex/_generated/api";
-import { useAuthedMutation, useAuthedQuery, useConvexResponse } from "@/app/convex.setup";
+import { useAuthedMutation, useAuthedQuery, resolveConvexResponse } from "@/app/convex.setup";
 import { useMutation } from "convex/react";
 
 export type LoginInput = FunctionArgs<typeof api.modules.auth.Login>;
@@ -15,25 +15,25 @@ export const AuthQueries = () => {
   const changePasswordMutation = useAuthedMutation(api.modules.auth.ChangePassword);
   const updateProfileMutation = useAuthedMutation(api.modules.auth.UpdateProfile);
   const Me = async () => {
-    return useConvexResponse(meMutation({}));
+    return resolveConvexResponse(meMutation({}));
   };
 
   const Login = async (args: LoginInput) => {
-    return useConvexResponse(loginMutation(args));
+    return resolveConvexResponse(loginMutation(args));
   };
 
   const Register = async (args: RegisterInput) => {
-    return useConvexResponse(registerMutation(args));
+    return resolveConvexResponse(registerMutation(args));
   };
 
   const ChangePassword = async (args: ChangePasswordInput) => {
     console.log("Changing password with args:", args);
 
-    return useConvexResponse(changePasswordMutation(args));
+    return resolveConvexResponse(changePasswordMutation(args));
   };
 
   const UpdateProfile = async (args: UpdateProfileInput) => {
-    return useConvexResponse(updateProfileMutation(args));
+    return resolveConvexResponse(updateProfileMutation(args));
   };
 
   return { Me, Login, Register, ChangePassword, UpdateProfile };

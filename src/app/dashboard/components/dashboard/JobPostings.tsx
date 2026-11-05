@@ -744,7 +744,7 @@ const JobPostings = ({
           <DialogTitle sx={{ fontWeight: 600, pb: 2, px: 4, pt: 4 }}>Delete Job</DialogTitle>
           <DialogContent sx={{ px: 4, pb: 2 }}>
             <Typography sx={{ color: "rgba(17, 17, 17, 0.72)" }}>
-              Are you sure you want to delete "{jobToDelete?.title}"? This action cannot be undone.
+              Are you sure you want to delete &quot;{jobToDelete?.title}&quot;? This action cannot be undone.
             </Typography>
           </DialogContent>
           <DialogActions sx={{ px: 4, pb: 3 }}>

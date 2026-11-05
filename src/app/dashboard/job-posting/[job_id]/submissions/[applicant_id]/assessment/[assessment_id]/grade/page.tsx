@@ -55,7 +55,7 @@ export default function GradingPage() {
               Technical Submission
             </Typography>
             <Typography color="text.secondary">
-              View the candidate's submission link and add a score based on their performance.
+              View the candidate&apos;s submission link and add a score based on their performance.
             </Typography>
 
             {/* coming back to chang this to !submissionLink  */}
