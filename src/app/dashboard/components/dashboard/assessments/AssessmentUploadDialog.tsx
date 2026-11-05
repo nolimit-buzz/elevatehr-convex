@@ -247,10 +247,13 @@ export default function AssessmentUploadDialog({
               />
             )}
             renderTags={(value, getTagProps) =>
-              value.map((option, index) => (
+              value.map((option, index) => {
+                const { key, ...tagProps } = getTagProps({ index });
+                return (
                 <Chip
+                  key={key}
                   label={option}
-                  {...getTagProps({ index })}
+                  {...tagProps}
                   onDelete={() => handleDeleteSkill(option)}
                   sx={{
                     bgcolor: "#F4F5F7",
@@ -262,7 +265,8 @@ export default function AssessmentUploadDialog({
                     "&:hover": { borderColor: "#4444E2" },
                   }}
                 />
-              ))
+                );
+              })
             }
           />
         </Box>

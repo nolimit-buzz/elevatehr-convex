@@ -285,7 +285,7 @@ export default function AssessmentInstructionsPage() {
                         • Upload your completed work to Google Drive.
                       </Typography>
                       <Typography sx={{ mb: 2 }}>
-                        • Set the document permissions to: "Anyone with the link can view"
+                        • Set the document permissions to: &quot;Anyone with the link can view&quot;
                       </Typography>
                       <Typography sx={{ mb: 2 }}>
                         • Submit the shareable link via the designated field on the submission page.
@@ -339,7 +339,7 @@ export default function AssessmentInstructionsPage() {
                         ✅ Upload it to Google Drive
                       </Typography>
                       <Typography sx={{ pl: 2, mb: 1 }}>
-                        ✅ Set sharing to "Anyone with the link can view"
+                        ✅ Set sharing to &quot;Anyone with the link can view&quot;
                       </Typography>
                       <Typography sx={{ pl: 2, mb: 1 }}>
                         ✅ Submit your shareable link via the submission form
