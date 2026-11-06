@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Box, Typography, Link } from "@mui/material";
 import LaunchIcon from "@mui/icons-material/Launch";
 import { resolveStorageUrl } from "@/utils/storageUrl";
@@ -9,8 +9,33 @@ interface ResumeViewerProps {
   externalCvLink?: string;
 }
 
+const PDF_TYPES = ["application/pdf"];
+
 export default function ResumeViewer({ cvUrl, externalCvLink }: ResumeViewerProps) {
   const rawUrl = resolveStorageUrl(cvUrl || externalCvLink);
+
+  // Convex storage URLs carry no file extension (/api/storage/<id>), so the
+  // only reliable way to tell a PDF from a Word doc is the actual
+  // Content-Type the server returns.
+  const [isPdf, setIsPdf] = useState<boolean | null>(/\.pdf($|\?)/i.test(rawUrl) ? true : null);
+
+  useEffect(() => {
+    if (!rawUrl || isPdf !== null) return;
+    let cancelled = false;
+    fetch(rawUrl, { method: "HEAD" })
+      .then((res) => {
+        if (cancelled) return;
+        const contentType = res.headers.get("content-type") || "";
+        setIsPdf(PDF_TYPES.includes(contentType.split(";")[0].trim()));
+      })
+      .catch(() => {
+        if (!cancelled) setIsPdf(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawUrl]);
 
   if (!rawUrl) {
     return (
@@ -30,10 +55,13 @@ export default function ResumeViewer({ cvUrl, externalCvLink }: ResumeViewerProp
     );
   }
 
-  const isDocx = /\.docx?($|\?)/i.test(rawUrl);
-  const previewSrc = isDocx
-    ? `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(rawUrl)}`
-    : rawUrl;
+  // Browsers can't render Word docs natively, so route those (and anything
+  // we haven't confirmed is a PDF yet) through the Office Online viewer.
+  // Used for both the preview iframe and the "Resume" link itself, so
+  // clicking it opens a readable preview tab instead of downloading the file.
+  const previewSrc = isPdf
+    ? rawUrl
+    : `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(rawUrl)}`;
 
   return (
     <Box
@@ -59,7 +87,7 @@ export default function ResumeViewer({ cvUrl, externalCvLink }: ResumeViewerProp
             textDecoration: "underline",
             textDecorationColor: "rgba(17, 17, 17, 0.68)",
           }}
-          href={rawUrl}
+          href={previewSrc}
           target="_blank"
           rel="noopener noreferrer"
         >

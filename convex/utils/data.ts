@@ -48,9 +48,9 @@ export const requiredData = [
     required: true,
     options: {
       immediately: "Immediately",
-      week: "Week",
-      month: "Month",
-      "2_months": "2 months",
+      week: "Within a week",
+      month: "Within a month",
+      "2_months": "Within 2 months",
     },
   },
   {

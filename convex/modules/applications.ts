@@ -248,8 +248,8 @@ export const listByJob = flexibleQuery({
           location: (app.custom_fields as any)?.location || "",
         },
         professional_info: {
-          experience: String(app.professional_info?.experience_years || ""),
-          experience_years: app.professional_info?.experience_years,
+          experience: getExperienceYears(app).toString() || "",
+          experience_years: getExperienceYears(app),
           salary_range: "",
           start_date: app.professional_info?.start_date || "",
           skills: Array.isArray(app.professional_info?.skills)
@@ -433,8 +433,8 @@ export const listWithFilters = flexibleQuery({
           location: (app.custom_fields as any)?.location || "",
         },
         professional_info: {
-          experience: String(app.professional_info?.experience_years || ""),
-          experience_years: app.professional_info?.experience_years,
+          experience: getExperienceYears(app).toString() || "",
+          experience_years: getExperienceYears(app),
           salary_range: "",
           start_date: app.professional_info?.start_date || "",
           skills: Array.isArray(app.professional_info?.skills)
@@ -502,7 +502,7 @@ export const get = flexibleQuery({
         location: (application.custom_fields as any)?.location || "",
       },
       professional_info: {
-        experience_years: application.professional_info?.experience_years,
+        experience_years: getExperienceYears(application),
         skills: Array.isArray(application.professional_info?.skills)
           ? application.professional_info.skills
           : application.professional_info?.skills
