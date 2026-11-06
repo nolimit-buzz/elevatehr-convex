@@ -7,6 +7,7 @@ import { useTheme } from "@mui/material/styles";
 import { Theme } from "@mui/material/styles";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { Candidate, StageType, SkillColor } from "@/app/dashboard/types/candidate";
+import { resolveStorageUrl } from "@/utils/storageUrl";
 
 interface MobileCandidateGridProps {
   candidates: Candidate[];
@@ -241,7 +242,7 @@ const MobileCandidateGrid: React.FC<MobileCandidateGridProps> = ({
               ))}
             </Box>
 
-            <Link href={candidate.attachments?.cv || ""} target="_blank">
+            <Link href={resolveStorageUrl(candidate.attachments?.cv)} target="_blank">
               <Stack
                 direction="row"
                 alignItems="center"

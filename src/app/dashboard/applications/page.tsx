@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import dynamic from "next/dynamic";
+import { resolveStorageUrl } from "@/utils/storageUrl";
 import {
   Box,
   Container,
@@ -1583,7 +1584,7 @@ export default function Home() {
                           ))}
                         </Box>
 
-                        <Link href={candidate.attachments?.cv || ""} target="_blank">
+                        <Link href={resolveStorageUrl(candidate.attachments?.cv)} target="_blank">
                           <Stack
                             direction="row"
                             alignItems="center"

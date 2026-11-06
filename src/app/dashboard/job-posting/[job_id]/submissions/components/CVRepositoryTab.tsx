@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { resolveStorageUrl } from "@/utils/storageUrl";
 import {
   Box,
   Typography,
@@ -167,7 +168,7 @@ export default function CVRepositoryTab({
         >
           {candidates.applications.map((app: any) => {
             const name = `${app.personal_info?.firstname || ""} ${app.personal_info?.lastname || ""}`.trim() || "Unknown";
-            const cvUrl = app.attachments?.cv;
+            const cvUrl = resolveStorageUrl(app.attachments?.cv);
             const isSelected = selectedEntries.includes(String(app.id));
 
             return (
@@ -346,7 +347,7 @@ export default function CVRepositoryTab({
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
           {candidates.applications.map((app: any) => {
             const name = `${app.personal_info?.firstname || ""} ${app.personal_info?.lastname || ""}`.trim() || "Unknown";
-            const cvUrl = app.attachments?.cv;
+            const cvUrl = resolveStorageUrl(app.attachments?.cv);
             const isSelected = selectedEntries.includes(String(app.id));
             return (
               <Box
