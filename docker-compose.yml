@@ -9,6 +9,8 @@ services:
     ports:
       - "${CONVEX_PORT}:3210"
       - "${CONVEX_SITE_PORT}:3211"
+    volumes:
+      - convex-data:/convex/data
 
   app:
     build:
@@ -31,3 +33,6 @@ services:
       - CONVEX_SELF_HOSTED_URL=http://convex:3210
     depends_on:
       - convex
+
+volumes:
+  convex-data:
