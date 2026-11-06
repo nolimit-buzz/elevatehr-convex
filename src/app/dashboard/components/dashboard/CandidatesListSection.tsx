@@ -19,17 +19,9 @@ import {
   ListItemText,
   Divider,
   CircularProgress,
-  Snackbar,
-  Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
 } from "@mui/material";
-import React, { useMemo, useState } from "react";
-import dynamic from "next/dynamic";
+import React, { useState } from "react";
 import NextLink from "next/link";
-import "react-quill/dist/quill.snow.css";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import BlockIcon from "@mui/icons-material/Block";
 import AssessmentIcon from "@mui/icons-material/Assessment";
@@ -205,53 +197,6 @@ export default function CandidateListSection({
     setAnchorEl(null);
   };
 
-  const handleAction = async (e: React.MouseEvent<HTMLElement>, action: string) => {
-    e.stopPropagation();
-    setLoadingStage(action);
-    try {
-      if (action.startsWith("assessment_")) {
-        // Handle assessment action
-        const token = localStorage.getItem("jwt");
-
-        // Find the assessment object that matches the action
-        const assessment = phaseOptions[currentStage]?.find(
-          (option) => option.action === action,
-        ) as CandidatePhaseOption;
-
-        if (!assessment || !assessment.id) {
-          throw new Error("Assessment not found");
-        }
-
-        const response = await fetch("https://app.elevatehr.ai/wp-json/elevatehr/v1/applications/send-job-assessment", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            application_ids: [candidate.id],
-            assessment_id: assessment.id,
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to send assessment");
-        }
-
-        onNotification?.("Assessment sent successfully", "success");
-      } else {
-        // Handle regular stage update
-        onUpdateStages(action);
-        onNotification?.(`Applicant moved to '${action.replace("_", " ")}'`, "success");
-      }
-    } catch (error) {
-      onNotification?.(error instanceof Error ? error.message : "Failed to update stage", "error");
-    } finally {
-      setLoadingStage(null);
-      handleClose();
-    }
-  };
-
   const handleCardClick = (event: React.MouseEvent<HTMLElement>) => {
     // Prevent redirection if clicking on checkbox or quick actions button
     if (
@@ -295,120 +240,6 @@ export default function CandidateListSection({
       (assessmentResult.assessment_submission_status !== "submitted" && assessmentResult.assessment_status !== "sent")
     );
   });
-
-  // Quill editor (client-only) - keep stable reference
-  const ReactQuill = useMemo(() => dynamic(() => import("react-quill"), { ssr: false }), []);
-  const quillModules = useMemo(
-    () => ({
-      toolbar: [
-        [{ header: [1, 2, 3, false] }],
-        ["bold", "italic", "underline", "strike"],
-        [{ list: "ordered" }, { list: "bullet" }],
-        ["link"],
-        ["clean"],
-      ],
-    }),
-    [],
-  );
-  const quillFormats = useMemo(() => ["header", "bold", "italic", "underline", "strike", "list", "bullet", "link"], []);
-
-  // Email modal state
-  const [emailModalOpen, setEmailModalOpen] = useState(false);
-  const [emailLoading, setEmailLoading] = useState(false);
-  const [emailContent, setEmailContent] = useState<string>("");
-  const [emailError, setEmailError] = useState<string>("");
-  const [pendingAction, setPendingAction] = useState<string | null>(null);
-
-  const mapActionToTemplateKey = (action: string): string | null => {
-    // Map stage action to template keys from API
-    switch (action) {
-      case "skill_assessment":
-        return "skill_assessment";
-      case "technical_assessment":
-        return "technical_assessment";
-      case "online_assessment_1":
-        return "online_assessment_1";
-      case "online_assessment_2":
-        return "online_assessment_2";
-      case "interviews":
-        return "interviews";
-      case "acceptance":
-        return "acceptance";
-      case "archived":
-        return "archived";
-      default:
-        return null;
-    }
-  };
-
-  const openEmailModalForAction = async (action: string) => {
-    try {
-      setPendingAction(action);
-      setEmailLoading(true);
-      setEmailError("");
-      setEmailContent("");
-
-      const token = typeof window !== "undefined" ? localStorage.getItem("jwt") : null;
-      if (!token) throw new Error("Authentication token not found");
-
-      const response = await fetch("https://app.elevatehr.ai/wp-json/elevatehr/v1/email-templates", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        cache: "no-store",
-      });
-      if (!response.ok) {
-        throw new Error("Failed to fetch email templates");
-      }
-      const data = await response.json();
-      const templateKey = mapActionToTemplateKey(action);
-      const content = templateKey && data?.templates?.[templateKey]?.content ? data.templates[templateKey].content : "";
-      setEmailContent(content);
-      setEmailModalOpen(true);
-    } catch (error) {
-      setEmailError(error instanceof Error ? error.message : "Failed to load templates");
-      onNotification?.(emailError || "Failed to load templates", "error");
-    } finally {
-      setEmailLoading(false);
-    }
-  };
-
-  const handleSendEmailAndMoveStage = async () => {
-    console.log("pendingAction", pendingAction);
-    if (!pendingAction) return;
-    try {
-      console.log("pendingAction", pendingAction);
-      setEmailLoading(true);
-      const token = typeof window !== "undefined" ? localStorage.getItem("jwt") : null;
-      if (!token) throw new Error("Authentication token not found");
-
-      const response = await fetch("https://app.elevatehr.ai/wp-json/elevatehr/v1/applications/move-stage", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          entries: [candidate.id],
-          stage: pendingAction,
-          custom_email_template: emailContent,
-        }),
-      });
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(errText || "Failed to update stage with email");
-      }
-
-      onNotification?.(`Email sent and applicant moved to '${pendingAction.replace("_", " ")}'`, "success");
-      setEmailModalOpen(false);
-      setPendingAction(null);
-    } catch (error) {
-      onNotification?.(error instanceof Error ? error.message : "Failed to send email", "error");
-    } finally {
-      setEmailLoading(false);
-    }
-  };
 
   return (
     <Paper
@@ -781,73 +612,6 @@ export default function CandidateListSection({
             );
           })}
         </Menu>
-
-        {/* Email Template Modal */}
-        <Dialog open={emailModalOpen} onClose={() => setEmailModalOpen(false)} fullWidth maxWidth="md">
-          <DialogTitle sx={{ fontWeight: 600, color: "rgba(17, 17, 17, 0.92)" }}>
-            {pendingAction ? `Send email for ${pendingAction.replace("_", " ")}` : "Send Email"}
-          </DialogTitle>
-          <DialogContent dividers sx={{ bgcolor: theme.palette.background.paper }}>
-            {emailLoading ? (
-              <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
-                <CircularProgress />
-              </Box>
-            ) : (
-              <Box
-                sx={{
-                  "& .quill": {
-                    bgcolor: "#FFF",
-                    borderRadius: "8px",
-                    border: "0.8px solid rgba(17, 17, 17, 0.14)",
-                    transition: "all 0.3s ease",
-                    "&:focus-within": {
-                      border: `0.8px solid ${theme.palette.primary.main}`,
-                      boxShadow: `0 0 0 1px ${theme.palette.primary.main}25`,
-                    },
-                    "& .ql-toolbar": {
-                      borderTopLeftRadius: "8px",
-                      borderTopRightRadius: "8px",
-                      border: "none",
-                      borderBottom: "0.8px solid rgba(17, 17, 17, 0.14)",
-                    },
-                    "& .ql-container": {
-                      border: "none",
-                      borderBottomLeftRadius: "8px",
-                      borderBottomRightRadius: "8px",
-                    },
-                  },
-                }}
-              >
-                {/* @ts-ignore - ReactQuill loaded dynamically */}
-                <ReactQuill
-                  theme="snow"
-                  value={emailContent}
-                  onChange={setEmailContent}
-                  modules={quillModules}
-                  formats={quillFormats}
-                />
-              </Box>
-            )}
-            {emailError && (
-              <Alert severity="error" sx={{ mt: 2 }}>
-                {emailError}
-              </Alert>
-            )}
-          </DialogContent>
-          <DialogActions sx={{ p: 2 }}>
-            <Button onClick={() => setEmailModalOpen(false)} variant="outlined" color="primary">
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSendEmailAndMoveStage}
-              variant="contained"
-              color="secondary"
-              disabled={emailLoading || !emailContent}
-            >
-              {emailLoading ? <CircularProgress size={20} color="inherit" /> : "Send"}
-            </Button>
-          </DialogActions>
-        </Dialog>
       </Box>
     </Paper>
   );

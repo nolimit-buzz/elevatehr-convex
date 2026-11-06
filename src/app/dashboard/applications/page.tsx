@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import {
   Box,
   Container,
@@ -25,6 +26,11 @@ import {
   TableCell,
   TableRow,
   Pagination,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  CircularProgress,
 } from "@mui/material";
 import Link from "next/link";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -47,6 +53,8 @@ import {
   StageType,
   CompanyApplicationsParams,
 } from "@/queries/applications.queries";
+import { useEmailTemplates } from "@/queries/emailTemplates.queries";
+import { useEmailStageModalStore } from "./store/useEmailStageModalStore";
 
 interface FilterState {
   jobTitle: string;
@@ -298,7 +306,77 @@ export default function Home() {
   const params = useParams();
 
   // Get the mutations hook
-  const { updateStage } = useApplicationMutations();
+  const { updateStage, moveToStageWithEmail } = useApplicationMutations();
+  const convexEmailTemplates = useEmailTemplates();
+
+  const {
+    emailModalOpen,
+    emailLoading,
+    emailContent,
+    emailError,
+    pendingAction,
+    setEmailModalOpen,
+    setEmailLoading,
+    setEmailContent,
+    setEmailError,
+    setPendingAction,
+  } = useEmailStageModalStore();
+
+  const ReactQuill = useMemo(() => dynamic(() => import("react-quill"), { ssr: false }), []);
+  const quillModules = useMemo(
+    () => ({
+      toolbar: [
+        [{ header: [1, 2, 3, false] }],
+        ["bold", "italic", "underline", "strike"],
+        [{ list: "ordered" }, { list: "bullet" }],
+        ["link"],
+        ["clean"],
+      ],
+    }),
+    [],
+  );
+  const quillFormats = useMemo(
+    () => ["header", "bold", "italic", "underline", "strike", "list", "bullet", "link"],
+    [],
+  );
+
+  const openEmailModalForAction = (action: string) => {
+    setPendingAction(action);
+    setEmailError("");
+    const content = convexEmailTemplates?.templates?.[action]?.content ?? "";
+    setEmailContent(content);
+    setEmailModalOpen(true);
+  };
+
+  const handleSendBulkEmailAndMoveStage = async () => {
+    if (!pendingAction || selectedEntries.length === 0) return;
+    setEmailLoading(true);
+    try {
+      const { error } = await moveToStageWithEmail(selectedEntries, pendingAction as StageType, emailContent);
+
+      if (error) {
+        throw new Error(error);
+      }
+
+      const message = `Email sent and ${selectedEntries.length} candidate${
+        selectedEntries.length > 1 ? "s" : ""
+      } moved to '${pendingAction.replace("_", " ")}'`;
+      setIsOpen(true);
+      setNotificationMessage(message);
+      setNotificationSeverity("success");
+      setEmailModalOpen(false);
+      setPendingAction(null);
+      setSelectedEntries([]);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to send email";
+      setEmailError(errorMessage);
+      setIsOpen(true);
+      setNotificationMessage(errorMessage);
+      setNotificationSeverity("error");
+    } finally {
+      setEmailLoading(false);
+    }
+  };
 
   // Compute stage from tab value
   const getStageValue = (tabValue: number): StageType => {
@@ -1609,16 +1687,14 @@ export default function Home() {
                   >
                     <CandidateListSection
                       setSelectedEntries={setSelectedEntries}
-                      isQuickActionsVisible={false}
+                      isQuickActionsVisible={true}
                       isCheckboxVisible={false}
                       key={candidate.id}
                       candidate={candidate}
                       isSelected={selectedEntries.includes(String(candidate.id))}
                       onSelectCandidate={handleSelectCandidate}
                       selectedEntries={selectedEntries}
-                      onUpdateStages={(action: string) => {
-                        console.log("action", action);
-                      }}
+                      onUpdateStages={(action: string) => openEmailModalForAction(action)}
                       currentStage={getStageValue(subTabValue)}
                       onNotification={(message, severity) => {
                         setNotificationMessage(message);
@@ -1710,6 +1786,67 @@ export default function Home() {
           {notificationMessage}
         </Alert>
       </Snackbar>
+
+      {/* Compose email + move stage modal */}
+      <Dialog open={emailModalOpen} onClose={() => setEmailModalOpen(false)} fullWidth maxWidth="md">
+        <DialogTitle sx={{ fontWeight: 600, color: "rgba(17, 17, 17, 0.92)" }}>
+          {pendingAction ? `Send email for ${pendingAction.replace("_", " ")}` : "Send Email"}
+        </DialogTitle>
+        <DialogContent dividers sx={{ bgcolor: theme.palette.background.paper }}>
+          <Box
+            sx={{
+              "& .quill": {
+                bgcolor: "#FFF",
+                borderRadius: "8px",
+                border: "0.8px solid rgba(17, 17, 17, 0.14)",
+                transition: "all 0.3s ease",
+                "&:focus-within": {
+                  border: `0.8px solid ${theme.palette.primary.main}`,
+                  boxShadow: `0 0 0 1px ${theme.palette.primary.main}25`,
+                },
+                "& .ql-toolbar": {
+                  borderTopLeftRadius: "8px",
+                  borderTopRightRadius: "8px",
+                  border: "none",
+                  borderBottom: "0.8px solid rgba(17, 17, 17, 0.14)",
+                },
+                "& .ql-container": {
+                  border: "none",
+                  borderBottomLeftRadius: "8px",
+                  borderBottomRightRadius: "8px",
+                },
+              },
+            }}
+          >
+            {/* @ts-ignore - ReactQuill loaded dynamically */}
+            <ReactQuill
+              theme="snow"
+              value={emailContent}
+              onChange={setEmailContent}
+              modules={quillModules}
+              formats={quillFormats}
+            />
+          </Box>
+          {emailError && (
+            <Alert severity="error" sx={{ mt: 2 }}>
+              {emailError}
+            </Alert>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setEmailModalOpen(false)} variant="outlined" color="primary">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSendBulkEmailAndMoveStage}
+            variant="contained"
+            color="secondary"
+            disabled={emailLoading || !emailContent}
+          >
+            {emailLoading ? <CircularProgress size={20} color="inherit" /> : "Send"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Filter Modal for Mobile */}
       {showFilterModal && (
