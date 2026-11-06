@@ -17,11 +17,9 @@ COPY . .
 # Learn more here: https://nextjs.org/telemetry
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Copy .env.local for build (only NEXT_PUBLIC_ vars are safe to include)
-COPY .env.local .env.local
-
-# Override NEXT_PUBLIC_ vars at build time so convex dev rewrites to 127.0.0.1
-# never leak into the production bundle
+# .env.local is gitignored and won't exist in a fresh clone (e.g. CI/Dokploy builds).
+# Pass the NEXT_PUBLIC_ vars it used to hold as build ARGs instead so convex dev
+# rewrites to 127.0.0.1 never leak into the production bundle.
 ARG NEXT_PUBLIC_CONVEX_URL=https://api-convexy.codesordinatestudio.net.ng
 ARG NEXT_PUBLIC_CONVEX_SITE_URL=https://http-convexy.codesordinatestudio.net.ng
 ARG OPENAI_API_KEY
