@@ -47,7 +47,7 @@ Convex: `convex/modules/applications.ts`, `convex/modules/applicationsNode.ts`
 | Per-job submissions list | `src/app/dashboard/job-posting/[job_id]/submissions/page.tsx` | `applications.listByJob` | ✅ Working | — |
 | Applicant detail/resume view | `.../submissions/[applicant_id]/page.tsx` | `applications.get` | ✅ Working | — |
 | Grade submitted assessment | `.../submissions/[applicant_id]/assessment/[assessment_id]/grade/page.tsx` | `applications.updateAssessmentScore`, `assessment.gradeTechnicalSubmission` | ✅ Working (verify) | Test full grading flow |
-| Orphan "move stage" component | `src/app/dashboard/components/dashboard/ActionSection.tsx` | — | 🧹 Dead code | Not imported anywhere — delete or finish wiring if it turns out to be needed |
+| Orphan "move stage" component | ~~`src/app/dashboard/components/dashboard/ActionSection.tsx`~~ | — | 🧹 Removed | Confirmed unused: zero imports/JSX usage anywhere in the repo. Rendered only hardcoded mock data and called the dead WP `move-stage` endpoint with an unfinished, literally-empty `entries` array. Deleted. |
 
 ---
 
@@ -118,5 +118,5 @@ Convex: `convex/modules/auth.ts` (`UpdateProfile`), `convex/modules/company.ts` 
 
 - **`company.get`** (`convex/modules/company.ts`) — declares empty `args: {}` but handler reads `args.companyIdOverride`, which can never be passed. Dormant "admin view as company" path that silently no-ops. Not called by anything today — low priority.
 - **`company.get` is a mutation, not a query** — should be `flexibleQuery` for consistency/reactivity, matches no other read-only Convex fn in the codebase.
-- **`src/app/lib/errorHandler.ts`** — built around raw `fetch`/`Response`, manual `localStorage` clearing on 403. Only relevant to legacy REST calls; verify nothing still imports it once all dead-API callers are migrated, then delete.
+- **`src/app/lib/errorHandler.ts`** — 🧹 Removed. Confirmed zero importers anywhere in the repo, including the one still-live dead-WP-API page (`onboarding/page.tsx`). Deleted.
 - **Duplicate JWT storage** — `AdminAuthLogin.tsx` writes both `setWithExpiry(DefaultConstants.tokenName, ...)` (correct) and raw `localStorage.setItem("jwt", ...)` (legacy). The raw `"jwt"` key is what all the broken dead-API pages read from — once those pages are migrated to Convex, this duplicate write should be removed too.
