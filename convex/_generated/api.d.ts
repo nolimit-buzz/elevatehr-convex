@@ -25,6 +25,7 @@ import type * as templates_ai_assessmentDescription from "../templates/ai/assess
 import type * as templates_ai_cvAnalysis from "../templates/ai/cvAnalysis.js";
 import type * as templates_ai_jobDescription from "../templates/ai/jobDescription.js";
 import type * as templates_email_skill_assessment from "../templates/email/skill_assessment.js";
+import type * as utils_aiKey from "../utils/aiKey.js";
 import type * as utils_constants from "../utils/constants.js";
 import type * as utils_data from "../utils/data.js";
 import type * as utils_email from "../utils/email.js";
@@ -57,6 +58,7 @@ declare const fullApi: ApiFromModules<{
   "templates/ai/cvAnalysis": typeof templates_ai_cvAnalysis;
   "templates/ai/jobDescription": typeof templates_ai_jobDescription;
   "templates/email/skill_assessment": typeof templates_email_skill_assessment;
+  "utils/aiKey": typeof utils_aiKey;
   "utils/constants": typeof utils_constants;
   "utils/data": typeof utils_data;
   "utils/email": typeof utils_email;

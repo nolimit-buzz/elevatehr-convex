@@ -8,6 +8,7 @@ import { generateJobDescription } from "../templates/ai/jobDescription";
 import { generateSkillsForRole } from "../templates/ai/assessmentDescription";
 import { verifyToken } from "../utils/validation";
 import { requiredData } from "../utils/data";
+import { resolveAiApiKey } from "../utils/aiKey";
 
 // Internal query to get company by ID (used by actions)
 export const getCompanyInternal = internalQuery({
@@ -109,20 +110,21 @@ export const create = action({
       companyId: user.company_id,
     });
     if (!company) throw new ConvexError({ message: "Company not found", code: 404 });
-    if (!company.ai_api_key) throw new ConvexError({ message: "AI API key not configured for company", code: 400 });
+    const aiApiKey = resolveAiApiKey();
+    if (!aiApiKey) throw new ConvexError({ message: "AI API key not configured", code: 400 });
 
     // Generate job description using AI
     const aiResult = await generateJobDescription({
       jobTitle: args.title,
       jobLevel: args.experience_level,
-      aiApiKey: company.ai_api_key,
+      aiApiKey,
     });
 
     // Generate skills for the role using AI
     const skillsResult = await generateSkillsForRole({
       jobTitle: args.experience_level ? `${args.experience_level} ${args.title}` : args.title,
       jobDescription: aiResult.success && aiResult.data?.aboutTheRole ? aiResult.data.aboutTheRole : "",
-      aiApiKey: company.ai_api_key,
+      aiApiKey,
     });
 
     // Combine technical and soft skills
@@ -165,7 +167,8 @@ export const regenerateField = action({
       companyId: user.company_id,
     });
     if (!company) throw new ConvexError({ message: "Company not found", code: 404 });
-    if (!company.ai_api_key) throw new ConvexError({ message: "AI API key not configured for company", code: 400 });
+    const aiApiKey = resolveAiApiKey();
+    if (!aiApiKey) throw new ConvexError({ message: "AI API key not configured", code: 400 });
 
     const job = await ctx.runQuery(internal.modules.jobs.getJobInternal, { jobId: args.jobId });
     if (!job) throw new ConvexError({ message: "Job not found", code: 404 });
@@ -176,7 +179,7 @@ export const regenerateField = action({
     const aiResult = await generateJobDescription({
       jobTitle: job.title,
       jobLevel: job.experience_level,
-      aiApiKey: company.ai_api_key,
+      aiApiKey,
     });
 
     if (!aiResult.success || !aiResult.data) {

@@ -6,6 +6,7 @@ import { internal } from "../_generated/api";
 import { Id } from "../_generated/dataModel";
 import { analyzeCVWithAI, extractTextFromCV } from "../templates/ai/cvAnalysis";
 import { Mailman } from "../utils/email";
+import { resolveAiApiKey } from "../utils/aiKey";
 
 // ============================================
 // HELPERS
@@ -100,19 +101,9 @@ async function performCVAnalysis(ctx: ActionCtx, args: AnalyzeCVArgs): Promise<A
     return { success: false, error: "Job not found" };
   }
 
-  // Get the company for AI API key
-  const company = await ctx.runQuery(internal.modules.applications.getCompanyInternal, {
-    companyId: application.company_id,
-  });
-
-  if (!company) {
-    return { success: false, error: "Company not found" };
-  }
-
-  // Use company API key
-  const aiApiKey = company.ai_api_key;
+  const aiApiKey = resolveAiApiKey();
   if (!aiApiKey) {
-    return { success: false, error: "AI API key not configured for this company" };
+    return { success: false, error: "AI API key not configured" };
   }
 
   // Get the CV URL
