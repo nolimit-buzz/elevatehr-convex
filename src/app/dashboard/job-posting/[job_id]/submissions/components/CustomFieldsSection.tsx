@@ -7,15 +7,22 @@ interface CustomFieldsSectionProps {
   applicant: any;
 }
 
+// Fields already shown elsewhere in the applicant detail view (header, skills, resume).
+const FIELDS_SHOWN_ELSEWHERE = new Set(["firstname", "lastname", "email", "skills", "cv", "resume"]);
+
 export default function CustomFieldsSection({ jobData, applicant }: CustomFieldsSectionProps) {
+  const requiredFieldsConfig = jobData?.application_form?.required_fields || [];
   const customFieldsConfig = jobData?.application_form?.custom_fields || [];
+  const fieldsConfig = [...requiredFieldsConfig, ...customFieldsConfig].filter(
+    (field: any) => !FIELDS_SHOWN_ELSEWHERE.has(field.key),
+  );
   const customFieldResponses = applicant?.custom_fields || {};
 
-  if (customFieldsConfig.length === 0 || Object.keys(customFieldResponses).length === 0) return null;
+  if (fieldsConfig.length === 0 || Object.keys(customFieldResponses).length === 0) return null;
 
-  const validFields = customFieldsConfig.filter((field: any) => {
+  const validFields = fieldsConfig.filter((field: any) => {
     const response = customFieldResponses[field.key];
-    return response !== undefined && response !== null;
+    return response !== undefined && response !== null && response !== "";
   });
 
   if (validFields.length === 0) return null;
@@ -32,9 +39,15 @@ export default function CustomFieldsSection({ jobData, applicant }: CustomFields
       }}>
         {validFields.map((field: any, index: number) => {
           const response = customFieldResponses[field.key];
-          const displayValue = typeof response === 'object' && response !== null && 'value' in response
-            ? String(response.value)
-            : String(response);
+          const rawValue = typeof response === 'object' && response !== null && 'value' in response
+            ? response.value
+            : response;
+          // For select fields, the stored answer is the option key (e.g. "option_0") —
+          // resolve it to its human-readable label.
+          const displayValue =
+            field.type === "select" && field.options && typeof field.options === "object"
+              ? (field.options as Record<string, string>)[String(rawValue)] ?? String(rawValue)
+              : String(rawValue);
 
           return (
             <Box key={field.key} sx={{ whiteSpace: "pre-wrap" }}>
