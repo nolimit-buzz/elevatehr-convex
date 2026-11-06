@@ -283,7 +283,7 @@ export const usePublicJobApplicationForm = (jobId: string | null): PublicJobForm
  * Hook for public application submission mutations
  */
 export const usePublicApplicationMutations = () => {
-  const submitAction = useAction(api.modules.applicationsNode.submitPublicApplication);
+  const submitAction = useAction(api.modules.applications.submitPublicApplication);
   const generateUploadUrlMutation = useMutation(api.modules.applications.generatePublicUploadUrl);
   const submitAssessmentMutation = useMutation(api.modules.applications.submitAssessment);
 

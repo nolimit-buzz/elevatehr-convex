@@ -45,14 +45,6 @@ const CVAnalysisSchema = {
   summary: v.optional(v.string()),
 };
 
-// Professional info schema
-const ProfessionalInfoSchema = v.object({
-  experience_years: v.optional(v.number()),
-  skills: v.optional(v.union(v.string(), v.array(v.string()))),
-  education: v.optional(v.array(v.string())),
-  start_date: v.optional(v.string()),
-});
-
 // ============================================
 // SHARED CV ANALYSIS LOGIC
 // ============================================
@@ -300,56 +292,6 @@ export const analyzeCVAction = action({
   },
 });
 
-// Public action to submit an application (no authentication required)
-export const submitPublicApplication = action({
-  args: {
-    job_id: v.id("jobs"),
-    name: v.string(),
-    email: v.string(),
-    phone: v.optional(v.string()),
-    cv_url: v.optional(v.string()),
-    cv_storage_id: v.optional(v.id("_storage")),
-    professional_info: v.optional(ProfessionalInfoSchema),
-    custom_fields: v.optional(v.any()),
-  },
-  handler: async (ctx, args): Promise<{ id: Id<"applications">; message: string }> => {
-    // Create the application via internal mutation
-    const result = await ctx.runMutation(internal.modules.applications.createPublicApplicationInternal, {
-      job_id: args.job_id,
-      name: args.name,
-      email: args.email,
-      phone: args.phone,
-      cv_url: args.cv_url,
-      cv_storage_id: args.cv_storage_id,
-      professional_info: args.professional_info,
-      custom_fields: args.custom_fields,
-    });
-
-    // If CV is provided, trigger CV analysis in background using scheduler
-    if (args.cv_url || args.cv_storage_id) {
-      try {
-        // Schedule CV analysis to run immediately in the background
-        await ctx.scheduler.runAfter(0, internal.modules.applicationsNode.analyzeCVActionInternal, {
-          applicationId: result.id,
-          cvStorageId: args.cv_storage_id,
-          cvUrl: args.cv_url,
-        });
-      } catch (error) {
-        // Log but don't fail the application submission
-      }
-    }
-
-    // Send application-received confirmation email to the candidate
-    try {
-      await ctx.scheduler.runAfter(0, internal.modules.applicationsNode.sendStageEmailInternal, {
-        applicationId: result.id,
-        templateType: "application_received",
-      });
-    } catch (error) {}
-
-    return {
-      id: result.id,
-      message: "Application submitted successfully",
-    };
-  },
-});
+// Note: submitPublicApplication lives in applications.ts (default runtime) —
+// it doesn't need Node APIs, and Node-runtime actions can't call back into
+// the backend via ctx.runMutation/ctx.runQuery on this deployment.
