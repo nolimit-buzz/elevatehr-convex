@@ -1207,6 +1207,11 @@ const AboutTheJob = () => {
   useEffect(() => {
     customFieldsRef.current = customFields;
   }, [customFields]);
+  // Tracks which jobId's data has already populated the form, so the
+  // (reactive) Convex job query doesn't blow away in-progress edits
+  // (e.g. a custom question being typed) whenever the job document
+  // changes in the background.
+  const populatedJobIdRef = useRef<string | null>(null);
   const [currentStep, setCurrentStep] = useState(1);
   const [showDialog, setShowDialog] = useState(false);
   const [jobUrl, setJobUrl] = useState("");
@@ -1264,6 +1269,17 @@ const AboutTheJob = () => {
 
     // Handle job data
     if (convexJob) {
+      // Only populate form state from the server once per job. This query is
+      // reactive, so without this guard any background change to the job
+      // document (e.g. clicking "regenerate" on a different field) would
+      // re-fire this effect and silently discard whatever the user was
+      // currently typing (custom questions, unsaved edits, etc.).
+      if (populatedJobIdRef.current === jobId) {
+        setLoading(false);
+        return;
+      }
+      populatedJobIdRef.current = jobId;
+
       const jobData = convexJob;
 
       // Parse skills and requirements from Convex data
