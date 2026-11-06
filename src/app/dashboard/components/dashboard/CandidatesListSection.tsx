@@ -1,3 +1,4 @@
+import { resolveStorageUrl } from "@/utils/storageUrl";
 import ClockIcon from "@mui/icons-material/AccessTimeOutlined";
 import CheckIcon from "@mui/icons-material/Check";
 import ChevronDownIcon from "@mui/icons-material/KeyboardArrowDown";
@@ -471,7 +472,7 @@ export default function CandidateListSection({
 
           {/* Resume link */}
           <Link
-            href={candidate?.attachments?.cv || ""}
+            href={resolveStorageUrl(candidate?.attachments?.cv)}
             target="_blank"
             underline="always"
             sx={{

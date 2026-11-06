@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { getProfile } from "@/app/utils/authStorage";
+import { resolveStorageUrl } from "@/utils/storageUrl";
 import {
   Box,
   Container,
@@ -664,7 +665,7 @@ export default function Home() {
 
     for (const app of selectedApps) {
       if (app.attachments?.cv) {
-        window.open(app.attachments.cv, "_blank");
+        window.open(resolveStorageUrl(app.attachments.cv), "_blank");
         count++;
       }
     }

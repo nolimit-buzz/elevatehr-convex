@@ -2,6 +2,7 @@
 import React from "react";
 import { Box, Typography, Link } from "@mui/material";
 import LaunchIcon from "@mui/icons-material/Launch";
+import { resolveStorageUrl } from "@/utils/storageUrl";
 
 interface ResumeViewerProps {
   cvUrl?: string;
@@ -9,7 +10,7 @@ interface ResumeViewerProps {
 }
 
 export default function ResumeViewer({ cvUrl, externalCvLink }: ResumeViewerProps) {
-  const rawUrl = cvUrl || externalCvLink;
+  const rawUrl = resolveStorageUrl(cvUrl || externalCvLink);
 
   if (!rawUrl) {
     return (
