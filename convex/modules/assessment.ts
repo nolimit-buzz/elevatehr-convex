@@ -4,6 +4,7 @@ import { Constants } from "../utils/constants";
 import { ConvexError, v } from "convex/values";
 import { action, internalMutation, internalQuery, internalAction, query } from "../_generated/server";
 import { flexibleMutation, flexibleQuery, flexibleAction } from "../utils/permission";
+import { resolveAiApiKey } from "../utils/aiKey";
 import {
   generateQuizQuestions,
   generateSkillsForRole,
@@ -337,7 +338,8 @@ export const generateQuestions = flexibleAction({
       companyId: user.company_id,
     });
     if (!company) throw new ConvexError({ message: "Company not found", code: 404 });
-    if (!company.ai_api_key) throw new ConvexError({ message: "AI API key not configured for company", code: 400 });
+    const aiApiKey = resolveAiApiKey();
+    if (!aiApiKey) throw new ConvexError({ message: "AI API key not configured", code: 400 });
 
     // Generate questions using AI
     const result = await generateQuizQuestions({
@@ -346,7 +348,7 @@ export const generateQuestions = flexibleAction({
       skills: args.skills,
       numberOfOpenTextQuestions: args.numberOfOpenTextQuestions,
       numberOfMultiChoiceQuestions: args.numberOfMultiChoiceQuestions,
-      aiApiKey: company.ai_api_key,
+      aiApiKey,
     });
 
     if (!result.success || !result.questions) {
@@ -450,12 +452,13 @@ export const generateSkills = flexibleAction({
       companyId: targetCompanyId,
     });
     if (!company) throw new ConvexError({ message: "Company not found", code: 404 });
-    if (!company.ai_api_key) throw new ConvexError({ message: "AI API key not configured for company", code: 400 });
+    const aiApiKey = resolveAiApiKey();
+    if (!aiApiKey) throw new ConvexError({ message: "AI API key not configured", code: 400 });
 
     return await generateSkillsForRole({
       jobTitle: args.jobTitle,
       jobDescription: args.jobDescription || "",
-      aiApiKey: company.ai_api_key,
+      aiApiKey,
     });
   },
 });
@@ -480,14 +483,15 @@ export const generateTechnicalAssessmentContent = flexibleAction({
       companyId: targetCompanyId,
     });
     if (!company) throw new ConvexError({ message: "Company not found", code: 404 });
-    if (!company.ai_api_key) throw new ConvexError({ message: "AI API key not configured for company", code: 400 });
+    const aiApiKey = resolveAiApiKey();
+    if (!aiApiKey) throw new ConvexError({ message: "AI API key not configured", code: 400 });
 
     const result = await generateTechnicalContent({
       jobTitle: args.jobTitle,
       level: args.level,
       skills: args.skills,
       assessmentOptions: args.assessmentOptions,
-      aiApiKey: company.ai_api_key,
+      aiApiKey,
     });
 
     if (!result.success || !result.content) {
@@ -571,11 +575,8 @@ export const gradeAssessmentInternal = internalAction({
     const answers = assessmentResult?.answers;
     if (!answers || answers.length === 0) return;
 
-    // Fetch the company's AI API key
-    const company = await ctx.runQuery(internal.modules.assessment.getCompanyInternal, {
-      companyId: application.company_id,
-    });
-    if (!company?.ai_api_key) return;
+    const aiApiKey = resolveAiApiKey();
+    if (!aiApiKey) return;
 
     // Fetch the job title for context
     const job = await ctx.runQuery(internal.modules.assessment.getJobInternal, {
@@ -588,7 +589,7 @@ export const gradeAssessmentInternal = internalAction({
       jobTitle,
       questions: assessment.questions as { question: string; type: "open-text" | "multi-choice"; options: string[] }[],
       answers,
-      aiApiKey: company.ai_api_key,
+      aiApiKey,
     });
 
     if (!result.success || result.score === undefined) return;
