@@ -46,9 +46,9 @@ COPY --from=builder --chown=bun:bun /app/public ./public
 
 USER bun
 
-EXPOSE 3000
+EXPOSE 1357
 
-ENV PORT=3000
+ENV PORT=1357
 
 # set hostname to localhost
 ENV HOSTNAME="0.0.0.0"
