@@ -31,7 +31,7 @@ Convex: `convex/modules/jobs.ts`
 | Public job view (no auth) | `src/app/job-openings/[job_id]/page.tsx` | `jobs.getPublicJob`, `jobs.getPublicCompany` | ✅ Working | — |
 | Public job apply (no auth) | `src/app/job-openings/[job_id]/apply/page.tsx` | `applications.getPublicJobApplicationForm`, `applications.generatePublicUploadUrl`, `applicationsNode.submitPublicApplication` | ✅ Working (verify end-to-end) | Test full submission flow |
 | **Internal** "apply as logged-in user" | `src/app/dashboard/job-openings/[job_id]/apply/page.tsx` | should be `jobs.getPublicJob` + `applications.*` | 🔴 Broken | Fetches job via dead WP endpoint (line ~104), submits via dead WP endpoint (line ~354). Rewrite both to Convex equivalents. Remove raw `localStorage` JWT read. |
-| Job detail viewer (orphan?) | `src/app/dashboard/jobs/[job_id]/page.tsx` | should be `jobs.get` | 🔴 Broken / ⚪ | Still calls dead WP endpoint. **First confirm whether this route is linked from anywhere in the nav** — if not, decide: fix or delete. |
+| Job detail viewer (orphan) | ~~`src/app/dashboard/jobs/[job_id]/page.tsx`~~ | — | 🧹 Removed | Confirmed unreachable: no nav/sidebar/listings-table link pointed to this route, and its own "Apply" button targeted a non-existent sub-route. Fully superseded by `create-job-posting/[job_id]/page.tsx` (edit, via `jobs.get`/`useJob`) and `job-posting/[job_id]/submissions` (view applicants). Deleted. |
 | Upcoming interviews | `src/app/dashboard/upcoming-interviews/page.tsx` | none (Calendly only) | ⚪ | No Convex table backing — purely Calendly-sourced. Verify Calendly calls aren't hitting the mock endpoint too. |
 
 ---
