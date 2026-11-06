@@ -227,8 +227,14 @@ export default function Typeform({ params }: { params: { job_id: string } }) {
                 throw new Error(uploadError || `Failed to get upload URL for ${key}`);
               }
 
+              // Convex's self-hosted generateUploadUrl can return a path relative
+              // to the Convex deployment's site URL rather than an absolute URL.
+              const absoluteUploadUrl = uploadUrl.startsWith("http")
+                ? uploadUrl
+                : `${process.env.NEXT_PUBLIC_CONVEX_SITE_URL}${uploadUrl}`;
+
               // Upload the file
-              const uploadResponse = await fetch(uploadUrl, {
+              const uploadResponse = await fetch(absoluteUploadUrl, {
                 method: "POST",
                 headers: { "Content-Type": file.type },
                 body: file,
