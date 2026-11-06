@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { formatDistanceToNow } from "date-fns";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Container, Box, Stack, Typography, styled, Chip, Button, Grid, Skeleton, Divider } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
@@ -257,12 +258,7 @@ const JobDetailsPage = () => {
                 <Pill
                   label={
                     jobData?.created_at &&
-                    (() => {
-                      const days = Math.floor(
-                        (new Date().getTime() - new Date(jobData.created_at).getTime()) / (1000 * 60 * 60 * 24)
-                      );
-                      return `Posted ${days} ${days === 1 ? "day" : "days"} ago`;
-                    })()
+                    `Posted ${formatDistanceToNow(new Date(jobData.created_at), { addSuffix: true })}`
                   }
                   className="date"
                 />
